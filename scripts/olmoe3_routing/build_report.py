@@ -66,20 +66,35 @@ def ce_table(res, res1000):
     return table(["model", "restriction", "CE (65.5M tok)", "&Delta; vs unrestricted", "web", "pdf", "code", "math", "other"], rows)
 
 
-def build_overview(res, res1000, findings_html):
-    n = res["std"]["none"]["meta"]
+def split_findings(findings_html):
+    """findings.html is a flat sequence of card divs (Finding 1..5); return them as a list so tabs can pick their own."""
+    parts = [c for c in findings_html.split('<div class="card') if c.strip()]
+    return ['<div class="card' + c for c in parts]
+
+
+def build_overview():
     setup = (
-        f"<p>Models: the two 512-expert OLMoE3-ladder 275M arms trained here for 10B tokens with the ladder's WSD trunk "
-        f"(<code>olmoe3_275m_10b</code>, <code>olmoe3_275m_emo_10b</code>; the 1000-expert arms appear in tab 5). "
-        f"Data: {n['n_instances']:,} raw 8192-token training-stream instances = {n['n_tokens']:,} tokens, {n['n_docs']:,} EOS-delimited "
-        f"documents, sampled stratified by source (web 4000 / pdf 1500 / code 1200 / math 800 / other 500) from the 10B&ndash;20B token "
-        f"window of the SAME data order (steps 19,076&ndash;38,146), i.e. never seen by these checkpoints.</p>"
-        "<p>Restriction: <em>per document</em>, sum the softmax router scores over the document's tokens, keep the top-P experts, "
-        "route top-16 within them (the EMO pool rule; EMO checkpoints do it natively, the standard checkpoint gets a router wrapper "
-        "self-tested to reproduce EmoRouterV2 exactly). A condition <code>A-B:P</code> applies pool P to MoE layers A..B and leaves "
-        "the other layers unrestricted (layer 0 is dense in this family; layers 1&ndash;9 are MoE).</p>"
+        "<p>Two 512-expert MoE models at <b>276.7M active / 2.61B total</b> parameters, trained here for 10B tokens with a WSD schedule "
+        "(constant LR after warmup, no decay). The architecture follows the 275M rung of the scaling-ladders repo unchanged. "
+        "We also trained a <b>1000-expert</b> version by raising only the expert count with everything else fixed, so the total size grows "
+        "to 4.90B (279.5M active), and a <b>128-expert</b> version the same way (0.80B total, 274.5M active). "
+        "For each expert count we trained an <b>EMO</b> version and a <b>standard MoE</b> version.</p>"
+        "<p>All routing statistics in this report come from forward passes of these checkpoints on 65.5M unseen training-stream tokens "
+        "(8,000 instances from the 10B&ndash;20B token window of the same data order).</p>"
     )
-    return card("info", "Setup", setup) + findings_html + card("info", "Cross-entropy of every pass", ce_table(res, res1000))
+    guide = (
+        "<ul>"
+        "<li><b>Method</b>: extraction pipeline, metric definitions, sanity checks.</li>"
+        "<li><b>1</b>: what layers 7&ndash;9 do when layers 1&ndash;3 / 1&ndash;6 are forced to per-document pools; CE of every pass.</li>"
+        "<li><b>2</b>: document-poolability and co-activation modularity of every layer, every condition.</li>"
+        "<li><b>3</b>: do documents with the same early pool share later experts?</li>"
+        "<li><b>4</b>: cross-layer expert dependence.</li>"
+        "<li><b>5</b>: the 128- and 1000-expert arms.</li>"
+        "<li><b>6</b>: lift and co-occurrence heatmaps.</li>"
+        "<li><b>7</b>: spectral-k sweep and the layer-1 expert&rarr;document partition test.</li>"
+        "</ul>"
+    )
+    return card("info", "Setup", setup) + card("info", "Where things are", guide)
 
 
 def build_method():
@@ -112,7 +127,7 @@ unrestricted CE 2.44 (std) / 2.46 (EMO) matches the runs' end-of-training loss.<
     return card("info", "Method", body)
 
 
-def build_late_layers(res):
+def build_late_layers(res, res1000, findings):
     """The direct test: layers 7-9 (free) under unrestricted vs layers 1-3 vs 1-6 restricted, per pool size."""
     late = ["7", "8", "9"]
     def row(model, cond):
@@ -131,11 +146,12 @@ def build_late_layers(res):
                 if cond in res[model]: rows.append(row(model, cond))
         out += card("info", f"{MODEL_LABEL[model]}: layers 7&ndash;9 under early-layer restriction", table(hdr, rows))
     out += fig_row(fig("poolable64_by_layer.png", "Top-64 poolability by layer (all conditions)."), fig("doc_eff_experts_by_layer.png", "Effective experts per document by layer (all conditions)."))
-    return out
+    out += card("info", "Cross-entropy of every pass", ce_table(res, res1000))
+    return findings[1] + findings[2] + out
 
 
-def build_poolability(res):
-    body = (
+def build_poolability(res, findings):
+    body = findings[0] + findings[3] + (
         "<p>Does restricting early layers make later layers more document-poolable? Rows are conditions, columns MoE layers; restricted "
         "layers read 1.000 by construction, so look at the unrestricted columns to the right of each restricted prefix.</p>"
         + card("info", "Share of routed assignments inside the document's top-64 experts (unweighted over docs)", layer_table(res, "poolable_top64_unw"))
@@ -169,7 +185,7 @@ def build_cross(res):
     return body
 
 
-def build_1000(res1000, res):
+def build_1000(res1000, res, findings):
     if not res1000:
         return card("warn", "1000-expert arms", "<p>No analysis found in runs_1000/.</p>")
     rows = []
@@ -180,7 +196,7 @@ def build_1000(res1000, res):
     for model, conds in list(res.items()) + list(res1000.items()):
         r = conds["none"]
         rows2.append([MODEL_LABEL[model]] + [f(r["layers"][l]["Q_louvain"]) for l in LAYERS])
-    return (card("info", "Unrestricted pass: held-out CE and top-64 poolability by layer, all trained arms", table(["model", "CE", *[f"L{l}" for l in LAYERS]], rows))
+    return (findings[4] + card("info", "Unrestricted pass: held-out CE and top-64 poolability by layer, all trained arms", table(["model", "CE", *[f"L{l}" for l in LAYERS]], rows))
             + card("info", "Louvain Q by layer, unrestricted", table(["model", *[f"L{l}" for l in LAYERS]], rows2))
             + fig_row(fig("poolable64_by_layer.png", "1000-expert arms: top-64 poolability (unrestricted only).", RUNS1000), fig("q_louvain_by_layer.png", "1000-expert arms: Louvain Q.", RUNS1000)))
 
@@ -248,15 +264,16 @@ def build_next():
 def main(findings_path=OUT / "findings.html"):
     res = json.load(open(RUNS / "metrics.json"))
     res1000 = json.load(open(RUNS1000 / "metrics.json")) if (RUNS1000 / "metrics.json").exists() else {}
-    findings_html = findings_path.read_text() if findings_path.exists() else card("warn", "Findings", "<p>findings.html not written yet.</p>")
+    findings = split_findings(findings_path.read_text()) if findings_path.exists() else []
+    findings += [card("warn", "Finding", "<p>findings.html not written yet.</p>")] * (5 - len(findings))
     tabs = [
-        ("overview", "Overview", build_overview(res, res1000, findings_html)),
+        ("overview", "Overview", build_overview()),
         ("method", "Method", build_method()),
-        ("late", "1 · Layers 7-9 under early restriction", build_late_layers(res)),
-        ("pool", "2 · Poolability & modularity, all layers", build_poolability(res)),
+        ("late", "1 · Layers 7-9 under early restriction", build_late_layers(res, res1000, findings)),
+        ("pool", "2 · Poolability & modularity, all layers", build_poolability(res, findings)),
         ("early", "3 · Early-pool conditioning", build_earlypool(res)),
         ("cross", "4 · Cross-layer NMI", build_cross(res)),
-        ("e1000", "5 · 128- and 1000-expert arms", build_1000(res1000, res)),
+        ("e1000", "5 · 128- and 1000-expert arms", build_1000(res1000, res, findings)),
         ("heat", "6 · Co-activation heatmaps", build_heatmaps()),
         ("ksweep", "7 · k sweep & document partition", build_ksweep()),
         ("next", "Next steps", build_next()),
