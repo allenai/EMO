@@ -105,17 +105,25 @@ def question_card(qid):
     return card("ok", "Question", f"<p>{q}</p>")
 
 
-def unrestricted_table(res, models=("std", "emo")):
+METRIC_SPECS = {"top32": ("top-32 share", "poolable_top32_unw", 2), "top64": ("top-64 share", "poolable_top64_unw", 2),
+                "top128": ("top-128 share", "poolable_top128_unw", 2), "eff": ("eff. experts / doc", "doc_eff_experts_unw", 0),
+                "ql": ("Louvain Q", "Q_louvain", 2), "qs": ("spectral Q (k=8)", "Q_spectral", 2), "ent": ("router entropy (nats)", "mean_router_entropy", 2)}
+
+
+def unrestricted_table(res, models=("std", "emo"), metrics=tuple(METRIC_SPECS)):
     """One row per (model, metric), columns = layers, unrestricted pass only."""
-    specs = [("top-32 share", "poolable_top32_unw", 2), ("top-64 share", "poolable_top64_unw", 2), ("top-128 share", "poolable_top128_unw", 2),
-             ("eff. experts / doc", "doc_eff_experts_unw", 0), ("Louvain Q", "Q_louvain", 2), ("spectral Q (k=8)", "Q_spectral", 2),
-             ("router entropy (nats)", "mean_router_entropy", 2)]
     rows = []
     for model in models:
         r = res[model]["none"]
-        for label, key, nd in specs:
+        for m in metrics:
+            label, key, nd = METRIC_SPECS[m]
             rows.append([MODEL_LABEL[model], label] + [f(r["layers"][l][key], nd) for l in LAYERS])
     return table(["model", "metric", *[f"L{l}" for l in LAYERS]], rows)
+
+
+def section(title, what, result, takeaway):
+    """One digestible result block: metric definition -> table/figure -> one-paragraph conclusion."""
+    return card("info", title, f'<p class="what">{what}</p>{result}<p><b>Takeaway.</b> {takeaway}</p>')
 
 
 HEAT = OUT / "heatmaps"
@@ -134,32 +142,49 @@ def heatmap_card(tag, label):
 
 
 def build_q1(res, findings):
-    method = (
-        "<p>Every metric is computed per MoE layer from one forward pass over the 65.5M held-out tokens, using the experts each token "
-        "actually selected (top-16 of 512). A <em>document</em> is an EOS-delimited span; document metrics average over documents with "
-        "&ge; 64 tokens.</p><ul>"
-        "<li><b>Top-P share</b> &mdash; <em>could this document have been served by a pool of P experts?</em> Rank the layer's experts by "
-        "the total router weight the document's tokens gave them, keep the top P, and count what fraction of the document's actual "
-        "selections landed in those P. 1.0 means a P-expert pool would reproduce the routing exactly; token-level routing spread over "
-        "the whole layer gives a small value. Reported at P = 32 / 64 / 128.</li>"
-        "<li><b>Effective experts per document</b> &mdash; <em>how many experts does a document really use?</em> The exponential of the "
-        "entropy of the document's expert-usage histogram: heavily used experts count fully, rarely used ones only a little. 16 would mean "
-        "the same 16 experts for every token; 512 means uniform use of all of them.</li>"
-        "<li><b>Modularity Q</b> &mdash; <em>do experts form groups that fire together?</em> Experts are nodes; the edge between two experts "
-        "is how much more often they are selected on the same token than chance would predict (lift). Q measures how cleanly the graph splits "
-        "into groups that co-fire within but rarely across, using either Louvain (free number of groups) or spectral clustering into k = 8. "
-        "0 means no structure beyond chance; a shuffled-label null gives the noise floor.</li>"
-        "<li><b>Router entropy</b> &mdash; how spread out the router's softmax is per token, averaged over tokens. ln 512 = 6.24 is uniform; "
-        "lower means a sharper router.</li>"
-        "<li><b>Co-activation heatmaps</b> &mdash; expert &times; expert grids per layer. <b>Lift</b>: how much more often two experts are used "
-        "together than chance, in log2 (+1 = twice as often, 0 = independent, clipped to &plusmn;3), with experts ordered so that groups appear "
-        "as blocks on the diagonal. <b>Conditional co-activation</b>: given that expert i is used, the probability that expert j is too. "
-        "Both come at token level (the two experts are in one token's top-16) and document level (both are used somewhere in the same "
-        "document).</li></ul>"
-    )
-    body = question_card("q1") + card("info", "Method & metrics", method) + findings[0]
-    body += card("info", "Unrestricted pass, 512 experts: per-layer routing statistics", unrestricted_table(res))
+    body = question_card("q1")
+    body += card("ok", "Short answer",
+                 "<p><b>EMO: yes, from layer 2 on. Standard MoE: no.</b> In the EMO model a document's tokens in layers 2&ndash;9 mostly stay "
+                 "inside a small subset of experts (about 60% of selections fall in the document's top-64 of 512), while the standard model "
+                 "spreads a document over almost every expert in every layer. Both models reach the same held-out loss (CE 2.463 vs 2.444), "
+                 "and the two routers are equally sharp per token, so EMO's concentration is a per-document property, not a sharper router. "
+                 "EMO's first MoE layer behaves like the standard model.</p>")
+    body += section("Top-P share: could a document be served by a pool of P experts?",
+        "For one document and one layer, rank the experts by the total router weight the document's tokens gave them, keep the top P, and "
+        "count the fraction of the document's actual selections that landed in those P. 1.0 means a P-expert pool would reproduce the routing "
+        "exactly; spreading a document across the whole layer gives a small value. P = 32 / 64 / 128 of 512; mean over documents with &ge; 64 tokens.",
+        unrestricted_table(res, metrics=("top32", "top64", "top128")),
+        "In the standard model only 17&ndash;28% of a document's selections fall in its top-64 experts, and even the top-128 catch under half. "
+        "In EMO the top-64 catch 55&ndash;67% and the top-128 catch 72&ndash;81% from layer 2 onward, rising slowly with depth. EMO layer 1 "
+        "(29% top-64) looks like the standard model.")
+    body += section("Effective experts per document: how many experts does a document really use?",
+        "The exponential of the entropy of the document's expert-usage histogram in that layer: heavily used experts count fully, rarely used "
+        "ones only a little. 16 would mean the same 16 experts for every token; 512 means every expert used equally.",
+        unrestricted_table(res, metrics=("eff",)),
+        "A document in the standard model effectively uses 360&ndash;450 of the 512 experts in every layer, i.e. routing is essentially "
+        "token-level. In EMO it uses 140&ndash;210 from layer 2 on, falling to ~140 by layer 9, again with layer 1 (~385) as the exception.")
+    body += section("Modularity Q and router entropy: are there expert groups, and is the router sharper?",
+        "<b>Q</b>: experts are nodes, and the edge between two experts is how much more often they are selected on the same token than chance "
+        "predicts (lift). Q measures how cleanly the graph splits into groups that co-fire within but rarely across, found by Louvain (free "
+        "number of groups) or spectral clustering into k = 8; 0 means no structure beyond chance (a shuffled-label null sits at 0.00). "
+        "<b>Router entropy</b>: how spread out the router's softmax is per token, averaged over tokens; ln 512 = 6.24 is uniform.",
+        unrestricted_table(res, metrics=("ql", "qs", "ent")),
+        "Token-level group structure is about the same in both models (Louvain Q 0.23&ndash;0.40 standard vs 0.28&ndash;0.38 EMO, both growing with "
+        "depth), and the routers are equally spread out per token (entropy ~5.9&ndash;6.1 nats in both). So EMO does not create sharper "
+        "per-token expert groups; its document-level concentration comes from the pool rule, which keeps a document within a subset of "
+        "experts even though individual tokens still pick from a broad, near-uniform distribution.")
+    body += card("info", "Co-activation heatmaps: which experts are used together?",
+        "<p>Expert &times; expert grids per layer. <b>Lift</b>: how much more often two experts are used together than chance, in log2 "
+        "(+1 = twice as often, 0 = independent, clipped to &plusmn;3), with experts ordered so that groups appear as blocks on the diagonal. "
+        "<b>Conditional co-activation</b>: given that expert i is used, the probability that expert j is too. Both come at <em>token</em> level "
+        "(the two experts are in one token's top-16) and <em>document</em> level (both are used somewhere in the same document).</p>")
     body += heatmap_card("std512_full", "standard MoE, 512 experts, full routing") + heatmap_card("emo512_full", "EMO, 512 experts, full routing")
+    body += card("info", "Takeaway from the heatmaps",
+        "<p>At token level both models show clear red blocks on the diagonal in every layer, of similar size and strength: which experts fire "
+        "together on a token is organised the same way in both. The difference is at document level. The standard model's document-level "
+        "grids are blank, because a document touches nearly every expert, so no pair is used together more or less often than chance. In "
+        "EMO faint blocks appear from layer 2 and sharpen with depth (layer 9 clearest): sets of experts that are used by the same documents "
+        "and, in the off-diagonal blue, sets that are rarely used by the same document.</p>")
     return body
 
 
@@ -303,7 +328,7 @@ def main(findings_path=OUT / "findings.html"):
     title = "OLMoE3-ladder 275M: document-level routing structure, standard MoE vs EMO"
     page = f"""<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{html.escape(title)}</title><style>{CSS}</style><style>.muted{{color:var(--muted);font-weight:normal;font-size:0.85em}}</style></head>
+<title>{html.escape(title)}</title><style>{CSS}</style><style>.muted{{color:var(--muted);font-weight:normal;font-size:0.85em}} .what{{color:#475569;font-size:0.93em;border-left:3px solid #cbd5e1;padding-left:10px;margin:4px 0 10px}}</style></head>
 <body><header><a class="home-link" href="/">&larr; all reports</a><h1>{html.escape(title)}</h1>
 <p>olmoe3_routing &mdash; router statistics of the 275M-active OLMoE3-ladder models trained here (standard MoE vs EMO; 128 / 512 / 1000 experts)
 on 65.5M unseen training-stream tokens, unrestricted and with early layers forced to per-document expert pools &middot;
