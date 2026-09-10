@@ -378,6 +378,40 @@ def ksweep_table(tag, layer):
     return table(["k", "purity", "purity, random partition", "docs with purity &gt; 0.5", "lift within", "lift across"], rows)
 
 
+KS_MODELS = (("emo512_full", "emo"), ("emo1000_full", "emo1000"), ("std1000_full", "std1000"))
+KS_LAYERS = (1, 5, 9)
+
+
+def ksweep_tables_by_layer():
+    out = ""
+    for layer in KS_LAYERS:
+        rows = []
+        for tag, m in KS_MODELS:
+            jf = KS / f"{tag}_L{layer}_ksweep.json"
+            if not jf.exists(): continue
+            r = json.load(open(jf))
+            for k, v in sorted(r.items(), key=lambda kv: int(kv[0])):
+                rows.append([MODEL_LABEL[m], k, f(v["purity"], 2), f(v["purity_null"], 2), f"{v['frac_purity_gt_half']:.2f}", f(v["lift_within"], 2), f(v["lift_across"], 2)])
+        out += f"<p><b>Layer {layer}</b> (rows grouped by model)</p>" + table(["model", "k", "purity", "purity, random partition", "docs with purity &gt; 0.5", "lift within", "lift across"], rows)
+    return out
+
+
+def purity_grid():
+    """Document-purity histograms as a model x layer grid, one grid per k, with a k toggle."""
+    css = ("<style>.pgrid table{border-collapse:separate;border-spacing:4px}.pgrid th{font-size:12px;font-weight:600}"
+           ".pgrid td.h{font-size:12px;white-space:nowrap;text-align:right;padding-right:6px}.pgrid img{width:100%;max-width:420px;display:block}"
+           ".pgrid .pg{display:none}.pgrid .pg.on{display:block}.pgrid .ctl{margin:8px 0;font-size:0.95em}</style>")
+    html_ = [css, '<div class="pgrid"><div class="ctl"><b>k:</b> ' + " ".join(f'<label><input type="radio" name="pgk" value="{k}"{" checked" if k == 4 else ""}> {k}</label>' for k in (4, 8, 16, 32, 64)) + "</div>"]
+    for k in (4, 8, 16, 32, 64):
+        html_.append(f'<div class="pg{" on" if k == 4 else ""}" data-k="{k}"><table><tr><th></th>' + "".join(f"<th>layer {l}</th>" for l in KS_LAYERS) + "</tr>")
+        for tag, m in KS_MODELS:
+            html_.append(f'<tr><td class="h">{MODEL_LABEL[m]}</td>' + "".join(f"<td>{img_tag(KS / f'{tag}_L{l}_k{k}_docpartition.png', '')}</td>" for l in KS_LAYERS) + "</tr>")
+        html_.append("</table></div>")
+    html_.append("</div><script>document.querySelectorAll('.pgrid input[name=pgk]').forEach(r=>r.addEventListener('change',e=>{document.querySelectorAll('.pgrid .pg').forEach(d=>d.classList.toggle('on',d.dataset.k===e.target.value));}));</script>")
+    return ("<p><b>Document purity, model &times; layer</b>: histogram of each document's purity under the layer's expert blocks (blue) vs a "
+            "random partition of the same block sizes (orange); pick k with the buttons.</p>" + "".join(html_))
+
+
 def build_q5():
     body = question_card("q5")
     body += card("ok", "Short answer",
@@ -399,9 +433,7 @@ def build_q5():
         "in that layer. <b>Purity</b> = the share of the document's routing that lands in its own cluster, compared with a random expert "
         "partition of the same sizes. <b>Lift within / across</b> = mean log2 lift among the experts the document actually uses, inside vs "
         "outside its cluster. Shown for three models at layers 1, 5 and 9.",
-        "".join(f"<p><b>{MODEL_LABEL[m]}, layer {layer}</b></p>" + ksweep_table(tag, layer)
-                + fig_row(*[img_tag(KS / f"{tag}_L{layer}_k{k}_docpartition.png", f"k = {k}: document purity vs a random partition") for k in (4, 8, 32)])
-                for tag, m in (("emo512_full", "emo"), ("std1000_full", "std1000"), ("emo1000_full", "emo1000")) for layer in (1, 5, 9)),
+        ksweep_tables_by_layer() + purity_grid(),
         "Standard 1000, every layer: purity equals the random-partition value at every k (layer 9: 0.32 vs 0.31 at k = 4), no document "
         "puts more than half its routing in one block, and experts from different blocks anti-correlate (lift across &lt; 0). Its blocks "
         "are groups of experts that fire on the same <em>tokens</em>, and every document contains tokens of every kind. EMO layer 1 looks "
