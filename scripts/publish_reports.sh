@@ -100,5 +100,8 @@ ${entries}</ul>
 </html>
 EOF
 
+# Force browsers/edge to revalidate HTML on every load (pages are large and were seen served stale).
+printf '/*.html\n  Cache-Control: no-cache, must-revalidate\n/\n  Cache-Control: no-cache, must-revalidate\n' > "${stage}/_headers"
+
 wrangler pages deploy "$stage" --project-name "$PROJECT" --branch main --commit-dirty=true
 echo "Published: ${SITE}/"
