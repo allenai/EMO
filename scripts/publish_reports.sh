@@ -45,13 +45,26 @@ command -v wrangler >/dev/null || export PATH="/root/.local/node/bin:$PATH"
 stage="$(mktemp -d)"
 trap 'rm -rf "$stage"' EXIT
 
+# Which experiments to REBUILD before deploying. Default: all. Pass experiment names to rebuild
+# only those (everything else is deployed from its existing claude_outputs/<name>/report.html);
+# pass --no-build to rebuild nothing. Wrangler only uploads files whose hash changed, so a
+# single-experiment publish takes seconds instead of the ~minutes it costs to rebuild every page.
+#   bash scripts/publish_reports.sh                      # rebuild + deploy everything
+#   bash scripts/publish_reports.sh olmoe3_routing       # rebuild one page, deploy the rest as-is
+#   bash scripts/publish_reports.sh --no-build           # deploy the existing pages only
+REBUILD=("$@")
 entries=""
 for spec in "${EXPERIMENTS[@]}"; do
     name="${spec%%|*}"
     blurb="${spec#*|}"
     builder="scripts/${name}/build_report.py"
     report="claude_outputs/${name}/report.html"
-    if [ -f "$builder" ]; then
+    do_build=0
+    if [ ${#REBUILD[@]} -eq 0 ]; then do_build=1; else
+        for r in "${REBUILD[@]}"; do [ "$r" = "$name" ] && do_build=1; done
+    fi
+    if [ -f "$builder" ] && [ "$do_build" = 1 ]; then
+        echo "== building ${name}"
         python "$builder"
     fi
     if [ ! -f "$report" ]; then
@@ -87,5 +100,5 @@ ${entries}</ul>
 </html>
 EOF
 
-wrangler pages deploy "$stage" --project-name "$PROJECT" --branch main
+wrangler pages deploy "$stage" --project-name "$PROJECT" --branch main --commit-dirty=true
 echo "Published: ${SITE}/"
