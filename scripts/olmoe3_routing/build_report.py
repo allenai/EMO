@@ -133,30 +133,29 @@ def heatmap_card(tag, label):
     return card("info", f"Heatmaps: {label}{qtxt}", sub)
 
 
-HEATMAP_METHOD = ("<li><b>co-activation heatmaps</b>: per layer, <b>log2 lift</b> = observed / expected-under-independence pair counts "
-                  "(experts ordered by spectral cluster (k=8) then usage, clipped to &plusmn;3) and <b>conditional co-activation</b> "
-                  "P(E<sub>j</sub> | E<sub>i</sub>), each at token level (both experts in one token's top-16) and document level (both used at "
-                  "least once in a document). Same drawing as the sparse_experts report.</li>")
-
-
 def build_q1(res, findings):
     method = (
-        "<p><b>Pass</b> (<code>scripts/sparse_experts/olmoe3_routing/</code>): <code>extract_stream.py</code> rebuilds the run's dataset and "
-        "loader from the checkpoint config with the pinned OLMo-core (fingerprint asserted equal to the checkpoint's) and dumps steps "
-        "19,074&ndash;38,147 (1.22M instances); <code>sample_instances.py</code> draws 8,000 instances stratified by source (web 4000 / pdf 1500 / "
-        "code 1200 / math 800 / other 500) = 65.5M tokens, 56.5k EOS-delimited documents; <code>extract_routing.py</code> loads the OLMoDDP "
-        "checkpoint natively, runs bf16 forward passes on one H100 and accumulates per-layer routing counts on the GPU; "
-        "<code>analyze_routing.py</code> computes the metrics. Sanity check: the pass's CE (2.444 std / 2.463 EMO) matches the runs' "
-        "end-of-training loss.</p>"
-        "<p><b>Metrics per MoE layer</b>:</p><ul>"
-        "<li><b>top-P share</b>: for each document, the share of its routed (token, expert) assignments that fall inside the document's own "
-        "top-P experts, ranked by the document's summed router scores in that layer. Unweighted mean over documents with &ge; 64 tokens. "
-        "High = the document could have been served by a pool of P experts.</li>"
-        "<li><b>effective # experts per document</b>: exp(entropy of the document's expert-usage histogram).</li>"
-        "<li><b>Louvain / spectral Q</b>: Newman modularity of the token-level co-activation lift graph (log-lift, negatives clipped), "
-        "against a shuffled-label null.</li>"
-        "<li><b>router entropy</b>: mean entropy of the softmax router distribution per token (ln 512 = 6.24).</li>"
-        + HEATMAP_METHOD + "</ul>"
+        "<p>Every metric is computed per MoE layer from one forward pass over the 65.5M held-out tokens, using the experts each token "
+        "actually selected (top-16 of 512). A <em>document</em> is an EOS-delimited span; document metrics average over documents with "
+        "&ge; 64 tokens.</p><ul>"
+        "<li><b>Top-P share</b> &mdash; <em>could this document have been served by a pool of P experts?</em> Rank the layer's experts by "
+        "the total router weight the document's tokens gave them, keep the top P, and count what fraction of the document's actual "
+        "selections landed in those P. 1.0 means a P-expert pool would reproduce the routing exactly; token-level routing spread over "
+        "the whole layer gives a small value. Reported at P = 32 / 64 / 128.</li>"
+        "<li><b>Effective experts per document</b> &mdash; <em>how many experts does a document really use?</em> The exponential of the "
+        "entropy of the document's expert-usage histogram: heavily used experts count fully, rarely used ones only a little. 16 would mean "
+        "the same 16 experts for every token; 512 means uniform use of all of them.</li>"
+        "<li><b>Modularity Q</b> &mdash; <em>do experts form groups that fire together?</em> Experts are nodes; the edge between two experts "
+        "is how much more often they are selected on the same token than chance would predict (lift). Q measures how cleanly the graph splits "
+        "into groups that co-fire within but rarely across, using either Louvain (free number of groups) or spectral clustering into k = 8. "
+        "0 means no structure beyond chance; a shuffled-label null gives the noise floor.</li>"
+        "<li><b>Router entropy</b> &mdash; how spread out the router's softmax is per token, averaged over tokens. ln 512 = 6.24 is uniform; "
+        "lower means a sharper router.</li>"
+        "<li><b>Co-activation heatmaps</b> &mdash; expert &times; expert grids per layer. <b>Lift</b>: how much more often two experts are used "
+        "together than chance, in log2 (+1 = twice as often, 0 = independent, clipped to &plusmn;3), with experts ordered so that groups appear "
+        "as blocks on the diagonal. <b>Conditional co-activation</b>: given that expert i is used, the probability that expert j is too. "
+        "Both come at token level (the two experts are in one token's top-16) and document level (both are used somewhere in the same "
+        "document).</li></ul>"
     )
     body = question_card("q1") + card("info", "Method & metrics", method) + findings[0]
     body += card("info", "Unrestricted pass, 512 experts: per-layer routing statistics", unrestricted_table(res))
