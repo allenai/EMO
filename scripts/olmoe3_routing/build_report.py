@@ -417,77 +417,40 @@ LP = OUT / "layerpair"
 
 
 def build_q6():
-    def load(tag, la, lb, k, top):
-        f = LP / f"{tag}_L{la}toL{lb}_k{k}_top{top}.json"
-        return json.load(open(f)) if f.exists() else None
-    rows = []
-    for tag, m, la, lb, k, top in (("emo1000_full", "emo1000", 8, 9, 4, 1000), ("emo1000_full", "emo1000", 8, 9, 8, 500), ("emo1000_full", "emo1000", 5, 9, 4, 1000),
-                                   ("emo1000_full", "emo1000", 2, 9, 4, 1000), ("emo1000_full", "emo1000", 1, 9, 4, 1000), ("emo512_full", "emo", 8, 9, 4, 1000), ("std1000_full", "std1000", 8, 9, 4, 1000)):
-        r = load(tag, la, lb, k, top)
-        if r is None: continue
-        s, n, al = r["selected"], r["null_random_layer_b_partition_selected"], r["all"]
-        rows.append([MODEL_LABEL[m], f"L{la} &rarr; L{lb}", k, f"{s['n_docs']:,}", f(r["meta"]["selected_purity_a_min"], 2), f(s["purity_a"], 2),
-                     f"{f(s['purity_b'], 2)} / {f(al['purity_b'], 2)} / {f(n['purity_b'], 2)}", f"{f(s['majority'], 2)} / {f(n['majority'], 2)}",
-                     f"{f(s['same_pair'], 2)} / {f(s['same_pair_base'], 2)} / {f(n['same_pair'], 2)}", f"{f(s['nmi'], 2)} / {f(n['nmi'], 2)}"])
-    hdr = ["model", "layers", "k", "docs kept", "min purity A", "mean purity A", "purity B: kept / all docs / random B blocks",
-           "majority share: kept / random B blocks", "same-pair: kept / chance / random B blocks", "NMI(A group ; B block): kept / random B blocks"]
-    main = load("emo1000_full", 8, 9, 4, 1000)
     body = question_card("q6")
     body += card("ok", "Short answer",
-                 "<p><b>Yes, almost perfectly.</b> In EMO 1000, take the 1,000 documents that route most cleanly into each of the four layer-8 "
-                 "expert blocks (layer-8 purity &ge; 0.60). At layer 9 these documents are purer than average (0.71 vs 0.55), and each layer-8 "
-                 "group lands in one layer-9 block: 97% of documents share their group's majority layer-9 block, two documents from the same "
-                 "layer-8 group are in the same layer-9 block 95% of the time (chance 25%), NMI 0.93. The same holds from layer 5 or layer 2 "
-                 "to layer 9 and for EMO 512, but not from layer 1, whose blocks are token-level. The document-level blocks are therefore "
-                 "one partition of the documents that persists across the later layers, not a different grouping per layer.</p>")
-    body += section("Selecting the cleanest documents at layer 8 and following them to layer 9",
-        "Experts of layer A and of layer B are each split into k spectral blocks from the token lift graph (Q5). Every document gets a "
-        "layer-A block (the one receiving most of its layer-A routing) and a layer-A purity (that share); the <b>top-N purity documents per "
-        "layer-A block</b> are kept. For those, the same assignment is made at layer B. <b>Majority share</b> = fraction of kept documents "
-        "whose layer-B block is the most common one in their layer-A group. <b>Same-pair</b> = probability that two documents from the same "
-        "layer-A group share a layer-B block (chance = two random documents). <b>Random B blocks</b> = the same statistics when layer B's "
-        "experts are shuffled into blocks of the same sizes, so the null keeps the layer-A grouping and only breaks layer B's structure.",
-        table(hdr, rows) + fig("emo1000_full_L8toL9_k4_top1000.png", "EMO 1000, layer 8 blocks (k = 4) followed to layer 9: where each layer-8 group lands (row-normalised counts), the mean split of each group's layer-9 routing over layer-9 blocks, and the layer-9 purity of the kept documents vs all documents.", LP),
-        "Layer 8 &rarr; 9 in EMO 1000: the 4 &times; 4 contingency table is nearly a permutation matrix (rows 1000 / 876 / 1000 / 999 on one "
-        "block each; the one split group sends 88% of its documents to one block and 12% to another). Shuffling layer-9 blocks drops the "
-        "majority share to 0.61 and NMI to 0.13. At k = 8 six of eight groups map onto a single layer-9 block (NMI 0.84). From layer 5 or 2 "
-        "the mapping is just as clean (NMI 0.93 / 0.99), and EMO 512 gives a perfect permutation. From layer 1 there is no mapping "
-        "(majority 0.49 vs a 0.54 null). The standard 1000-expert model's cleanest documents also show some agreement (NMI 0.56 vs 0.06), "
-        "but its purities sit at the random level (0.36 at layer 8, 0.35 at layer 9), so its blocks are barely document-level to begin with.")
-    if main:
-        M = main["selected"]
-        body += card("info", "Layer-8 groups &rarr; layer-9 blocks, EMO 1000 (k = 4, top 1,000 per group)",
-                     table(["layer-8 group (kept docs)", *[f"L9 block {j}" for j in range(4)], "majority share", "mean L9 purity"],
-                           [[f"group {i} ({M['a_group_sizes'][i]:,})", *[f"{v:,}" for v in M["contingency"][i]], f(M["majority_per_a_group"][i], 2), "&mdash;"] for i in range(4)])
-                     + "<p>Source mix of the kept documents per layer-8 group (web / pdf / code / math / other): "
-                     + "; ".join(f"group {i}: " + ", ".join(f"{g} {M['source_per_a_group'][g][i]}" for g in ("web", "pdf", "code", "math", "other") if g in M["source_per_a_group"]) for i in range(4)) + "</p>")
-        body += "".join(fig(n, cap, LP) for n, cap in (("emo1000_full_L8toL9_k8_top500.png", "EMO 1000, k = 8, top 500 per group."), ("emo1000_full_L5toL9_k4_top1000.png", "EMO 1000, layer 5 &rarr; 9."),
-                                                      ("emo1000_full_L1toL9_k4_top1000.png", "EMO 1000, layer 1 &rarr; 9 (no agreement)."), ("std1000_full_L8toL9_k4_top1000.png", "standard 1000, layer 8 &rarr; 9.")))
+                 "<p><b>Yes.</b> In the EMO models, documents that route cleanly into one expert block at any layer from 2 onward land "
+                 "together in a single layer-9 block: the heatmaps below are near-permutation matrices. Layer 1 does not, and the standard "
+                 "model's agreement is much weaker. The document-level blocks are one partition of the documents that persists across the "
+                 "later layers.</p>")
     body += interactive_grid()
     return body
 
 
-GRID_MODELS = (("emo1000_full", "EMO (1000e)"), ("emo512_full", "EMO (512e)"), ("std1000_full", "standard MoE (1000e)"))
+GRID_MODELS = (("emo1000_full", "EMO (1000e)"), ("emo512_full", "EMO (512e)"), ("emo128_full", "EMO (128e)"), ("std1000_full", "standard MoE (1000e)"))
 GRID_JS = r"""
 (function(){
   const Blues = v => { const t=Math.max(0,Math.min(1,v)); const r=Math.round(247-200*t), g=Math.round(251-170*t), b=Math.round(255-100*t); return `rgb(${r},${g},${b})`; };
   document.querySelectorAll('.lpgrid').forEach(root => {
     const data = JSON.parse(root.querySelector('script[type="application/json"]').textContent);
     const k = data.k, grid = data.n_grid, slider = root.querySelector('input[type=range]'), label = root.querySelector('.lp-label');
+    const modeInputs = root.querySelectorAll('input[type=radio]');
     const cells = {};
     root.querySelectorAll('.lp-cell').forEach(c => { cells[c.dataset.model + '|' + c.dataset.layer] = c; });
     function render(){
-      const ni = +slider.value, n = grid[ni];
+      const ni = +slider.value, n = grid[ni]; const pct = [...modeInputs].find(r => r.checked).value === 'pct';
       label.textContent = (n >= 100000 ? 'all documents' : 'top ' + n.toLocaleString() + ' documents per layer-i block');
       for (const [tag, m] of Object.entries(data.models)) for (const [l, L] of Object.entries(m.layers)) {
         const cell = cells[tag + '|' + l]; if (!cell) continue;
-        const T = L.tables[ni], S = L.stats[ni]; const tbl = cell.querySelector('table');
+        const T = L.tables[ni]; const tbl = cell.querySelector('table');
         for (let i=0;i<k;i++){ const row=T[i], tot=Math.max(row.reduce((a,b)=>a+b,0),1);
-          for (let j=0;j<k;j++){ const td=tbl.rows[i].cells[j]; const f=row[j]/tot; td.style.background=Blues(f); td.style.color = f>0.6?'#fff':'#111'; td.textContent = k<=4 ? row[j].toLocaleString() : (f>=0.995?'1':f.toFixed(2).replace(/^0/,'')); td.title = `${row[j]} docs (${(100*f).toFixed(0)}%)`; } }
-        cell.querySelector('.lp-stat').innerHTML = `NMI <b>${S.nmi.toFixed(2)}</b> · majority <b>${S.majority.toFixed(2)}</b><br>min purity L${l} ${S.min_purity==null?'–':S.min_purity.toFixed(2)} · mean purity L${data.target} ${S.mean_purity_b.toFixed(2)} · ${S.n.toLocaleString()} docs (${(100*S.frac_docs).toFixed(0)}%)`;
+          for (let j=0;j<k;j++){ const td=tbl.rows[i].cells[j]; const f=row[j]/tot; td.style.background=Blues(f); td.style.color = f>0.6?'#fff':'#111';
+            td.textContent = pct ? (f>=0.995 ? '100' : Math.round(100*f).toString()) : row[j].toLocaleString();
+            td.title = `${row[j].toLocaleString()} docs (${(100*f).toFixed(1)}%)`; } }
+        cell.querySelector('.lp-stat').textContent = `${L.stats[ni].n.toLocaleString()} docs`;
       }
     }
-    slider.addEventListener('input', render); render();
+    slider.addEventListener('input', render); modeInputs.forEach(r => r.addEventListener('change', render)); render();
   });
 })();
 """
@@ -496,20 +459,19 @@ GRID_CSS = """
 .lpgrid input[type=range]{width:360px}.lpgrid .lp-table{border-collapse:separate;border-spacing:6px}
 .lpgrid .lp-cell{vertical-align:top;text-align:center;padding:0}.lpgrid .lp-cell table{border-collapse:collapse;margin:0 auto}
 .lpgrid .lp-cell td{border:1px solid #fff;text-align:center;font-family:ui-monospace,Menlo,monospace;padding:0}
-.lpgrid .lp-k4 td{width:28px;height:22px;font-size:10px}.lpgrid .lp-k8 td{width:16px;height:15px;font-size:8px}
-.lpgrid .lp-stat{font-size:9.5px;color:#475569;line-height:1.25;margin-top:3px;width:130px}
+.lpgrid .lp-k4 td{width:34px;height:24px;font-size:10px}.lpgrid .lp-k8 td{width:19px;height:16px;font-size:8px}
+.lpgrid .lp-stat{font-size:9.5px;color:#64748b;margin-top:3px}
 .lpgrid th{font-weight:600;font-size:12px}.lpgrid .lp-rowhead{text-align:right;padding-right:8px;font-size:12px;white-space:nowrap}
 """
 
 
 def interactive_grid():
     out = ("<style>" + GRID_CSS + "</style>"
-           "<p>Interactive version of the same analysis for every source layer: each small heatmap is the contingency table of "
-           "<em>layer-i block</em> (rows, the block that receives most of a document's layer-i routing) against <em>layer-9 block</em> "
-           "(columns) for the top-N purity documents per layer-i block, row-normalised colour (for k = 4 the cells show document counts, "
-           "for k = 8 the row share). Rows are ordered once so the diagonal is the best match; layer 9 &rarr; layer 9 is the identity check. "
-           "Move the slider to admit more documents per block: the mapping stays a permutation as long as NMI stays high while the "
-           "minimum admitted purity falls.</p>")
+           "<p>Each heatmap is the contingency table of <em>layer-i block</em> (rows: the block that receives most of a document's layer-i "
+           "routing) against <em>layer-9 block</em> (columns) for the top-N purity documents per layer-i block; colour is the row share. "
+           "Rows are ordered once so the diagonal is the best match; layer 9 &rarr; layer 9 is the identity check. The slider admits more "
+           "documents per block (from the cleanest down to all); the toggle switches the cell values between document counts and row "
+           "percentages.</p>")
     for k in (4, 8):
         models = {}
         for tag, _ in GRID_MODELS:
@@ -519,7 +481,8 @@ def interactive_grid():
         any_ = next(iter(models.values()))
         payload = dict(k=k, n_grid=any_["n_grid"], target=any_["target"], models={tag: dict(layers={l: dict(tables=v["tables"], stats=v["stats"]) for l, v in m["layers"].items()}) for tag, m in models.items()})
         default = any_["n_grid"].index(1000)
-        html_ = [f'<div class="lpgrid" id="lpgrid-k{k}"><div class="lp-controls"><b>k = {k} blocks</b> &nbsp; N: <input type="range" min="0" max="{len(any_["n_grid"])-1}" value="{default}" step="1"> <span class="lp-label"></span></div>']
+        html_ = [f'<div class="lpgrid" id="lpgrid-k{k}"><div class="lp-controls"><b>k = {k} blocks</b> &nbsp; N: <input type="range" min="0" max="{len(any_["n_grid"])-1}" value="{default}" step="1"> <span class="lp-label"></span>'
+                 f' &nbsp;|&nbsp; <label><input type="radio" name="lpmode{k}" value="abs" checked> counts</label> <label><input type="radio" name="lpmode{k}" value="pct"> % of row</label></div>']
         html_.append('<table class="lp-table"><tr><th></th>' + "".join(f"<th>layer {l} &rarr; layer 9</th>" for l in range(1, 10)) + "</tr>")
         for tag, label in GRID_MODELS:
             if tag not in models: continue
