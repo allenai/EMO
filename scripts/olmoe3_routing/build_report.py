@@ -83,6 +83,8 @@ QUESTIONS = [
      "How does the picture change with 128 / 512 / 1000 experts at fixed active size?"),
     ("q5", "Q5 · Joint expert / document partition",
      "Can one layer's experts be split into k blocks such that documents split the same way, and does the choice of k matter?"),
+    ("q6", "Q6 · Block agreement across layers",
+     "Do documents that sit cleanly in one layer-8 expert block also sit together in a single layer-9 block, i.e. are the document-level blocks the same groups of documents from layer to layer?"),
 ]
 
 
@@ -411,6 +413,59 @@ def build_q5():
     return body
 
 
+LP = OUT / "layerpair"
+
+
+def build_q6():
+    def load(tag, la, lb, k, top):
+        f = LP / f"{tag}_L{la}toL{lb}_k{k}_top{top}.json"
+        return json.load(open(f)) if f.exists() else None
+    rows = []
+    for tag, m, la, lb, k, top in (("emo1000_full", "emo1000", 8, 9, 4, 1000), ("emo1000_full", "emo1000", 8, 9, 8, 500), ("emo1000_full", "emo1000", 5, 9, 4, 1000),
+                                   ("emo1000_full", "emo1000", 2, 9, 4, 1000), ("emo1000_full", "emo1000", 1, 9, 4, 1000), ("emo512_full", "emo", 8, 9, 4, 1000), ("std1000_full", "std1000", 8, 9, 4, 1000)):
+        r = load(tag, la, lb, k, top)
+        if r is None: continue
+        s, n, al = r["selected"], r["null_random_layer_b_partition_selected"], r["all"]
+        rows.append([MODEL_LABEL[m], f"L{la} &rarr; L{lb}", k, f"{s['n_docs']:,}", f(r["meta"]["selected_purity_a_min"], 2), f(s["purity_a"], 2),
+                     f"{f(s['purity_b'], 2)} / {f(al['purity_b'], 2)} / {f(n['purity_b'], 2)}", f"{f(s['majority'], 2)} / {f(n['majority'], 2)}",
+                     f"{f(s['same_pair'], 2)} / {f(s['same_pair_base'], 2)} / {f(n['same_pair'], 2)}", f"{f(s['nmi'], 2)} / {f(n['nmi'], 2)}"])
+    hdr = ["model", "layers", "k", "docs kept", "min purity A", "mean purity A", "purity B: kept / all docs / random B blocks",
+           "majority share: kept / random B blocks", "same-pair: kept / chance / random B blocks", "NMI(A group ; B block): kept / random B blocks"]
+    main = load("emo1000_full", 8, 9, 4, 1000)
+    body = question_card("q6")
+    body += card("ok", "Short answer",
+                 "<p><b>Yes, almost perfectly.</b> In EMO 1000, take the 1,000 documents that route most cleanly into each of the four layer-8 "
+                 "expert blocks (layer-8 purity &ge; 0.60). At layer 9 these documents are purer than average (0.71 vs 0.55), and each layer-8 "
+                 "group lands in one layer-9 block: 97% of documents share their group's majority layer-9 block, two documents from the same "
+                 "layer-8 group are in the same layer-9 block 95% of the time (chance 25%), NMI 0.93. The same holds from layer 5 or layer 2 "
+                 "to layer 9 and for EMO 512, but not from layer 1, whose blocks are token-level. The document-level blocks are therefore "
+                 "one partition of the documents that persists across the later layers, not a different grouping per layer.</p>")
+    body += section("Selecting the cleanest documents at layer 8 and following them to layer 9",
+        "Experts of layer A and of layer B are each split into k spectral blocks from the token lift graph (Q5). Every document gets a "
+        "layer-A block (the one receiving most of its layer-A routing) and a layer-A purity (that share); the <b>top-N purity documents per "
+        "layer-A block</b> are kept. For those, the same assignment is made at layer B. <b>Majority share</b> = fraction of kept documents "
+        "whose layer-B block is the most common one in their layer-A group. <b>Same-pair</b> = probability that two documents from the same "
+        "layer-A group share a layer-B block (chance = two random documents). <b>Random B blocks</b> = the same statistics when layer B's "
+        "experts are shuffled into blocks of the same sizes, so the null keeps the layer-A grouping and only breaks layer B's structure.",
+        table(hdr, rows) + fig("emo1000_full_L8toL9_k4_top1000.png", "EMO 1000, layer 8 blocks (k = 4) followed to layer 9: where each layer-8 group lands (row-normalised counts), the mean split of each group's layer-9 routing over layer-9 blocks, and the layer-9 purity of the kept documents vs all documents.", LP),
+        "Layer 8 &rarr; 9 in EMO 1000: the 4 &times; 4 contingency table is nearly a permutation matrix (rows 1000 / 876 / 1000 / 999 on one "
+        "block each; the one split group sends 88% of its documents to one block and 12% to another). Shuffling layer-9 blocks drops the "
+        "majority share to 0.61 and NMI to 0.13. At k = 8 six of eight groups map onto a single layer-9 block (NMI 0.84). From layer 5 or 2 "
+        "the mapping is just as clean (NMI 0.93 / 0.99), and EMO 512 gives a perfect permutation. From layer 1 there is no mapping "
+        "(majority 0.49 vs a 0.54 null). The standard 1000-expert model's cleanest documents also show some agreement (NMI 0.56 vs 0.06), "
+        "but its purities sit at the random level (0.36 at layer 8, 0.35 at layer 9), so its blocks are barely document-level to begin with.")
+    if main:
+        M = main["selected"]
+        body += card("info", "Layer-8 groups &rarr; layer-9 blocks, EMO 1000 (k = 4, top 1,000 per group)",
+                     table(["layer-8 group (kept docs)", *[f"L9 block {j}" for j in range(4)], "majority share", "mean L9 purity"],
+                           [[f"group {i} ({M['a_group_sizes'][i]:,})", *[f"{v:,}" for v in M["contingency"][i]], f(M["majority_per_a_group"][i], 2), "&mdash;"] for i in range(4)])
+                     + "<p>Source mix of the kept documents per layer-8 group (web / pdf / code / math / other): "
+                     + "; ".join(f"group {i}: " + ", ".join(f"{g} {M['source_per_a_group'][g][i]}" for g in ("web", "pdf", "code", "math", "other") if g in M["source_per_a_group"]) for i in range(4)) + "</p>")
+        body += "".join(fig(n, cap, LP) for n, cap in (("emo1000_full_L8toL9_k8_top500.png", "EMO 1000, k = 8, top 500 per group."), ("emo1000_full_L5toL9_k4_top1000.png", "EMO 1000, layer 5 &rarr; 9."),
+                                                      ("emo1000_full_L1toL9_k4_top1000.png", "EMO 1000, layer 1 &rarr; 9 (no agreement)."), ("std1000_full_L8toL9_k4_top1000.png", "standard 1000, layer 8 &rarr; 9.")))
+    return body
+
+
 def build_next():
     return card("info", "Next steps", "<ul><li>Sweep every prefix length 1..8 at one pool size to locate where later-layer structure (if any) switches on.</li>"
                 "<li>Replace the k-means early-pool clustering with the exact early pool identity (documents sharing the same top-32 set) once enough documents share pools.</li>"
@@ -430,6 +485,7 @@ def main(findings_path=OUT / "findings.html"):
         ("q3", QUESTIONS[2][1], build_q3(res)),
         ("q4", QUESTIONS[3][1], build_q4(res1000, res, findings)),
         ("q5", QUESTIONS[4][1], build_q5()),
+        ("q6", QUESTIONS[5][1], build_q6()),
         ("next", "Next steps", build_next()),
     ]
     nav = "".join(f'<button data-target="{tid}">{name}</button>' for tid, name, _ in tabs)
