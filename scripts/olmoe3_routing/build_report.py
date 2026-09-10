@@ -463,7 +463,76 @@ def build_q6():
                      + "; ".join(f"group {i}: " + ", ".join(f"{g} {M['source_per_a_group'][g][i]}" for g in ("web", "pdf", "code", "math", "other") if g in M["source_per_a_group"]) for i in range(4)) + "</p>")
         body += "".join(fig(n, cap, LP) for n, cap in (("emo1000_full_L8toL9_k8_top500.png", "EMO 1000, k = 8, top 500 per group."), ("emo1000_full_L5toL9_k4_top1000.png", "EMO 1000, layer 5 &rarr; 9."),
                                                       ("emo1000_full_L1toL9_k4_top1000.png", "EMO 1000, layer 1 &rarr; 9 (no agreement)."), ("std1000_full_L8toL9_k4_top1000.png", "standard 1000, layer 8 &rarr; 9.")))
+    body += interactive_grid()
     return body
+
+
+GRID_MODELS = (("emo1000_full", "EMO (1000e)"), ("emo512_full", "EMO (512e)"), ("std1000_full", "standard MoE (1000e)"))
+GRID_JS = r"""
+(function(){
+  const Blues = v => { const t=Math.max(0,Math.min(1,v)); const r=Math.round(247-200*t), g=Math.round(251-170*t), b=Math.round(255-100*t); return `rgb(${r},${g},${b})`; };
+  document.querySelectorAll('.lpgrid').forEach(root => {
+    const data = JSON.parse(root.querySelector('script[type="application/json"]').textContent);
+    const k = data.k, grid = data.n_grid, slider = root.querySelector('input[type=range]'), label = root.querySelector('.lp-label');
+    const cells = {};
+    root.querySelectorAll('.lp-cell').forEach(c => { cells[c.dataset.model + '|' + c.dataset.layer] = c; });
+    function render(){
+      const ni = +slider.value, n = grid[ni];
+      label.textContent = (n >= 100000 ? 'all documents' : 'top ' + n.toLocaleString() + ' documents per layer-i block');
+      for (const [tag, m] of Object.entries(data.models)) for (const [l, L] of Object.entries(m.layers)) {
+        const cell = cells[tag + '|' + l]; if (!cell) continue;
+        const T = L.tables[ni], S = L.stats[ni]; const tbl = cell.querySelector('table');
+        for (let i=0;i<k;i++){ const row=T[i], tot=Math.max(row.reduce((a,b)=>a+b,0),1);
+          for (let j=0;j<k;j++){ const td=tbl.rows[i].cells[j]; const f=row[j]/tot; td.style.background=Blues(f); td.style.color = f>0.6?'#fff':'#111'; td.textContent = k<=4 ? row[j].toLocaleString() : (f>=0.995?'1':f.toFixed(2).replace(/^0/,'')); td.title = `${row[j]} docs (${(100*f).toFixed(0)}%)`; } }
+        cell.querySelector('.lp-stat').innerHTML = `NMI <b>${S.nmi.toFixed(2)}</b> · majority <b>${S.majority.toFixed(2)}</b><br>min purity L${l} ${S.min_purity==null?'–':S.min_purity.toFixed(2)} · mean purity L${data.target} ${S.mean_purity_b.toFixed(2)} · ${S.n.toLocaleString()} docs (${(100*S.frac_docs).toFixed(0)}%)`;
+      }
+    }
+    slider.addEventListener('input', render); render();
+  });
+})();
+"""
+GRID_CSS = """
+.lpgrid{overflow-x:auto}.lpgrid .lp-controls{display:flex;gap:14px;align-items:center;margin:6px 0 10px;font-size:0.95em}
+.lpgrid input[type=range]{width:360px}.lpgrid .lp-table{border-collapse:separate;border-spacing:6px}
+.lpgrid .lp-cell{vertical-align:top;text-align:center;padding:0}.lpgrid .lp-cell table{border-collapse:collapse;margin:0 auto}
+.lpgrid .lp-cell td{border:1px solid #fff;text-align:center;font-family:ui-monospace,Menlo,monospace;padding:0}
+.lpgrid .lp-k4 td{width:28px;height:22px;font-size:10px}.lpgrid .lp-k8 td{width:16px;height:15px;font-size:8px}
+.lpgrid .lp-stat{font-size:9.5px;color:#475569;line-height:1.25;margin-top:3px;width:130px}
+.lpgrid th{font-weight:600;font-size:12px}.lpgrid .lp-rowhead{text-align:right;padding-right:8px;font-size:12px;white-space:nowrap}
+"""
+
+
+def interactive_grid():
+    out = ("<style>" + GRID_CSS + "</style>"
+           "<p>Interactive version of the same analysis for every source layer: each small heatmap is the contingency table of "
+           "<em>layer-i block</em> (rows, the block that receives most of a document's layer-i routing) against <em>layer-9 block</em> "
+           "(columns) for the top-N purity documents per layer-i block, row-normalised colour (for k = 4 the cells show document counts, "
+           "for k = 8 the row share). Rows are ordered once so the diagonal is the best match; layer 9 &rarr; layer 9 is the identity check. "
+           "Move the slider to admit more documents per block: the mapping stays a permutation as long as NMI stays high while the "
+           "minimum admitted purity falls.</p>")
+    for k in (4, 8):
+        models = {}
+        for tag, _ in GRID_MODELS:
+            f = LP / f"{tag}_k{k}_grid.json"
+            if f.exists(): models[tag] = json.load(open(f))
+        if not models: continue
+        any_ = next(iter(models.values()))
+        payload = dict(k=k, n_grid=any_["n_grid"], target=any_["target"], models={tag: dict(layers={l: dict(tables=v["tables"], stats=v["stats"]) for l, v in m["layers"].items()}) for tag, m in models.items()})
+        default = any_["n_grid"].index(1000)
+        html_ = [f'<div class="lpgrid" id="lpgrid-k{k}"><div class="lp-controls"><b>k = {k} blocks</b> &nbsp; N: <input type="range" min="0" max="{len(any_["n_grid"])-1}" value="{default}" step="1"> <span class="lp-label"></span></div>']
+        html_.append('<table class="lp-table"><tr><th></th>' + "".join(f"<th>layer {l} &rarr; layer 9</th>" for l in range(1, 10)) + "</tr>")
+        for tag, label in GRID_MODELS:
+            if tag not in models: continue
+            html_.append(f'<tr><td class="lp-rowhead">{label}</td>')
+            for l in range(1, 10):
+                cell_tbl = "<table>" + "".join("<tr>" + "".join("<td></td>" for _ in range(k)) + "</tr>" for _ in range(k)) + "</table>"
+                html_.append(f'<td class="lp-cell lp-k{k}" data-model="{tag}" data-layer="{l}">{cell_tbl}<div class="lp-stat"></div></td>')
+            html_.append("</tr>")
+        html_.append("</table>")
+        html_.append('<script type="application/json">' + json.dumps(payload, separators=(",", ":")) + "</script></div>")
+        out += card("info", f"Layer i &rarr; layer 9 block agreement, k = {k}, all layers, slider over N", "".join(html_))
+    out += "<script>" + GRID_JS + "</script>"
+    return out
 
 
 def build_next():
