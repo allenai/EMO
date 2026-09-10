@@ -29,6 +29,9 @@ Env knobs (all forwarded to the Beaker worker, which rebuilds the config):
     OLMOE3_RANK_MB        sequences per rank per micro-batch (default 2 -> 32 ranks x 2 = the fixed
                           64-sequence global batch, no grad accumulation)
     OLMOE3_EP_SIZE        expert-parallel degree (default 1)
+    OLMOE3_EP_PATH        EP transport when OLMOE3_EP_SIZE > 1: rowwise_nvshmem (default, the
+                          team's production path; needs the NVSHMEM/symm-mem extension, which does
+                          not build on jupiter) | sync_1d (plain torch all-to-all, no NVSHMEM)
     OLMOE3_ATTN_BACKEND   flash_3 (default, Hopper) | flash_2 | flash_4 (Blackwell only, the
                           ladder's own setting)
     OLMOE3_USE_CUTE_KDA   0 (default, FLA Triton KDA kernel, any GPU) | 1 (Blackwell CuTe kernel)
@@ -186,6 +189,9 @@ EXPECTED_PARAMS = {
     128: (274_457_424, 210_232_144, 800_875_344),  # -384 experts x 522,240 x 9 layers, smaller router
     1000: (279_480_144, 215_254_864, 4_904_437_584),
     1024: (279_618_384, 215_393_104, 5_017_379_664),  # needs EP>=2 (rowwise NVSHMEM path)
+    # 2000 experts = 1000 local experts per rank at EP=2 over the sync_1d transport (plain torch
+    # all-to-all, dropless, no NVSHMEM), keeping under the grouped-GEMM cap; ~9.61B total.
+    2000: (285_240_144, 221_014_864, 9_610_357_584),
 }
 
 KDA_USE_CUTE_KERNEL = _env_bool("OLMOE3_USE_CUTE_KDA", False)
@@ -341,7 +347,7 @@ def _moe_block(layer_norm: LayerNormConfig, sequence_mixer) -> OLMoDDPTransforme
         checkpoint_attn=False,
         checkpoint_permute_moe_unpermute=False,
         checkpoint_second_unpermute=False,
-        ep=ExpertParallelConfig(path=ExpertParallelPath.rowwise_nvshmem),
+        ep=ExpertParallelConfig(path=EP_PATH),
         rowwise_fp8=MoERowwiseFP8Config(enabled=False),
     )
 
@@ -421,6 +427,13 @@ NUM_NODES = int(os.environ.get("OLMOE3_NUM_NODES", "4"))
 NUM_GPUS = int(os.environ.get("OLMOE3_NUM_GPUS", "8"))
 RANK_MICROBATCH_SEQUENCES = int(os.environ.get("OLMOE3_RANK_MB", "2"))
 EP_SIZE = int(os.environ.get("OLMOE3_EP_SIZE", "1"))
+EP_PATH = ExpertParallelPath(os.environ.get("OLMOE3_EP_PATH", "rowwise_nvshmem"))
+EP_NEEDS_NVSHMEM = EP_SIZE > 1 and EP_PATH in (ExpertParallelPath.rowwise_nvshmem, ExpertParallelPath.rowwise_wave, ExpertParallelPath.no_sync_1d)
+if NUM_ROUTED_EXPERTS % EP_SIZE != 0:
+    raise SystemExit(f"OLMOE3_NUM_EXPERTS={NUM_ROUTED_EXPERTS} is not divisible by OLMOE3_EP_SIZE={EP_SIZE}")
+if NUM_ROUTED_EXPERTS // EP_SIZE >= 1024:
+    # torch's CUTLASS grouped GEMM (and the pinned row-offset copy of it) rejects >= 1024 groups per rank.
+    raise SystemExit(f"{NUM_ROUTED_EXPERTS // EP_SIZE} local experts per rank exceeds the grouped-GEMM cap (< 1024); raise OLMOE3_EP_SIZE")
 PREEMPTIBLE_MODE = os.environ.get("OLMOE3_PREEMPTIBLE", "0").strip().lower()  # 0 allocated | 1 preemptible | filler
 DATA_ROOT = os.environ.get("OLMOE3_DATA_ROOT", "s3://ai2-llm")
 SAVE_ROOT = os.environ.get("OLMOE3_SAVE_ROOT", "/weka/oe-training-default/ryanwang/EMO/sparse_experts")
@@ -440,7 +453,7 @@ BEAKER_IMAGE = os.environ.get("OLMOE3_IMAGE") or H100_IMAGE
 WANDB_PROJECT, WANDB_ENTITY = "emo-extension", "ryanyxw"
 
 FORWARDED_ENV = (
-    "OLMOE3_TOKENS", "OLMOE3_LR", "OLMOE3_NUM_NODES", "OLMOE3_NUM_GPUS", "OLMOE3_RANK_MB", "OLMOE3_EP_SIZE",
+    "OLMOE3_TOKENS", "OLMOE3_LR", "OLMOE3_NUM_NODES", "OLMOE3_NUM_GPUS", "OLMOE3_RANK_MB", "OLMOE3_EP_SIZE", "OLMOE3_EP_PATH",
     "OLMOE3_ATTN_BACKEND", "OLMOE3_USE_CUTE_KDA", "OLMOE3_PREEMPTIBLE", "OLMOE3_DATA_ROOT",
     "OLMOE3_SAVE_ROOT", "OLMOE3_WORK_DIR", "OLMOE3_WANDB_TAGS", "OLMOE3_IMAGE", "OLMOE3_SAVE_INTERVAL",
     "OLMOE3_EMO", "OLMOE3_EMO_MIN_POOL", "OLMOE3_EMO_MAX_POOL", "OLMOE3_EMO_EVAL_POOL", "OLMOE3_NUM_EXPERTS",
@@ -452,7 +465,7 @@ def _beaker_env_vars() -> list[BeakerEnvVar]:
     values = dict(OLMO_DDP_PRESET.env_vars)
     values.update(
         {
-            "OLMO_SYMM_VDEV2D_AUTO_BUILD": "1" if EP_SIZE > 1 else "0",
+            "OLMO_SYMM_VDEV2D_AUTO_BUILD": "1" if EP_NEEDS_NVSHMEM else "0",
             "TORCH_CUDA_ARCH_LIST": os.environ.get("TORCH_CUDA_ARCH_LIST", "9.0"),  # H100; any JIT build targets only this
             # S3 credentials: the pinned launcher injects S3_PROFILE=S3 and the pinned olmo_core hands
             # that name straight to boto3 (a named profile disables env-var credentials), so the
@@ -501,7 +514,7 @@ def build_common_components(cli_context, **kwargs) -> CommonComponents:
             '"$AWS_ACCESS_KEY_ID" "$AWS_SECRET_ACCESS_KEY" > ~/.aws/credentials'
         )
         launch.post_setup = (
-            f"{write_aws_profile} && {OLMO_DDP_PRESET.post_setup}" if EP_SIZE > 1 else write_aws_profile
+            f"{write_aws_profile} && {OLMO_DDP_PRESET.post_setup}" if EP_NEEDS_NVSHMEM else write_aws_profile
         )
         launch.env_secrets = [
             BeakerEnvSecret(name="BEAKER_TOKEN", secret="RYAN_BEAKER_TOKEN"),
@@ -592,7 +605,7 @@ def build_train_module_config(common: CommonComponents) -> OLMoDDPTrainModuleCon
         + (f" (warmup {WSD_WARMUP_STEPS}, constant, no decay)" if SCHEDULER == "wsd" else "")
         + (f" (warmup {WSD_WARMUP_STEPS}, decay from step {_wsd_decay_start_step(TOKENS):,})" if SCHEDULER == "wsd_decay" else "")
         + " "
-        f"nodes={NUM_NODES} gpus/node={NUM_GPUS} rank_mb={RANK_MICROBATCH_SEQUENCES} ep={EP_SIZE} attn={ATTN_BACKEND} "
+        f"nodes={NUM_NODES} gpus/node={NUM_GPUS} rank_mb={RANK_MICROBATCH_SEQUENCES} ep={EP_SIZE}/{EP_PATH} attn={ATTN_BACKEND} "
         f"cute_kda={KDA_USE_CUTE_KERNEL} ppl_eval_interval={PPL_EVAL_INTERVAL} emo={EMO_ENABLED}"
         + (f" pool=[{EMO_MIN_POOL},{EMO_MAX_POOL}] pool_dist={EMO_POOL_DIST} eval_pool={EMO_EVAL_POOL}" if EMO_ENABLED else "")
     )
