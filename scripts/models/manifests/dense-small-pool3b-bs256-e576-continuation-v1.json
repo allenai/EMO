@@ -1,5 +1,5 @@
 {
-  "policy": "dense_small_pool3b_bs256_e576_integrated_v1",
+  "policy": "dense_small_pool3b_bs256_e576_integrated_protected_v2",
   "sourcePool": "dclm3b",
   "sourcePoolTokens": 3000000000,
   "targetPool": "dclm3b",

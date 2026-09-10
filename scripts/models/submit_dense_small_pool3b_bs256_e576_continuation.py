@@ -18,7 +18,8 @@ import submit_dense_small_pool3b_bs256_e512_continuation as base
 WORKSPACE = "ai2/flex2"
 REPORT = Path("reports/0802/data/wsd_checkpoint_producer_grid.json")
 REPORT_JS = REPORT.with_suffix(".js")
-NAME = "dense-153m-dclm3b-bs256-lr2e-3-wd0.1-integrated-e512-e576-two-node-v1"
+NAME = "dense-153m-dclm3b-bs256-lr2e-3-wd0.1-integrated-e568-e576-protected-two-node-v2"
+MIN_RUNTIME = "8h"
 
 
 def producer_record(report: dict[str, Any]) -> dict[str, Any]:
@@ -66,7 +67,11 @@ def build_spec(item: dict[str, Any], revision: str, priority: str) -> dict[str, 
     task["name"] = "main"
     task["arguments"] = ["python", "scripts/models/run_dense_small_pool3b_bs256_e576_continuation.py"]
     task["resources"] = {"gpuCount": 8, "sharedMemory": "10 GiB"}
-    task["context"] = {"priority": priority, "autoResume": True}
+    task["context"] = {
+        "priority": priority,
+        "minRuntime": MIN_RUNTIME,
+        "autoResume": True,
+    }
     task.update(
         replicas=2,
         leaderSelection=True,
@@ -81,8 +86,9 @@ def build_spec(item: dict[str, Any], revision: str, priority: str) -> dict[str, 
         "from exact retained E512 PD step1318359 to exact E576 PD step1483154, then "
         "immediate isolated uncapped 10% WSD decay and heldout/downstream evaluation. "
         "Two synchronized 8-GPU nodes, rank microbatch 16, gradient accumulation 1, "
-        "global batch 256, one logical writer, no minRuntime, auto-resume, eight retries; "
-        "save every four epochs and stop at E576."
+        "global batch 256, one logical writer, protected minRuntime=8h, auto-resume, "
+        "eight retries; save PD every four epochs and resumable WSD checkpoints at "
+        "25/50/75/100%, then stop at E576."
     )
     return spec
 
@@ -93,8 +99,11 @@ def validate_spec(spec: dict[str, Any], revision: str) -> None:
     assert task["replicas"] == 2 and task["resources"]["gpuCount"] == 8
     assert task["leaderSelection"] and task["hostNetworking"]
     assert task["propagateFailure"] and task["propagatePreemption"]
-    assert task["context"] == {"priority": task["context"]["priority"], "autoResume": True}
-    assert "minRuntime" not in task["context"]
+    assert task["context"] == {
+        "priority": task["context"]["priority"],
+        "minRuntime": MIN_RUNTIME,
+        "autoResume": True,
+    }
     assert spec["retry"]["allowedTaskRetries"] == 8
     assert env["GIT_REF"] == revision and env["NUM_NODES"] == "2"
     assert "GANTRY_RDZV_ID" in env and "GANTRY_RDZV_PORT" in env
@@ -124,7 +133,8 @@ def register(report: dict[str, Any], experiment: str, revision: str) -> None:
         "futureEvaluatorSubmissionsAuthorized": False,
         "nodeCount": 2, "gpusPerNode": 8, "gpuCount": 16,
         "rankMicrobatchSequences": 16, "gradientAccumulationSteps": 1,
-        "minRuntimeOmitted": True,
+        "minRuntime": MIN_RUNTIME, "minRuntimeOmitted": False,
+        "postDecayRecoverySteps": list(runner.POST_RECOVERY_STEPS),
         "runtimeEstimate": {"producerHours": [8, 10], "postHours": [8, 9], "evaluationAndOverheadHours": [0.1, 0.5], "totalHours": [16, 20]},
         "submittedAt": datetime.now(tz=UTC).isoformat(),
     })

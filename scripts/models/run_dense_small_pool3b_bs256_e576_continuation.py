@@ -15,7 +15,7 @@ import run_dense_small_pool3b_bs256_e512_continuation as base
 import run_dense_small_pool3b_checkpoint_evaluator as evaluator
 import run_dense_small_pool3b_checkpoint_producer as producer
 
-POLICY = "dense_small_pool3b_bs256_e576_integrated_v1"
+POLICY = "dense_small_pool3b_bs256_e576_integrated_protected_v2"
 DEFAULT_MANIFEST = Path("scripts/models/manifests/dense-small-pool3b-bs256-e576-continuation-v1.json")
 EXPECTED_ID = "dense-153m-dclm3b-bs256-lr2e-3-wd0.1"
 SOURCE_EPOCH = 512
@@ -23,6 +23,12 @@ TARGET_EPOCH = 576
 CHECKPOINT_EPOCHS = tuple(range(516, 577, 4))
 EXPECTED_OUTPUT = base.EXPECTED_OUTPUT
 STATE_DIR = EXPECTED_OUTPUT / ".constant_checkpoint_producer_pool3b_e512_e576_integrated_v1"
+POST_START_STEP = base.checkpoint_step(TARGET_EPOCH)
+POST_ENDPOINT_STEP = producer.total_step(TARGET_EPOCH, producer.TARGET_POOL_TOKENS, 256)
+POST_RECOVERY_STEPS = tuple(
+    POST_START_STEP + (POST_ENDPOINT_STEP - POST_START_STEP) * quarter // 4
+    for quarter in range(1, 5)
+)
 
 
 def configure_base() -> None:
@@ -48,6 +54,31 @@ def producer_arguments(config: dict[str, Any], item: dict[str, Any], resume: Pat
         "--trainer.callbacks.checkpointer.fixed_steps=" + json.dumps(target_steps, separators=(",", ":")),
         f"--trainer.load_path={resume}",
         "--force_exact_trainer_load_path=true",
+    ]
+
+
+def postdecay_arguments(
+    config: dict[str, Any],
+    item: dict[str, Any],
+    source: Path,
+    output: Path,
+    name: str,
+    resume_step: int,
+) -> list[str]:
+    """Resume WSD from the latest complete recovery checkpoint."""
+    pending_steps = [step for step in POST_RECOVERY_STEPS if step > resume_step]
+    if not pending_steps:
+        raise RuntimeError("post-decay endpoint is already complete")
+    arguments = evaluator.postdecay_arguments(
+        config, item, TARGET_EPOCH, source, output, name
+    )
+    fixed_steps = (
+        "--trainer.callbacks.checkpointer.fixed_steps="
+        + json.dumps(pending_steps, separators=(",", ":"))
+    )
+    return [
+        fixed_steps if value.startswith("--trainer.callbacks.checkpointer.fixed_steps=") else value
+        for value in arguments
     ]
 
 
@@ -80,13 +111,36 @@ def run(config: dict[str, Any], item: dict[str, Any]) -> None:
     result_path = evaluator.state_dir(item, str(EXPECTED_OUTPUT)) / "results" / "e576.json"
     if not result_path.is_file():
         post_output = evaluator.state_dir(item, str(EXPECTED_OUTPUT)) / "post_decay_runs" / "e576"
-        endpoint_step = producer.total_step(TARGET_EPOCH, producer.TARGET_POOL_TOKENS, 256)
-        endpoint = post_output / f"step{endpoint_step}"
+        endpoint = post_output / f"step{POST_ENDPOINT_STEP}"
         name = f"{EXPECTED_ID}-post-e576-v1"
         log_path = evaluator.state_dir(item, str(EXPECTED_OUTPUT)) / "logs" / "e576.log"
-        args = evaluator.evaluation_arguments(config, item, endpoint, post_output / "eval", f"{name}-recovered-eval") if endpoint.is_dir() else evaluator.postdecay_arguments(config, item, TARGET_EPOCH, target, post_output, name)
+        complete_post_steps = []
+        for step in POST_RECOVERY_STEPS:
+            checkpoint = post_output / f"step{step}"
+            if base.checkpoint_complete(checkpoint, 16):
+                complete_post_steps.append(step)
+            elif checkpoint.exists():
+                raise RuntimeError(f"refusing incomplete post-decay checkpoint {checkpoint}")
+        if POST_ENDPOINT_STEP in complete_post_steps:
+            log_path = evaluator.state_dir(item, str(EXPECTED_OUTPUT)) / "logs" / "e576_recovered_eval.log"
+            active_source = endpoint
+            args = evaluator.evaluation_arguments(
+                config, item, endpoint, post_output / "eval", f"{name}-recovered-eval"
+            )
+        else:
+            resume_step = max([POST_START_STEP, *complete_post_steps])
+            resume = target if resume_step == POST_START_STEP else post_output / f"step{resume_step}"
+            active_source = resume
+            args = postdecay_arguments(
+                config, item, resume, post_output, name, resume_step
+            )
         if base.is_leader():
-            print(f"DENSE_SMALL_CHECKPOINT_EVALUATOR_START id={EXPECTED_ID} epoch=576 source={target} output={post_output}", flush=True)
+            print(
+                f"DENSE_SMALL_CHECKPOINT_EVALUATOR_START id={EXPECTED_ID} epoch=576 "
+                f"source={active_source} "
+                f"output={post_output}",
+                flush=True,
+            )
         base.torchrun(name, args, log_path, "post")
         if base.is_leader():
             if not endpoint.is_dir():
@@ -116,6 +170,11 @@ def run(config: dict[str, Any], item: dict[str, Any]) -> None:
                 path = EXPECTED_OUTPUT / f"step{base.checkpoint_step(epoch)}"
                 if base.checkpoint_complete(path, 16):
                     shutil.rmtree(path)
+        post_output = evaluator.state_dir(item, str(EXPECTED_OUTPUT)) / "post_decay_runs" / "e576"
+        for step in POST_RECOVERY_STEPS[:-1]:
+            path = post_output / f"step{step}"
+            if base.checkpoint_complete(path, 16):
+                shutil.rmtree(path)
         producer.atomic_json(STATE_DIR / "decisions" / "e576.json", decision)
         print(f"DENSE_POOL3B_INTEGRATED_POST_RESULT id={EXPECTED_ID} epoch=576 json={json.dumps(result,separators=(',',':'),sort_keys=True)}", flush=True)
         print(f"DENSE_POOL3B_INTEGRATED_DECISION id={EXPECTED_ID} epoch=576 json={json.dumps(decision,separators=(',',':'),sort_keys=True)}", flush=True)
