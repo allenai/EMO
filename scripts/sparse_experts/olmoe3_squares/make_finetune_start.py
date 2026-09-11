@@ -25,7 +25,8 @@ def main():
     if d.exists(): shutil.rmtree(d)
     (d / "train").mkdir(parents=True)
     src = (a.model / "model_and_optim").resolve(); assert (src / ".metadata").exists(), src
-    os.symlink(src, d / "model_and_optim")
+    # relative symlink: the same tree is /root/EMO/sparse_experts here and /weka/.../EMO/sparse_experts on the workers
+    os.symlink(os.path.relpath(src, d), d / "model_and_optim")
     for f in sorted((a.train_from / "train").glob("rank*.pt")):
         st = torch.load(f, map_location="cpu", weights_only=False)
         st["global_step"] = S; st["global_train_tokens_seen"] = S * SEQ_TOKENS
