@@ -33,6 +33,7 @@ def main():
     ap.add_argument("--groups", type=Path, required=True); ap.add_argument("--full", type=Path, required=True, help="full-model step dir (for config.json and key list)")
     ap.add_argument("--subs", required=True, help="comma-separated sub-model step dirs, group order"); ap.add_argument("--weights", required=True)
     ap.add_argument("--out", type=Path, required=True); ap.add_argument("--overwrite", action="store_true")
+    ap.add_argument("--with-optim", action="store_true", help="also merge exp_avg / exp_avg_sq / step (same scatter / weighted-average rule) so the merged model can continue training with carried Adam state")
     a = ap.parse_args()
     import torch.distributed.checkpoint as dcp
     from olmo_core.distributed.checkpoint import get_checkpoint_metadata, load_keys
@@ -41,7 +42,8 @@ def main():
     assert len(subs) == k == len(w)
     mcfg = json.load(open(a.full / "config.json"))["model"]
     full_meta = get_checkpoint_metadata(str(a.full / "model_and_optim")).state_dict_metadata
-    keys = sorted(kk for kk in full_meta if kk.startswith("module.") and kk.endswith(".main"))
+    suffixes = (".main", ".exp_avg", ".exp_avg_sq", ".step") if a.with_optim else (".main",)
+    keys = sorted(kk for kk in full_meta if kk.startswith("module.") and kk.endswith(suffixes))
     sub_dirs = [str(p / "model_and_optim") if (p / "model_and_optim").exists() else str(p) for p in subs]  # step dir or bare DCP dir (init slices)
     layer_of = lambda kk: int(re.match(r"module\.blocks\.(\d+)\.", kk).group(1)) if kk.startswith("module.blocks.") else None
     if a.out.exists():
@@ -49,9 +51,9 @@ def main():
     a.out.mkdir(parents=True); (a.out / "model_and_optim").mkdir()
     out_sd, n_scatter, n_avg = {}, 0, 0
     for key in keys:
-        base = key[len("module."):-len(".main")]; l = layer_of(key); shp = expert_shape(base, E, mcfg)
+        suffix = "." + key.rsplit(".", 1)[1]; base = key[len("module."):-len(suffix)]; l = layer_of(key); shp = expert_shape(base, E, mcfg)
         vals = [next(load_keys(d, [key])) for d in sub_dirs]
-        if shp is not None and l in part:
+        if shp is not None and l in part and suffix != ".step":
             merged = torch.empty(shp, dtype=vals[0].dtype)
             for g in range(k):
                 ids = torch.tensor(G["groups"][str(l)][g], dtype=torch.long)
