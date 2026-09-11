@@ -24,7 +24,7 @@ _ml = importlib.util.module_from_spec(_spec); _spec.loader.exec_module(_ml)
 card, table, img_tag, fig_row, CSS, JS = _ml.card, _ml.table, _ml.img_tag, _ml.fig_row, _ml.CSS, _ml.JS
 
 LAYERS = [str(l) for l in range(1, 10)]
-MODEL_LABEL = {"std": "standard MoE (512e)", "emo": "EMO (512e)", "std1000": "standard MoE (1000e)", "emo1000": "EMO (1000e)", "std128": "standard MoE (128e)", "emo128": "EMO (128e)"}
+MODEL_LABEL = {"std": "standard MoE (512e)", "emo": "EMO (512e)", "std1000": "standard MoE (1000e)", "emo1000": "EMO (1000e)", "std128": "standard MoE (128e)", "emo128": "EMO (128e)", "emo2000": "EMO (2000e)", "std2000": "standard MoE (2000e)"}
 
 
 def cond_sort(c):
@@ -52,8 +52,8 @@ def build_overview():
     setup = (
         "<p>Two 512-expert MoE models at <b>276.7M active / 2.61B total</b> parameters, trained here for 10B tokens with a WSD schedule "
         "(constant LR after warmup, no decay). The architecture follows the 275M rung of the scaling-ladders repo unchanged. "
-        "We also trained a <b>1000-expert</b> version by raising only the expert count with everything else fixed, so the total size grows "
-        "to 4.90B (279.5M active), and a <b>128-expert</b> version the same way (0.80B total, 274.5M active). "
+        "We also trained <b>1000-</b> and <b>2000-expert</b> versions by raising only the expert count with everything else fixed, so the total size grows "
+        "to 4.90B (279.5M active) and 9.61B (285.2M active), and a <b>128-expert</b> version the same way (0.80B total, 274.5M active). "
         "For each expert count we trained an <b>EMO</b> version and a <b>standard MoE</b> version.</p>"
         "<p>All routing statistics in this report come from forward passes of these checkpoints on 65.5M unseen training-stream tokens "
         "(8,000 instances from the 10B&ndash;20B token window of the same data order). Layer 0 of this family is dense; layers 1&ndash;9 are MoE.</p>"
@@ -75,7 +75,7 @@ def section(title, what, result, takeaway):
 KS = OUT / "ksweep"
 
 
-KS_MODELS = (("emo1000_full", "emo1000"), ("emo512_full", "emo"), ("emo128_full", "emo128"), ("std1000_full", "std1000"))
+KS_MODELS = (("emo2000_full", "emo2000"), ("emo1000_full", "emo1000"), ("emo512_full", "emo"), ("emo128_full", "emo128"), ("std1000_full", "std1000"))
 KS_LAYERS = (1, 5, 9)
 
 
@@ -142,7 +142,7 @@ def build_q6():
     return body
 
 
-GRID_MODELS = (("emo1000_full", "EMO (1000e)"), ("emo512_full", "EMO (512e)"), ("emo128_full", "EMO (128e)"), ("std1000_full", "standard MoE (1000e)"))
+GRID_MODELS = (("emo2000_full", "EMO (2000e)"), ("emo1000_full", "EMO (1000e)"), ("emo512_full", "EMO (512e)"), ("emo128_full", "EMO (128e)"), ("std1000_full", "standard MoE (1000e)"))
 GRID_JS = r"""
 (function(){
   const Blues = v => { const t=Math.max(0,Math.min(1,v)); const r=Math.round(247-200*t), g=Math.round(251-170*t), b=Math.round(255-100*t); return `rgb(${r},${g},${b})`; };
