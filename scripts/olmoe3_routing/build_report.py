@@ -278,7 +278,7 @@ def build_q3():
                          table(["group", "documents", "tokens", "token share", "mean in-group share", "full-model CE"],
                                [[f"group {g}", f"{st['docs_per_group'][g]:,}", f"{st['tokens_per_group'][g]/1e9:.2f}B", f"{100*st['token_share'][g]:.1f}%", f(st['in_group_share_by_group'][str(g)], 2), f(st['ce_by_group'][str(g)], 3)] for g in range(4)]))
         body += squares_results(HELD=ROOT / "sparse_experts/olmoe3_routing/runs_heldout20b_std", PPL=ROOT / "sparse_experts/olmoe3_squares_std/ppl_validation", SQO=OUT / "olmoe3_squares_std",
-                                start="std_step19074", start_ppl="olmoe3_275m_10b", base_runs=("olmoe3_275m_20b_1node",), label=" (standard MoE)")
+                                start="std_step19074", start_ppl="olmoe3_275m_10b", base_runs=("olmoe3_275m_20b_1node",), label=" (standard MoE)", take_main=STD_TAKE, take_pw=STD_PW_TAKE)
     return body
 
 
@@ -296,7 +296,24 @@ def _ppl(f):
     d = json.load(open(f))["per_set"]; return sum(v["CE loss"] for v in d.values()) / len(d)
 
 
-def squares_results(HELD=HELD, PPL=PPL, SQO=SQO, start="emo_step19074", start_ppl="olmoe3_275m_emo_10b", base_runs=("olmoe3_275m_emo_20b", "olmoe3_275m_emo_20b_filler", "olmoe3_275m_emo_20b_1node"), label=""):
+EMO_TAKE = ("Merged beats the baseline only at 5% (2.424 vs 2.455) and then falls behind monotonically, ending 0.15 above it and 0.09 above the start model. "
+            "The oracle-routed merged model keeps improving, so the loss is not in serving a document from one group.")
+EMO_PW_TAKE = ("At 5% the squares alone (2.509) equal the merged oracle number (2.511): averaging is harmless while the four copies of the shared "
+            "parameters are still nearly identical, and free routing across groups then adds a large gain (2.424). At 31% the squares alone keep "
+            "improving (2.437, about the baseline's 2.434) but the merged model does not (2.530 under oracle routing): the averaged shared "
+            "parameters now cost ~0.09, and the damage is concentrated on group 0, the code group, whose own square scores 1.50 while the "
+            "merged model scores 1.77 on the same documents. The partition and the sub-models are not the problem; averaging diverged shared "
+            "parameters is.")
+STD_TAKE = ("The standard merge never beats its baseline: 2.482 vs 2.436 at 5%, then flat around 2.46 while the baseline keeps improving to 2.374, "
+            "ending 0.09 behind. Unlike EMO it does not degrade with more separate training, and its oracle number improves steadily, but the "
+            "restriction cost of the standard partition stays huge for the baseline (oracle 3.31 vs 2.37).")
+STD_PW_TAKE = ("For the standard model the squares themselves are the problem: each square is worse than the start model on its own documents even "
+            "at 31% (piecewise 2.506 vs the baseline's 2.413), because a quarter of token-level experts cannot serve the group's documents. "
+            "Averaging the shared parameters costs almost nothing here (piecewise 2.506 vs merged oracle 2.516), the reverse of the EMO case, "
+            "and free routing across groups recovers most of the rest (2.463).")
+
+
+def squares_results(HELD=HELD, PPL=PPL, SQO=SQO, start="emo_step19074", start_ppl="olmoe3_275m_emo_10b", base_runs=("olmoe3_275m_emo_20b", "olmoe3_275m_emo_20b_filler", "olmoe3_275m_emo_20b_1node"), label="", take_main=EMO_TAKE, take_pw=EMO_PW_TAKE):
     ref_none, ref_orc = _ce(HELD / f"{start}/none"), _ce(HELD / f"{start}/oracle")
     ref_ppl = _ppl(ROOT / f"claude_outputs/debug_validation/ppl_validation/{start_ppl}/step19074.json")
     rows = [["start (step 19074, full model)", "&mdash;", f(ref_none), f(ref_orc), f(ref_ppl), "&mdash;", "&mdash;", "&mdash;"]]
@@ -339,6 +356,7 @@ def squares_results(HELD=HELD, PPL=PPL, SQO=SQO, start="emo_step19074", start_pp
     take = (f"Restricting the start model to one group per document costs {ref_orc-ref_none:+.3f} CE before any training ({f(ref_none)} &rarr; {f(ref_orc)}): "
             "that is the routing the squares give up." if (ref_none and ref_orc) else "Reference passes pending.")
     if not have: take += " Baseline and merged evaluations are pending."
+    else: take += " " + take_main
     out = section(f"Stages 2&ndash;4: merged squares vs continued baseline{label}", intro, tbl, take)
     # piecewise diagnostic: each held-out document scored by its own square, no merge
     pw = {name: json.load(open(SQO / f"piecewise_{name}.json")) for _, name in MATCH if (SQO / f"piecewise_{name}.json").exists() and json.load(open(SQO / f"piecewise_{name}.json")).get("piecewise")}
@@ -360,12 +378,7 @@ def squares_results(HELD=HELD, PPL=PPL, SQO=SQO, start="emo_step19074", start_pp
             table(["progress", "piecewise CE (own square, no merge)", "merged, oracle routing", "merged, free routing", "baseline"], rows)
             + "<p><b>By document group</b> (held-out documents of each group; sub-model g on its own group vs the merged model on the same documents):</p>"
             + table(["progress", "group", "docs", "start model", "own square", "merged, oracle", "merged, free"], grp_rows),
-            "At 5% the squares alone (2.509) equal the merged oracle number (2.511): averaging is harmless while the four copies of the shared "
-            "parameters are still nearly identical, and free routing across groups then adds a large gain (2.424). At 31% the squares alone keep "
-            "improving (2.437, about the baseline's 2.434) but the merged model does not (2.530 under oracle routing): the averaged shared "
-            "parameters now cost ~0.09, and the damage is concentrated on group 0, the code group, whose own square scores 1.50 while the "
-            "merged model scores 1.77 on the same documents. The partition and the sub-models are not the problem; averaging diverged shared "
-            "parameters is.")
+            take_pw)
     return out
 
 
