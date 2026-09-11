@@ -1,17 +1,17 @@
 {
   "policy": "dense_dclm111m_integrated_producer_eval_v1",
-  "updatedAt": "2026-09-11T21:03:49.000000+00:00",
+  "updatedAt": "2026-09-11T22:01:20.000000+00:00",
   "datasetManifest": "src/olmo_core/data/subsets/0802/dclm_0802_repeated_train_111m.json",
   "scheduling": "allocated",
   "minRuntimeOmitted": false,
   "trajectoryCount": 12,
-  "lastPolledAt": "2026-09-11T21:03:49.000000Z",
+  "lastPolledAt": "2026-09-11T22:01:20.000000Z",
   "liveSummary": {
-    "queued": 8,
-    "running": 4,
+    "queued": 6,
+    "running": 6,
     "terminal": 0,
     "telemetryAvailable": true,
-    "warning": "1B BS32 LR5e-4 WD1.0 failed twice with NaN loss at exact step 403; owner-matched retry 2 is active"
+    "warning": "1B BS32 LR5e-4 WD1.0 failed three times with NaN loss at exact step 403; owner-matched retry 3 is pending"
   },
   "crossWeightDecayPruning": {
     "enabled": true,
@@ -64,7 +64,7 @@
     ]
   },
   "jobAllowlist": [
-    "01M2948P5JGKHBQBMFA2W2NZ8Y",
+    "01M294GW6KQJ158BHEA5XVA0B2",
     "01M293GRQERDPDWXZB22JECGKR",
     "01M293GSGEF4Z1BQBMTZSYBRZF",
     "01M293GT8A8HJNB7H61K3B0P76",
@@ -126,9 +126,9 @@
         24
       ],
       "stopOnAdjacentPostNonImprovement": true,
-      "status": "running",
+      "status": "queued",
       "experiment": "01M293GQQV3Q0231SE2AZN7RTX",
-      "job": "01M2948P5JGKHBQBMFA2W2NZ8Y",
+      "job": "01M294GW6KQJ158BHEA5XVA0B2",
       "jobHistory": [
         {
           "job": "01M293GQY5MJQK65953FCDZB6V",
@@ -139,8 +139,18 @@
           "job": "01M293ZS255H9RXYH177PFM84R",
           "status": "failed",
           "failure": "nan loss at step 403"
+        },
+        {
+          "job": "01M2948P5JGKHBQBMFA2W2NZ8Y",
+          "status": "failed",
+          "failure": "nan loss at step 403"
         }
       ],
+      "resolvedCheckpointEpochs": [],
+      "resolvedPostEpochs": [],
+      "postDecayResults": {},
+      "currentEpoch": 2,
+      "currentPhase": "producer",
       "revision": "4f29bf3a76f246876cc5bc57e54e86caf6629731",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm111m/bs32_dr_wt_embwd_lr5e-4_wd1.0",
       "minRuntimeSeconds": 21600
@@ -179,6 +189,15 @@
       "status": "running",
       "experiment": "01M293GRKQG4WNN2F8DVMVVNQ1",
       "job": "01M293GRQERDPDWXZB22JECGKR",
+      "resolvedCheckpointEpochs": [2, 4, 6, 8],
+      "resolvedPostEpochs": [4, 8],
+      "postDecayResults": {
+        "4": {"status": "complete", "validationExact": 4.14644},
+        "8": {"status": "complete", "validationExact": 4.07941}
+      },
+      "currentEpoch": 10,
+      "currentPhase": "producer",
+      "expectedEta": "2026-09-11T22:03:20Z",
       "revision": "4f29bf3a76f246876cc5bc57e54e86caf6629731",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm111m/bs32_dr_wt_embwd_lr5e-4_wd3.0",
       "minRuntimeSeconds": 21600
@@ -217,6 +236,15 @@
       "status": "running",
       "experiment": "01M293GSCT5TERP8583VVDRR38",
       "job": "01M293GSGEF4Z1BQBMTZSYBRZF",
+      "resolvedCheckpointEpochs": [2, 4, 6, 8, 10],
+      "resolvedPostEpochs": [4, 8],
+      "postDecayResults": {
+        "4": {"status": "complete", "validationExact": 3.72232},
+        "8": {"status": "complete", "validationExact": 3.60106}
+      },
+      "currentEpoch": 12,
+      "currentPhase": "producer",
+      "expectedEta": "2026-09-11T22:11:20Z",
       "revision": "4f29bf3a76f246876cc5bc57e54e86caf6629731",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm111m/bs64_dr_wt_embwd_lr1e-3_wd1.0",
       "minRuntimeSeconds": 21600
@@ -255,6 +283,11 @@
       "status": "queued",
       "experiment": "01M293GT4S5J5V6XAF9HHDT249",
       "job": "01M293GT8A8HJNB7H61K3B0P76",
+      "resolvedCheckpointEpochs": [],
+      "resolvedPostEpochs": [],
+      "postDecayResults": {},
+      "currentEpoch": 2,
+      "currentPhase": "producer",
       "revision": "4f29bf3a76f246876cc5bc57e54e86caf6629731",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm111m/bs64_dr_wt_embwd_lr1e-3_wd3.0",
       "minRuntimeSeconds": 21600
@@ -287,6 +320,14 @@
       "status": "running",
       "experiment": "01M293GTX16M9QRY3WPSG8BFBQ",
       "job": "01M293GV0H055Q1W5BTDTB37ZA",
+      "resolvedCheckpointEpochs": [4, 8],
+      "resolvedPostEpochs": [8],
+      "postDecayResults": {
+        "8": {"status": "complete", "validationExact": 3.69019}
+      },
+      "currentEpoch": 12,
+      "currentPhase": "producer",
+      "expectedEta": "2026-09-11T22:10:20Z",
       "revision": "4f29bf3a76f246876cc5bc57e54e86caf6629731",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm111m/bs32_dr_wt_embwd_lr1e-3_wd0.3",
       "minRuntimeSeconds": 23400
@@ -316,9 +357,15 @@
         32
       ],
       "stopOnAdjacentPostNonImprovement": true,
-      "status": "queued",
+      "status": "running",
       "experiment": "01M293GVNRR123W9AZJMXB74VX",
       "job": "01M293GVSD3XJ0J617W0QRW447",
+      "resolvedCheckpointEpochs": [4],
+      "resolvedPostEpochs": [],
+      "postDecayResults": {},
+      "currentEpoch": 8,
+      "currentPhase": "producer",
+      "expectedEta": "2026-09-11T22:11:20Z",
       "revision": "4f29bf3a76f246876cc5bc57e54e86caf6629731",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm111m/bs32_dr_wt_embwd_lr1e-3_wd1.0",
       "minRuntimeSeconds": 23400
@@ -348,9 +395,15 @@
         32
       ],
       "stopOnAdjacentPostNonImprovement": true,
-      "status": "queued",
+      "status": "running",
       "experiment": "01M293GWE1VJC8ZJAZRAKC4M6J",
       "job": "01M293GWHHG3TRP6BAYW64787Q",
+      "resolvedCheckpointEpochs": [4],
+      "resolvedPostEpochs": [],
+      "postDecayResults": {},
+      "currentEpoch": 8,
+      "currentPhase": "producer",
+      "expectedEta": "2026-09-11T22:05:20Z",
       "revision": "4f29bf3a76f246876cc5bc57e54e86caf6629731",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm111m/bs64_dr_wt_embwd_lr2e-3_wd0.3",
       "minRuntimeSeconds": 14400
@@ -380,9 +433,15 @@
         32
       ],
       "stopOnAdjacentPostNonImprovement": true,
-      "status": "queued",
+      "status": "running",
       "experiment": "01M293GX61H7EDQV8BK2DRBBJ2",
       "job": "01M293GX9M097ZJMVCNN3KA8SF",
+      "resolvedCheckpointEpochs": [4],
+      "resolvedPostEpochs": [],
+      "postDecayResults": {},
+      "currentEpoch": 8,
+      "currentPhase": "producer",
+      "expectedEta": "2026-09-11T22:05:20Z",
       "revision": "4f29bf3a76f246876cc5bc57e54e86caf6629731",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm111m/bs64_dr_wt_embwd_lr2e-3_wd1.0",
       "minRuntimeSeconds": 14400
