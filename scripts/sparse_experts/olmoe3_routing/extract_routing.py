@@ -236,9 +236,10 @@ def apply_restriction(routers: Dict[int, torch.nn.Module], layers: List[int], po
         if isinstance(r, EmoRouterV2):
             # Routers built from the same block config SHARE one EmoRouterConfig object; give this
             # router its own copy before editing, or every layer ends up with the last value set.
+            # Expert counts can differ per layer (olmoe3_squares sub-models), so use the router's own.
             r.emo = copy.deepcopy(r.emo)
-            r.emo.eval_document_expert_pool = p if p is not None else num_experts
-            r.emo.validate_for_router(num_experts=num_experts, top_k=r.top_k)
+            r.emo.eval_document_expert_pool = p if p is not None else r.num_experts
+            r.emo.validate_for_router(num_experts=r.num_experts, top_k=r.top_k)
             kinds[l] = f"emo(eval_pool={r.emo.eval_pool_size()})"
         else:
             r.__class__ = PoolMasked
@@ -343,7 +344,11 @@ def run(args):
     log(f"rank {args.rank}/{args.world}: {N} instances, {N*S:,} tokens, {n_doc} docs; restrict={args.restrict}")
 
     model, routers, mcfg = build_model(args.checkpoint, device, args.attn_backend, args.use_cute_kda)
-    E = mcfg["block"]["routed_experts"]["num_experts"]; k = mcfg["block"]["routed_experts_router"]["top_k"]
+    k = mcfg["block"]["routed_experts_router"]["top_k"]
+    E_layer = {l: int(routers[l].num_experts) for l in MOE_LAYERS}
+    E = max(E_layer.values())  # accumulators are sized to the widest layer; narrower layers' scores are zero-padded
+    if len(set(E_layer.values())) > 1:
+        log(f"per-layer expert counts: {E_layer}")
     L = len(MOE_LAYERS)
     group_cfg = json.load(open(args.group_restrict)) if args.group_restrict else None
     if group_cfg:
@@ -409,7 +414,7 @@ def run(args):
             loss = out.ce_loss if hasattr(out, "ce_loss") else out  # LMOutputWithLoss -> per-token CE (B, S)
             assert loss.shape == ids.shape, loss.shape
             idx = torch.stack([captured[l][0] for l in MOE_LAYERS], dim=2).long()  # (B, S, L, k)
-            scores = [captured[l][1] for l in MOE_LAYERS]
+            scores = [captured[l][1] if captured[l][1].shape[-1] == E else torch.nn.functional.pad(captured[l][1], (0, E - captured[l][1].shape[-1])) for l in MOE_LAYERS]
             # sanity: restricted layers must route inside a pool of size <= P per document
             doc = torch.from_numpy(doc_of[b0 : b0 + B]).to(device)
             if pool is not None and b0 == 0:
