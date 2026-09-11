@@ -15,7 +15,7 @@
 export OLMOE3_NUM_EXPERTS=512
 export OLMOE3_EMO=1
 export OLMOE3_TOKENS=20000000000
-export OLMOE3_RUNNAME=olmoe3_275m_emo_20b
+export OLMOE3_RUNNAME="${OLMOE3_RUNNAME:-olmoe3_275m_emo_20b}"
 export OLMOE3_WANDB_TAGS=20b,olmoe3_squares
 source "$(dirname "${BASH_SOURCE[0]}")/olmoe3_275m_10b.sh" "${1:-launch}" \
     --trainer.load_path=/weka/oe-training-default/ryanwang/EMO/sparse_experts/olmoe3_275m_emo_10b/step19074 \
