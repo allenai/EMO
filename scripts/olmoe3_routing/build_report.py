@@ -75,7 +75,7 @@ def section(title, what, result, takeaway):
 KS = OUT / "ksweep"
 
 
-KS_MODELS = (("emo2000_full", "emo2000"), ("emo1000_full", "emo1000"), ("emo512_full", "emo"), ("emo128_full", "emo128"), ("std1000_full", "std1000"))
+KS_MODELS = (("emo2000_full", "emo2000"), ("emo1000_full", "emo1000"), ("emo512_full", "emo"), ("emo128_full", "emo128"), ("std2000_full", "std2000"), ("std1000_full", "std1000"))
 KS_LAYERS = (1, 5, 9)
 
 
@@ -142,7 +142,7 @@ def build_q6():
     return body
 
 
-GRID_MODELS = (("emo2000_full", "EMO (2000e)"), ("emo1000_full", "EMO (1000e)"), ("emo512_full", "EMO (512e)"), ("emo128_full", "EMO (128e)"), ("std1000_full", "standard MoE (1000e)"))
+GRID_MODELS = (("emo2000_full", "EMO (2000e)"), ("emo1000_full", "EMO (1000e)"), ("emo512_full", "EMO (512e)"), ("emo128_full", "EMO (128e)"), ("std2000_full", "standard MoE (2000e)"), ("std1000_full", "standard MoE (1000e)"))
 GRID_JS = r"""
 (function(){
   const Blues = v => { const t=Math.max(0,Math.min(1,v)); const r=Math.round(247-200*t), g=Math.round(251-170*t), b=Math.round(255-100*t); return `rgb(${r},${g},${b})`; };
