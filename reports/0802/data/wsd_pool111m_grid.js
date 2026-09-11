@@ -1,24 +1,48 @@
 window.ICSL_POOL111M_GRID={
   "policy": "dense_dclm111m_integrated_producer_eval_v1",
-  "updatedAt": "2026-09-11T19:44:32.901450+00:00",
+  "updatedAt": "2026-09-11T20:46:12.053433+00:00",
   "datasetManifest": "src/olmo_core/data/subsets/0802/dclm_0802_repeated_train_111m.json",
-  "scheduling": "unallocated",
-  "minRuntimeOmitted": true,
+  "scheduling": "allocated",
+  "minRuntimeOmitted": false,
   "trajectoryCount": 12,
+  "lastPolledAt": "2026-09-11T20:50:30.102984Z",
+  "liveSummary": {
+    "queued": 10,
+    "running": 2,
+    "terminal": 0,
+    "telemetryAvailable": false
+  },
   "jobAllowlist": [
-    "01M28ZZR447T0W9T1W0CY39VZV",
-    "01M28ZZS61QV49YF0CQ9FJH25W",
-    "01M28ZZTBZ16BE1J76PN6Z12A3",
-    "01M28ZZVDM4X6CHE3F7QR1AYQB",
-    "01M28ZZWEV6PBZ68NE814PY4TF",
-    "01M28ZZXKPPVH1CEYV6XTRYWH8",
-    "01M28ZZYSQ7YJ413VW2M1ENGDE",
-    "01M28ZZZW7SD5XAX85D0QR61SF",
-    "01M29000WTBCRYWBEBFMJ7ZKR9",
-    "01M29001YJ52YEZ0ZCVVHCJTKM",
-    "01M29002Y8MHJ88CRYH9QPTHCX",
-    "01M29003YSCK75MTQDZSG4SA3S"
+    "01M293GQY5MJQK65953FCDZB6V",
+    "01M293GRQERDPDWXZB22JECGKR",
+    "01M293GSGEF4Z1BQBMTZSYBRZF",
+    "01M293GT8A8HJNB7H61K3B0P76",
+    "01M293GV0H055Q1W5BTDTB37ZA",
+    "01M293GVSD3XJ0J617W0QRW447",
+    "01M293GWHHG3TRP6BAYW64787Q",
+    "01M293GX9M097ZJMVCNN3KA8SF",
+    "01M293GY41MSMEQMCFM4CH0W8T",
+    "01M293GYVXPQF8K7SB27834CZ6",
+    "01M293GZM0MSQT2YJ5EB7HBEW2",
+    "01M293H0C6Y8NHJZ4D55E2SYF8"
   ],
+  "replacedUnallocated": {
+    "status": "canceled_after_protected_replacements_accepted",
+    "experiments": [
+      "01M28ZZR0E9TKWY15KB0W5JM2C",
+      "01M28ZZS1KP5Y9MTHNR5DHCRJE",
+      "01M28ZZT49733MYMB3ET0C71KR",
+      "01M28ZZVA542H948XDZWCEHN6V",
+      "01M28ZZWBDNJGA8YCEB06WYHST",
+      "01M28ZZXFV61GV9EVY5VSR06SA",
+      "01M28ZZYKTYCMQYH2P6AC00CJZ",
+      "01M28ZZZRG8515FFJQ3NFE5ZS5",
+      "01M29000S841H74ZVM20MH9B38",
+      "01M29001TDVHJM6NWEZH1216G2",
+      "01M29002TQ9REX2VCAY97VT1S7",
+      "01M29003VAH94KHPYZXGJFCV05"
+    ]
+  },
   "trajectories": [
     {
       "id": "dense-1b-dclm111m-bs32-lr5e-4-wd1.0",
@@ -51,10 +75,12 @@ window.ICSL_POOL111M_GRID={
         24
       ],
       "stopOnAdjacentPostNonImprovement": true,
-      "status": "submitted",
-      "experiment": "01M28ZZR0E9TKWY15KB0W5JM2C",
-      "revision": "dbaa81fc02b257fed576b1ffdc163cb885a6dbda",
-      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm111m/bs32_dr_wt_embwd_lr5e-4_wd1.0"
+      "status": "running",
+      "experiment": "01M293GQQV3Q0231SE2AZN7RTX",
+      "job": "01M293GQY5MJQK65953FCDZB6V",
+      "revision": "4f29bf3a76f246876cc5bc57e54e86caf6629731",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm111m/bs32_dr_wt_embwd_lr5e-4_wd1.0",
+      "minRuntimeSeconds": 21600
     },
     {
       "id": "dense-1b-dclm111m-bs32-lr5e-4-wd3.0",
@@ -87,10 +113,12 @@ window.ICSL_POOL111M_GRID={
         24
       ],
       "stopOnAdjacentPostNonImprovement": true,
-      "status": "submitted",
-      "experiment": "01M28ZZS1KP5Y9MTHNR5DHCRJE",
-      "revision": "dbaa81fc02b257fed576b1ffdc163cb885a6dbda",
-      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm111m/bs32_dr_wt_embwd_lr5e-4_wd3.0"
+      "status": "queued",
+      "experiment": "01M293GRKQG4WNN2F8DVMVVNQ1",
+      "job": "01M293GRQERDPDWXZB22JECGKR",
+      "revision": "4f29bf3a76f246876cc5bc57e54e86caf6629731",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm111m/bs32_dr_wt_embwd_lr5e-4_wd3.0",
+      "minRuntimeSeconds": 21600
     },
     {
       "id": "dense-1b-dclm111m-bs64-lr1e-3-wd1.0",
@@ -123,10 +151,12 @@ window.ICSL_POOL111M_GRID={
         24
       ],
       "stopOnAdjacentPostNonImprovement": true,
-      "status": "submitted",
-      "experiment": "01M28ZZT49733MYMB3ET0C71KR",
-      "revision": "dbaa81fc02b257fed576b1ffdc163cb885a6dbda",
-      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm111m/bs64_dr_wt_embwd_lr1e-3_wd1.0"
+      "status": "queued",
+      "experiment": "01M293GSCT5TERP8583VVDRR38",
+      "job": "01M293GSGEF4Z1BQBMTZSYBRZF",
+      "revision": "4f29bf3a76f246876cc5bc57e54e86caf6629731",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm111m/bs64_dr_wt_embwd_lr1e-3_wd1.0",
+      "minRuntimeSeconds": 21600
     },
     {
       "id": "dense-1b-dclm111m-bs64-lr1e-3-wd3.0",
@@ -159,10 +189,12 @@ window.ICSL_POOL111M_GRID={
         24
       ],
       "stopOnAdjacentPostNonImprovement": true,
-      "status": "submitted",
-      "experiment": "01M28ZZVA542H948XDZWCEHN6V",
-      "revision": "dbaa81fc02b257fed576b1ffdc163cb885a6dbda",
-      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm111m/bs64_dr_wt_embwd_lr1e-3_wd3.0"
+      "status": "queued",
+      "experiment": "01M293GT4S5J5V6XAF9HHDT249",
+      "job": "01M293GT8A8HJNB7H61K3B0P76",
+      "revision": "4f29bf3a76f246876cc5bc57e54e86caf6629731",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm111m/bs64_dr_wt_embwd_lr1e-3_wd3.0",
+      "minRuntimeSeconds": 21600
     },
     {
       "id": "dense-474m-dclm111m-bs32-lr1e-3-wd0.3",
@@ -189,10 +221,12 @@ window.ICSL_POOL111M_GRID={
         32
       ],
       "stopOnAdjacentPostNonImprovement": true,
-      "status": "submitted",
-      "experiment": "01M28ZZWBDNJGA8YCEB06WYHST",
-      "revision": "dbaa81fc02b257fed576b1ffdc163cb885a6dbda",
-      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm111m/bs32_dr_wt_embwd_lr1e-3_wd0.3"
+      "status": "running",
+      "experiment": "01M293GTX16M9QRY3WPSG8BFBQ",
+      "job": "01M293GV0H055Q1W5BTDTB37ZA",
+      "revision": "4f29bf3a76f246876cc5bc57e54e86caf6629731",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm111m/bs32_dr_wt_embwd_lr1e-3_wd0.3",
+      "minRuntimeSeconds": 23400
     },
     {
       "id": "dense-474m-dclm111m-bs32-lr1e-3-wd1.0",
@@ -219,10 +253,12 @@ window.ICSL_POOL111M_GRID={
         32
       ],
       "stopOnAdjacentPostNonImprovement": true,
-      "status": "submitted",
-      "experiment": "01M28ZZXFV61GV9EVY5VSR06SA",
-      "revision": "dbaa81fc02b257fed576b1ffdc163cb885a6dbda",
-      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm111m/bs32_dr_wt_embwd_lr1e-3_wd1.0"
+      "status": "queued",
+      "experiment": "01M293GVNRR123W9AZJMXB74VX",
+      "job": "01M293GVSD3XJ0J617W0QRW447",
+      "revision": "4f29bf3a76f246876cc5bc57e54e86caf6629731",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm111m/bs32_dr_wt_embwd_lr1e-3_wd1.0",
+      "minRuntimeSeconds": 23400
     },
     {
       "id": "dense-474m-dclm111m-bs64-lr2e-3-wd0.3",
@@ -249,10 +285,12 @@ window.ICSL_POOL111M_GRID={
         32
       ],
       "stopOnAdjacentPostNonImprovement": true,
-      "status": "submitted",
-      "experiment": "01M28ZZYKTYCMQYH2P6AC00CJZ",
-      "revision": "dbaa81fc02b257fed576b1ffdc163cb885a6dbda",
-      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm111m/bs64_dr_wt_embwd_lr2e-3_wd0.3"
+      "status": "queued",
+      "experiment": "01M293GWE1VJC8ZJAZRAKC4M6J",
+      "job": "01M293GWHHG3TRP6BAYW64787Q",
+      "revision": "4f29bf3a76f246876cc5bc57e54e86caf6629731",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm111m/bs64_dr_wt_embwd_lr2e-3_wd0.3",
+      "minRuntimeSeconds": 14400
     },
     {
       "id": "dense-474m-dclm111m-bs64-lr2e-3-wd1.0",
@@ -279,10 +317,12 @@ window.ICSL_POOL111M_GRID={
         32
       ],
       "stopOnAdjacentPostNonImprovement": true,
-      "status": "submitted",
-      "experiment": "01M28ZZZRG8515FFJQ3NFE5ZS5",
-      "revision": "dbaa81fc02b257fed576b1ffdc163cb885a6dbda",
-      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm111m/bs64_dr_wt_embwd_lr2e-3_wd1.0"
+      "status": "queued",
+      "experiment": "01M293GX61H7EDQV8BK2DRBBJ2",
+      "job": "01M293GX9M097ZJMVCNN3KA8SF",
+      "revision": "4f29bf3a76f246876cc5bc57e54e86caf6629731",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm111m/bs64_dr_wt_embwd_lr2e-3_wd1.0",
+      "minRuntimeSeconds": 14400
     },
     {
       "id": "dense-153m-dclm111m-bs32-lr1e-3-wd0.3",
@@ -321,10 +361,12 @@ window.ICSL_POOL111M_GRID={
         128
       ],
       "stopOnAdjacentPostNonImprovement": true,
-      "status": "submitted",
-      "experiment": "01M29000S841H74ZVM20MH9B38",
-      "revision": "dbaa81fc02b257fed576b1ffdc163cb885a6dbda",
-      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm111m/bs32_dr_wt_embwd_lr1e-3_wd0.3"
+      "status": "queued",
+      "experiment": "01M293GY098DADZ2FHGK3QTWCY",
+      "job": "01M293GY41MSMEQMCFM4CH0W8T",
+      "revision": "4f29bf3a76f246876cc5bc57e54e86caf6629731",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm111m/bs32_dr_wt_embwd_lr1e-3_wd0.3",
+      "minRuntimeSeconds": 28800
     },
     {
       "id": "dense-153m-dclm111m-bs32-lr1e-3-wd1.0",
@@ -363,10 +405,12 @@ window.ICSL_POOL111M_GRID={
         128
       ],
       "stopOnAdjacentPostNonImprovement": true,
-      "status": "submitted",
-      "experiment": "01M29001TDVHJM6NWEZH1216G2",
-      "revision": "dbaa81fc02b257fed576b1ffdc163cb885a6dbda",
-      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm111m/bs32_dr_wt_embwd_lr1e-3_wd1.0"
+      "status": "queued",
+      "experiment": "01M293GYR2MV1ZXQC3GXGMC70V",
+      "job": "01M293GYVXPQF8K7SB27834CZ6",
+      "revision": "4f29bf3a76f246876cc5bc57e54e86caf6629731",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm111m/bs32_dr_wt_embwd_lr1e-3_wd1.0",
+      "minRuntimeSeconds": 28800
     },
     {
       "id": "dense-153m-dclm111m-bs64-lr2e-3-wd0.3",
@@ -405,10 +449,12 @@ window.ICSL_POOL111M_GRID={
         128
       ],
       "stopOnAdjacentPostNonImprovement": true,
-      "status": "submitted",
-      "experiment": "01M29002TQ9REX2VCAY97VT1S7",
-      "revision": "dbaa81fc02b257fed576b1ffdc163cb885a6dbda",
-      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm111m/bs64_dr_wt_embwd_lr2e-3_wd0.3"
+      "status": "queued",
+      "experiment": "01M293GZFRV32HRHN9W6QKDMR0",
+      "job": "01M293GZM0MSQT2YJ5EB7HBEW2",
+      "revision": "4f29bf3a76f246876cc5bc57e54e86caf6629731",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm111m/bs64_dr_wt_embwd_lr2e-3_wd0.3",
+      "minRuntimeSeconds": 23400
     },
     {
       "id": "dense-153m-dclm111m-bs64-lr2e-3-wd1.0",
@@ -447,10 +493,12 @@ window.ICSL_POOL111M_GRID={
         128
       ],
       "stopOnAdjacentPostNonImprovement": true,
-      "status": "submitted",
-      "experiment": "01M29003VAH94KHPYZXGJFCV05",
-      "revision": "dbaa81fc02b257fed576b1ffdc163cb885a6dbda",
-      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm111m/bs64_dr_wt_embwd_lr2e-3_wd1.0"
+      "status": "queued",
+      "experiment": "01M293H08JR4PFDC8GR31D2GAY",
+      "job": "01M293H0C6Y8NHJZ4D55E2SYF8",
+      "revision": "4f29bf3a76f246876cc5bc57e54e86caf6629731",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm111m/bs64_dr_wt_embwd_lr2e-3_wd1.0",
+      "minRuntimeSeconds": 23400
     }
   ]
 };
