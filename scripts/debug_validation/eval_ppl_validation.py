@@ -203,7 +203,7 @@ def main():
             {
                 "checkpoint": str(ckpt),
                 "run": run,
-                "step": int(step.replace("step", "")),
+                "step": int(step.replace("step", "")) if step.replace("step", "").isdigit() else step,  # merged models: "match20000" 
                 "num_experts": mcfg["block"]["routed_experts"]["num_experts"],
                 "emo": mcfg["block"]["routed_experts_router"].get("emo") is not None,
                 "sequence_length": args.sequence_length,
