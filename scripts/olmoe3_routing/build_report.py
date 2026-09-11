@@ -45,6 +45,8 @@ QUESTIONS = [
      "Can one layer's experts be split into k blocks such that documents split the same way, and does the choice of k matter?"),
     ("q2", "Q2 · Block agreement across layers",
      "Do documents that sit cleanly in one layer-8 expert block also sit together in a single layer-9 block, i.e. are the document-level blocks the same groups of documents from layer to layer?"),
+    ("q3", "Q3 · Train the squares separately, then merge",
+     "Can EMO 512e be split into four block-group sub-models (k = 4, layers 2&ndash;9), each trained on its own documents for the next 10B tokens, and merged back into a model that matches simply continuing the full model?"),
 ]
 
 
@@ -213,6 +215,51 @@ def interactive_grid():
     return out
 
 
+SQ = ROOT / "sparse_experts/olmoe3_squares"; SQO = OUT / "squares"
+
+
+def build_q3():
+    body = question_card("q3")
+    G = json.load(open(SQ / "groups.json")) if (SQ / "groups.json").exists() else None
+    stats = json.load(open(SQO / "stats.json")) if (SQO / "stats.json").exists() else None
+    body += card("info", "Plan",
+        "<ol><li><b>Partition</b> (done locally). Spectral blocks of the EMO 512e experts, k = 4, in layers 2&ndash;9, matched to the "
+        "layer-9 blocks with the Q2 rule. Layer 1 is left whole in every sub-model (its blocks show no document agreement). "
+        "Each group therefore owns 97&ndash;162 experts per layer from 2 on and all 512 in layer 1.</li>"
+        "<li><b>Assign documents</b> (1 forward pass of the full model over the next 10B tokens, the 10B&ndash;20B window in training order). "
+        "A document goes to the group whose experts receive most of its top-16 selections in layers 2&ndash;9. The full per-layer "
+        "(group &times; count) table is kept per document, so the share of routing a sub-model cannot serve is known.</li>"
+        "<li><b>Train four sub-models</b> from the step-19074 weights (experts and router rows sliced to the group; everything else copied), "
+        "each on its own documents re-packed in training order, same EMO loss, same 64 &times; 8192 batch, constant LR 8e-4 (the WSD trunk). "
+        "Token budgets are the groups' shares of the 10B, so total compute equals the baseline. Checkpoints at the same fractions of "
+        "progress as the baseline's (steps 20000 / 25000 / 30000 / 35000 / 38148).</li>"
+        "<li><b>Baseline</b>: the full EMO 512e continued from step 19074 on the same 10B tokens.</li>"
+        "<li><b>Merge</b> at every matched checkpoint: experts concatenated, shared parameters (and layer 1) averaged with token-share weights; "
+        "evaluated as-is (one 512-way router) and with oracle group routing, on the v3-small validation sets and a fresh held-out sample.</li></ol>")
+    if G:
+        rows = [[f"layer {l}", *[str(s) for s in G["sizes"][str(l)]], f(G["layer9_agreement"].get(str(l)), 2) if str(l) in G["layer9_agreement"] else "&mdash; (whole)"] for l in range(1, 10)]
+        pv = G["preview"]
+        body += section("Stage 0: the four block-groups",
+            "Experts per group and layer, and how often a document's block in that layer agrees with its layer-9 block (the Q2 alignment).",
+            table(["layer", "group 0", "group 1", "group 2", "group 3", "agreement with layer 9"], rows),
+            f"On the 8k-instance routing sample the groups would receive {' / '.join(f'{100*x:.0f}%' for x in pv['token_share'])} of the tokens, "
+            f"and a document keeps on average {100*pv['in_group_share_mean']:.0f}% of its layers 2&ndash;9 routing inside its chosen group "
+            f"(median {100*pv['in_group_share_median']:.0f}%, random assignment would give 25%). The other half is what a sub-model cannot serve.")
+    if stats:
+        body += section("Stage 1: assigning the next 10B tokens",
+            "Every document of the 10B&ndash;20B training window routed through the full model; in-group share = the fraction of its top-16 selections "
+            "(layers 2&ndash;9) that fall on its group's experts.",
+            table(["group", "documents", "tokens", "token share", "mean in-group share", "full-model CE"],
+                  [[f"group {g}", f"{stats['docs_per_group'][g]:,}", f"{stats['tokens_per_group'][g]/1e9:.2f}B", f"{100*stats['token_share'][g]:.1f}%", f(stats['in_group_share_by_group'][str(g)], 2), f(stats['ce_by_group'][str(g)], 3)] for g in range(4)])
+            + "<p>In-group share by layer: " + ", ".join(f"L{l} {v:.2f}" for l, v in stats["in_group_share_by_layer"].items()) + "</p>",
+            f"{stats['n_docs']:,} documents, {stats['n_tokens']/1e9:.2f}B tokens. Token-weighted, {100*stats['in_group_share_token_weighted']:.0f}% of the "
+            f"selections a sub-model's documents make are inside its own expert group.")
+    else:
+        body += card("warn", "Stage 1", "<p>Assignment pass running.</p>")
+    body += card("warn", "Stages 2&ndash;4", "<p>Sub-model training, baseline continuation and merges: pending.</p>")
+    return body
+
+
 def build_next():
     return card("info", "Next steps", "<ul><li>Add the 2000-expert arms (EP=2) to the partition and block-agreement grids once their 10B runs finish.</li>"
                 "<li>Use the persistent document-level blocks as the expert subsets for selective-expert finetuning, as in the sparse_experts plan.</li></ul>")
@@ -223,6 +270,7 @@ def main():
         ("overview", "Overview", build_overview()),
         ("q1", QUESTIONS[0][1], build_q5()),
         ("q2", QUESTIONS[1][1], build_q6()),
+        ("q3", QUESTIONS[2][1], build_q3()),
         ("next", "Next steps", build_next()),
     ]
     nav = "".join(f'<button data-target="{tid}">{name}</button>' for tid, name, _ in tabs)
