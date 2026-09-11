@@ -42,7 +42,7 @@ def main():
     mcfg = json.load(open(a.full / "config.json"))["model"]
     full_meta = get_checkpoint_metadata(str(a.full / "model_and_optim")).state_dict_metadata
     keys = sorted(kk for kk in full_meta if kk.startswith("module.") and kk.endswith(".main"))
-    sub_dirs = [str(p / "model_and_optim") for p in subs]
+    sub_dirs = [str(p / "model_and_optim") if (p / "model_and_optim").exists() else str(p) for p in subs]  # step dir or bare DCP dir (init slices)
     layer_of = lambda kk: int(re.match(r"module\.blocks\.(\d+)\.", kk).group(1)) if kk.startswith("module.blocks.") else None
     if a.out.exists():
         assert a.overwrite, f"{a.out} exists"; shutil.rmtree(a.out)
