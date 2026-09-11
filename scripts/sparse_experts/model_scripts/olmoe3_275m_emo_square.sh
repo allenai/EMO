@@ -13,14 +13,14 @@
 ##############################################################
 : "${SQUARE_GROUP:?set SQUARE_GROUP=0..3}"
 W=/weka/oe-training-default/ryanwang/EMO/sparse_experts   # worker-side paths (weka)
-SQ="$W/olmoe3_squares"
-LOCAL_SQ="$(git rev-parse --show-toplevel)/sparse_experts/olmoe3_squares"   # same storage, as seen from this session
+SQ="$W/${SQUARES_NAME:-olmoe3_squares}"
+LOCAL_SQ="$(git rev-parse --show-toplevel)/sparse_experts/${SQUARES_NAME:-olmoe3_squares}"   # same storage, as seen from this session
 tokens="${OLMOE3_TOKENS:-$(python -c "import json; print(json.load(open('$LOCAL_SQ/pack/stats.json'))['tokens_per_group'][$SQUARE_GROUP])")}"
 # steps of this run = tokens / 524288; checkpoint at the baseline's fractions of progress
 steps=$(( (tokens + 524287) / 524288 ))
 fixed=$(python -c "s=$steps; print(','.join(str(max(1, round(s*f/19074))) for f in (926, 5926, 10926, 15926)) + f',{s}')")
 export OLMOE3_NUM_EXPERTS=512
-export OLMOE3_EMO=1
+export OLMOE3_EMO="${OLMOE3_EMO:-1}"
 export OLMOE3_TOKENS="$tokens"
 export OLMOE3_NUM_NODES=1
 export OLMOE3_GROUPS="$SQ/groups.json"
@@ -30,6 +30,6 @@ export OLMOE3_INIT_FROM="${OLMOE3_INIT_FROM:-$SQ/init/group$SQUARE_GROUP}"
 export OLMOE3_FIXED_STEPS="$fixed"
 export OLMOE3_WARMUP=1
 export OLMOE3_RUNNAME="${OLMOE3_RUNNAME:-olmoe3_275m_emo_square$SQUARE_GROUP}"
-export OLMOE3_WANDB_TAGS=olmoe3_squares,square
+export OLMOE3_WANDB_TAGS="${OLMOE3_WANDB_TAGS:-olmoe3_squares,square}"
 echo "square $SQUARE_GROUP: $tokens tokens = $steps steps; fixed checkpoints at $fixed"
 source "$(dirname "${BASH_SOURCE[0]}")/olmoe3_275m_10b.sh" "$@"
