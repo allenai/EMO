@@ -281,7 +281,7 @@ def squares_results():
     have = False
     for step, name in MATCH:
         b_none, b_orc = _ce(HELD / f"baseline_step{step}/none"), _ce(HELD / f"baseline_step{step}/oracle")
-        b_ppl = next((_ppl(PPL / run / f"step{step}.json") for run in ("olmoe3_275m_emo_20b", "olmoe3_275m_emo_20b_filler", "olmoe3_275m_emo_20b_1node") if (PPL / run / f"step{step}.json").exists()), None)
+        b_ppl = next((_ppl(PPL / run / f"step{s}.json") for run in ("olmoe3_275m_emo_20b", "olmoe3_275m_emo_20b_filler", "olmoe3_275m_emo_20b_1node") for s in (step, step - 1) if (PPL / run / f"step{s}.json").exists()), None)  # final ckpt is step38147
         m_none, m_orc = _ce(HELD / f"merged_{name}/none"), _ce(HELD / f"merged_{name}/oracle")
         m_ppl = _ppl(PPL / "merged" / f"{name}.json")
         if any(x is not None for x in (b_none, m_none, b_ppl, m_ppl)): have = True
