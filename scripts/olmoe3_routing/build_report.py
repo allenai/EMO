@@ -257,6 +257,28 @@ def build_q3():
     else:
         body += card("warn", "Stage 1", "<p>Assignment pass running.</p>")
     body += squares_results()
+    Gs = SQ.parent / "olmoe3_squares_std" / "groups.json"; Ss = OUT / "olmoe3_squares_std" / "stats.json"
+    std_stats_src = ROOT / "sparse_experts/olmoe3_squares_std/pack/stats.json"
+    if std_stats_src.exists():
+        (OUT / "olmoe3_squares_std").mkdir(parents=True, exist_ok=True)
+        if not Ss.exists() or Ss.stat().st_mtime < std_stats_src.stat().st_mtime: Ss.write_text(std_stats_src.read_text())
+    if Gs.exists():
+        G2 = json.load(open(Gs)); pv = G2["preview"]
+        rows = [[f"layer {l}", *[str(s) for s in G2["sizes"][str(l)]], f(G2["layer9_agreement"].get(str(l)), 2) if str(l) in G2["layer9_agreement"] else "&mdash; (whole)"] for l in range(1, 10)]
+        std_intro = ("<p><b>Same experiment on the standard-routing 512-expert model</b> (olmoe3_275m_10b, no EMO), as a second baseline. Its k = 4 blocks "
+                     "are token-level (Q1), so documents were assigned by routing mass <em>per expert</em> of each group (raw mass would send 99% of "
+                     "documents to the two biggest blocks); the same rule on the EMO model changes its group shares only slightly (21/35/26/18% vs "
+                     "23/40/15/22%) and its in-group share not at all (0.50 vs 0.51).</p>")
+        body += card("info", "Standard MoE: the four block-groups", std_intro + table(["layer", "group 0", "group 1", "group 2", "group 3", "agreement with layer 9"], rows)
+                     + f"<p>Routing-sample preview: token shares {' / '.join(f'{100*x:.0f}%' for x in pv['token_share'])}, mean in-group share {100*pv['in_group_share_mean']:.0f}% "
+                     f"(random 25%): a standard-model document keeps almost none of its routing inside any one group.</p>")
+        if Ss.exists():
+            st = json.load(open(Ss))
+            body += card("info", "Standard MoE: assigning the next 10B tokens",
+                         table(["group", "documents", "tokens", "token share", "mean in-group share", "full-model CE"],
+                               [[f"group {g}", f"{st['docs_per_group'][g]:,}", f"{st['tokens_per_group'][g]/1e9:.2f}B", f"{100*st['token_share'][g]:.1f}%", f(st['in_group_share_by_group'][str(g)], 2), f(st['ce_by_group'][str(g)], 3)] for g in range(4)]))
+        body += squares_results(HELD=ROOT / "sparse_experts/olmoe3_routing/runs_heldout20b_std", PPL=ROOT / "sparse_experts/olmoe3_squares_std/ppl_validation", SQO=OUT / "olmoe3_squares_std",
+                                start="std_step19074", start_ppl="olmoe3_275m_10b", base_runs=("olmoe3_275m_20b_1node",), label=" (standard MoE)")
     return body
 
 
@@ -274,14 +296,14 @@ def _ppl(f):
     d = json.load(open(f))["per_set"]; return sum(v["CE loss"] for v in d.values()) / len(d)
 
 
-def squares_results():
-    ref_none, ref_orc = _ce(HELD / "emo_step19074/none"), _ce(HELD / "emo_step19074/oracle")
-    ref_ppl = _ppl(ROOT / "claude_outputs/debug_validation/ppl_validation/olmoe3_275m_emo_10b/step19074.json")
+def squares_results(HELD=HELD, PPL=PPL, SQO=SQO, start="emo_step19074", start_ppl="olmoe3_275m_emo_10b", base_runs=("olmoe3_275m_emo_20b", "olmoe3_275m_emo_20b_filler", "olmoe3_275m_emo_20b_1node"), label=""):
+    ref_none, ref_orc = _ce(HELD / f"{start}/none"), _ce(HELD / f"{start}/oracle")
+    ref_ppl = _ppl(ROOT / f"claude_outputs/debug_validation/ppl_validation/{start_ppl}/step19074.json")
     rows = [["start (step 19074, full model)", "&mdash;", f(ref_none), f(ref_orc), f(ref_ppl), "&mdash;", "&mdash;", "&mdash;"]]
     have = False
     for step, name in MATCH:
         b_none, b_orc = _ce(HELD / f"baseline_step{step}/none"), _ce(HELD / f"baseline_step{step}/oracle")
-        b_ppl = next((_ppl(PPL / run / f"step{s}.json") for run in ("olmoe3_275m_emo_20b", "olmoe3_275m_emo_20b_filler", "olmoe3_275m_emo_20b_1node") for s in (step, step - 1) if (PPL / run / f"step{s}.json").exists()), None)  # final ckpt is step38147
+        b_ppl = next((_ppl(PPL / run / f"step{s}.json") for run in base_runs for s in (step, step - 1) if (PPL / run / f"step{s}.json").exists()), None)  # final ckpt is step38147
         m_none, m_orc = _ce(HELD / f"merged_{name}/none"), _ce(HELD / f"merged_{name}/oracle")
         m_ppl = _ppl(PPL / "merged" / f"{name}.json")
         if any(x is not None for x in (b_none, m_none, b_ppl, m_ppl)): have = True
@@ -302,7 +324,7 @@ def squares_results():
     take = (f"Restricting the start model to one group per document costs {ref_orc-ref_none:+.3f} CE before any training ({f(ref_none)} &rarr; {f(ref_orc)}): "
             "that is the routing the squares give up." if (ref_none and ref_orc) else "Reference passes pending.")
     if not have: take += " Baseline and merged evaluations are pending."
-    out = section("Stages 2&ndash;4: merged squares vs continued baseline", intro, tbl, take)
+    out = section(f"Stages 2&ndash;4: merged squares vs continued baseline{label}", intro, tbl, take)
     # piecewise diagnostic: each held-out document scored by its own square, no merge
     pw = {name: json.load(open(SQO / f"piecewise_{name}.json")) for _, name in MATCH if (SQO / f"piecewise_{name}.json").exists() and json.load(open(SQO / f"piecewise_{name}.json")).get("piecewise")}
     if pw:
@@ -316,7 +338,7 @@ def squares_results():
             step = int(name[5:]); frac = (step - 19074) / 19074
             for g in range(4):
                 grp_rows.append([f"{100*frac:.0f}%", f"group {g}", f"{d['docs_per_group'][g]:,}", f(d["start_full_by_group"][str(g)]), f(d["sub_on_group"][str(g)][str(g)]), f(d[f"merged_{name}_oracle_by_group"][str(g)]), f(d[f"merged_{name}_by_group"][str(g)])])
-        out += section("Where the merge loses: each square alone vs the merged model",
+        out += section(f"Where the merge loses: each square alone vs the merged model{label}",
             "<b>Piecewise CE</b>: every held-out document is scored by the sub-model of its own group (group = the start model's routing), with "
             "no merging at all. Compared with the merged model under oracle routing (same documents, same expert groups, but shared parameters "
             "averaged) it isolates the cost of averaging; compared with the merged model's free routing it shows what cross-group experts add.",
