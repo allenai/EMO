@@ -14,7 +14,8 @@ import argparse, json
 from pathlib import Path
 import numpy as np
 
-H = Path("sparse_experts/olmoe3_routing/runs_heldout20b")
+import os
+H = Path("sparse_experts/olmoe3_routing") / os.environ.get("HELDOUT_DIR", "runs_heldout20b"); START = os.environ.get("START_TAG", "emo_step19074"); SQN = os.environ.get("SQUARES_NAME", "olmoe3_squares")
 
 
 def ce_of(d):
@@ -22,15 +23,16 @@ def ce_of(d):
 
 
 def main():
-    ap = argparse.ArgumentParser(); ap.add_argument("--name", required=True); ap.add_argument("--groups", type=Path, default=Path("sparse_experts/olmoe3_squares/groups.json"))
+    ap = argparse.ArgumentParser(); ap.add_argument("--name", required=True); ap.add_argument("--groups", type=Path, default=Path(f"sparse_experts/{SQN}/groups.json"))
     a = ap.parse_args(); G = json.load(open(a.groups)); k = G["k"]; PL = [int(l) for l in G["partitioned_layers"]]
-    u = np.load(H / "emo_step19074/none/doc_usage.npy", mmap_mode="r")
+    u = np.load(H / START / "none/doc_usage.npy", mmap_mode="r")
     mass = np.zeros((u.shape[0], k))
     for l in PL:
         oh = np.zeros((G["num_experts"], k))
         for g in range(k): oh[G["groups"][str(l)][g], g] = 1
         mass += np.asarray(u[:, l - 1, :]).astype(float) @ oh
-    grp = mass.argmax(1)
+    n_exp = np.array([sum(len(G["groups"][str(l)][g]) for l in PL) for g in range(k)], float)
+    grp = (mass / (n_exp if G.get("size_normalized") else 1.0)).argmax(1)
     subs = {g: ce_of(H / f"sub{g}_{a.name}/none") for g in range(k) if (H / f"sub{g}_{a.name}/none/doc_stats.npz").exists()}
     out = dict(name=a.name, docs_per_group=np.bincount(grp, minlength=k).tolist(), sub_on_group={}, piecewise=None)
     tot_sum = tot_len = 0.0
@@ -39,12 +41,12 @@ def main():
         out["sub_on_group"][str(g)]["all"] = float(cs.sum() / cl.sum())
         tot_sum += cs[grp == g].sum(); tot_len += cl[grp == g].sum()
     if len(subs) == k: out["piecewise"] = float(tot_sum / tot_len)
-    for tag, d in (("start_full", "emo_step19074/none"), ("start_oracle", "emo_step19074/oracle"), (f"merged_{a.name}", f"merged_{a.name}/none"), (f"merged_{a.name}_oracle", f"merged_{a.name}/oracle")):
+    for tag, d in (("start_full", f"{START}/none"), ("start_oracle", f"{START}/oracle"), (f"merged_{a.name}", f"merged_{a.name}/none"), (f"merged_{a.name}_oracle", f"merged_{a.name}/oracle")):
         p = H / d / "doc_stats.npz"
         if p.exists():
             cs, cl = ce_of(H / d); out[tag] = float(cs.sum() / cl.sum()); out[tag + "_by_group"] = {str(h): float(cs[grp == h].sum() / cl[grp == h].sum()) for h in range(k)}
-    Path("claude_outputs/olmoe3_routing/squares").mkdir(parents=True, exist_ok=True)
-    json.dump(out, open(f"claude_outputs/olmoe3_routing/squares/piecewise_{a.name}.json", "w"), indent=1)
+    od = Path("claude_outputs/olmoe3_routing") / ("squares" if SQN == "olmoe3_squares" else SQN); od.mkdir(parents=True, exist_ok=True)
+    json.dump(out, open(od / f"piecewise_{a.name}.json", "w"), indent=1)
     print(json.dumps({key: out[key] for key in out if not key.endswith("_by_group")}, indent=1))
 
 

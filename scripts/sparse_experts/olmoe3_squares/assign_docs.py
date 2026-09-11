@@ -45,6 +45,11 @@ def main():
     for l in PL:
         for g in range(k): e2g[ex.MOE_LAYERS.index(l), G["groups"][str(l)][g]] = g
     e2g = e2g.to(device); pl_idx = torch.tensor([ex.MOE_LAYERS.index(l) for l in PL], device=device)
+    # size-normalised assignment (groups.json flag): argmax of mass per expert of the group, so uneven blocks
+    # with token-level routing do not all collapse onto the biggest block
+    n_exp = torch.tensor([sum(len(G["groups"][str(l)][g]) for l in PL) for g in range(k)], device=device, dtype=torch.float)
+    norm = n_exp if G.get("size_normalized") else torch.ones_like(n_exp)
+    ex.log(f"assignment rule: {'mass per expert' if G.get('size_normalized') else 'raw mass'}; group expert totals {n_exp.tolist()}")
     model, routers, mcfg = ex.build_model(a.checkpoint, device, a.attn_backend, False)
     topk = mcfg["block"]["routed_experts_router"]["top_k"]
     captured = {}
@@ -73,7 +78,7 @@ def main():
                 onehot = torch.nn.functional.one_hot(gsel.reshape(B * S, len(PL), topk), k).sum(2)  # (B*S, PL, k)
                 mass = torch.zeros(n_doc, len(PL), k, device=device, dtype=torch.long).index_add_(0, flat_doc, onehot)
                 tot = mass.sum(1)                                                              # (n_doc, k)
-                grp = tot.argmax(1); share = tot.max(1).values.float() / tot.sum(1).clamp(min=1).float()
+                grp = (tot.float() / norm).argmax(1); share = tot.gather(1, grp[:, None])[:, 0].float() / tot.sum(1).clamp(min=1).float()
                 # doc CE: loss at t predicts t+1 -> attribute to doc of t+1
                 loss_doc = torch.roll(doc, -1, 1).reshape(-1); valid = (labels != -100).reshape(-1)
                 ce_sum = torch.zeros(n_doc, device=device).index_add_(0, loss_doc[valid], loss.reshape(-1)[valid].float())

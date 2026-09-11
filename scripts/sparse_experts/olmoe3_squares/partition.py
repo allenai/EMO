@@ -25,6 +25,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("cond", type=Path); ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--k", type=int, default=4); ap.add_argument("--min-doc-tokens", type=int, default=64)
+    ap.add_argument("--size-normalized", action="store_true", help="assign documents by routing mass PER EXPERT of the group (mass / group size) instead of raw mass; needed when blocks are uneven and routing is token-level (standard MoE), where raw mass just picks the biggest block")
     a = ap.parse_args(); k = a.k
     c = np.load(a.cond / "counts.npz"); Ct = c["coact_tok"].astype(float); N = float(c["n_tok"]); E = Ct.shape[1]
     du = np.load(a.cond / "doc_usage.npy"); dl = np.load(a.cond / "doc_stats.npz")["doc_len"]; keep = dl >= a.min_doc_tokens
@@ -51,8 +52,13 @@ def main():
         oh = np.zeros((E, k))
         for j in range(k): oh[groups[l][j], j] = 1
         tot += du[keep, LAYERS.index(l)].astype(float) @ oh
-    dg = tot.argmax(1); share = tot.max(1) / np.maximum(tot.sum(1), 1)
-    out = dict(k=k, num_experts=E, partitioned_layers=PARTITIONED, untouched_layers=[1], source=str(a.cond),
+    share = tot.max(1) / np.maximum(tot.sum(1), 1)
+    if a.size_normalized:
+        n_exp = np.array([[len(groups[l][j]) for j in range(k)] for l in PARTITIONED]).sum(0)
+        dg = (tot / n_exp).argmax(1); share = tot[np.arange(len(dg)), dg] / np.maximum(tot.sum(1), 1)
+    else:
+        dg = tot.argmax(1)
+    out = dict(k=k, num_experts=E, partitioned_layers=PARTITIONED, untouched_layers=[1], source=str(a.cond), size_normalized=bool(a.size_normalized),
                groups={str(l): groups[l] for l in LAYERS}, sizes={str(l): [len(x) for x in groups[l]] for l in LAYERS},
                layer9_agreement={str(l): round(agreement[l], 3) for l in PARTITIONED},
                preview=dict(n_docs=int(keep.sum()), docs_per_group=np.bincount(dg, minlength=k).tolist(),
