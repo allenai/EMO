@@ -20,7 +20,12 @@ if [ ! -f "$OUT/merge_info.json" ]; then
     --subs "$(IFS=,; echo "${subs[*]}")" --weights "${MERGE_WEIGHTS:-0.2284,0.3993,0.1507,0.2216}" --out "$OUT" --overwrite | tail -1 | cut -c1-160
 fi
 M="$W/$SQN/merged/$NAME"; R="$W/olmoe3_routing/$HR/merged_$NAME"
-launch() { PYTHONPATH=external/OLMo-core/src python scripts/sparse_experts/olmoe3_beaker_cmd.py --name "$1" --gpus 1 --allocated -- "${@:2}" 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | grep -aoE "beaker.org/ex/[A-Z0-9]+" | head -1 | sed "s|^|$1: |"; }
+launch() { local name=$1; shift; local log=/tmp/claude-0/-root-EMO/c7db74f2-bbe3-4a2c-9d37-93c64250d7c6/scratchpad/launch_$name.log; local u=""
+  for attempt in 1 2 3 4; do
+    PYTHONPATH=external/OLMo-core/src python scripts/sparse_experts/olmoe3_beaker_cmd.py --name "$name" --gpus 1 --allocated -- "$@" > "$log" 2>&1
+    u=$(sed 's/\x1b\[[0-9;]*m//g' "$log" | grep -aoE 'beaker.org/ex/[A-Z0-9]+' | head -1); [ -n "$u" ] && break; sleep 30   # gantry's git check fails with a broken pipe now and then
+  done
+  echo "$name: ${u:-LAUNCH FAILED after 4 attempts}"; }
 launch "$SQN-eval-$NAME-none" python scripts/sparse_experts/olmoe3_routing/extract_routing.py --checkpoint "$M" --instances "$W/olmoe3_routing/sample_8k_20b.npz" --out-dir "$R/none/rank0" --restrict none --batch-size 8 --log-every 100
 launch "$SQN-eval-$NAME-oracle" python scripts/sparse_experts/olmoe3_routing/extract_routing.py --checkpoint "$M" --instances "$W/olmoe3_routing/sample_8k_20b.npz" --out-dir "$R/oracle/rank0" --group-restrict "$W/$SQN/groups.json" --batch-size 8 --log-every 100
 launch "$SQN-eval-$NAME-ppl" python scripts/debug_validation/eval_ppl_validation.py --checkpoints "$M" --out-dir "$W/$SQN/ppl_validation" --batch-size 8

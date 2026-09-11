@@ -6,9 +6,12 @@
 cd "$(git rev-parse --show-toplevel)"; export PATH=/root/.conda/envs/emo/bin:$PATH
 SQN="${SQUARES_NAME:-olmoe3_squares}"; HR="${HELDOUT_DIR:-runs_heldout20b}"; BRUN="${BASELINE_RUN:-olmoe3_275m_emo_20b_1node}"
 S=sparse_experts; W=/weka/oe-training-default/ryanwang/EMO/sparse_experts
-launch() { local name=$1; shift; local log=/tmp/claude-0/-root-EMO/c7db74f2-bbe3-4a2c-9d37-93c64250d7c6/scratchpad/ensure_$name.log
-  PYTHONPATH=external/OLMo-core/src python scripts/sparse_experts/olmoe3_beaker_cmd.py --name "$name" --gpus 1 --allocated -- "$@" > "$log" 2>&1
-  echo "$name: $(sed 's/\x1b\[[0-9;]*m//g' "$log" | grep -aoE 'beaker.org/ex/[A-Z0-9]+' | head -1)"; }
+launch() { local name=$1; shift; local log=/tmp/claude-0/-root-EMO/c7db74f2-bbe3-4a2c-9d37-93c64250d7c6/scratchpad/launch_$name.log; local u=""
+  for attempt in 1 2 3 4; do
+    PYTHONPATH=external/OLMo-core/src python scripts/sparse_experts/olmoe3_beaker_cmd.py --name "$name" --gpus 1 --allocated -- "$@" > "$log" 2>&1
+    u=$(sed 's/\x1b\[[0-9;]*m//g' "$log" | grep -aoE 'beaker.org/ex/[A-Z0-9]+' | head -1); [ -n "$u" ] && break; sleep 30   # gantry's git check fails with a broken pipe now and then
+  done
+  echo "$name: ${u:-LAUNCH FAILED after 4 attempts}"; }
 have() { [ -f "$1/meta.json" ] || [ -f "$1/rank0/DONE" ]; }
 for step in 20000 25000 30000 35000 38148; do
   # merged
