@@ -12,6 +12,56 @@ window.ICSL_POOL111M_GRID={
     "terminal": 0,
     "telemetryAvailable": false
   },
+  "crossWeightDecayPruning": {
+    "enabled": true,
+    "comparisonScope": "same_model_batch_learning_rate_and_evaluation_epoch",
+    "criterion": "higher_weight_decay_strictly_lower_healthy_matched_post_validationExact",
+    "action": "stop_lower_weight_decay_trajectory",
+    "pairs": [
+      {
+        "model": "1b",
+        "batchSequences": 32,
+        "learningRate": "5e-4",
+        "lowerWeightDecay": "1.0",
+        "higherWeightDecay": "3.0"
+      },
+      {
+        "model": "1b",
+        "batchSequences": 64,
+        "learningRate": "1e-3",
+        "lowerWeightDecay": "1.0",
+        "higherWeightDecay": "3.0"
+      },
+      {
+        "model": "474m",
+        "batchSequences": 32,
+        "learningRate": "1e-3",
+        "lowerWeightDecay": "0.3",
+        "higherWeightDecay": "1.0"
+      },
+      {
+        "model": "474m",
+        "batchSequences": 64,
+        "learningRate": "2e-3",
+        "lowerWeightDecay": "0.3",
+        "higherWeightDecay": "1.0"
+      },
+      {
+        "model": "153m",
+        "batchSequences": 32,
+        "learningRate": "1e-3",
+        "lowerWeightDecay": "0.3",
+        "higherWeightDecay": "1.0"
+      },
+      {
+        "model": "153m",
+        "batchSequences": 64,
+        "learningRate": "2e-3",
+        "lowerWeightDecay": "0.3",
+        "higherWeightDecay": "1.0"
+      }
+    ]
+  },
   "jobAllowlist": [
     "01M293GQY5MJQK65953FCDZB6V",
     "01M293GRQERDPDWXZB22JECGKR",
