@@ -3,7 +3,7 @@
 # whichever baseline copy is running: olmoe3_275m_emo_20b or olmoe3_275m_emo_20b_filler) and launch its
 # evaluations (held-out 20B-window CE unrestricted + oracle group routing; v3-small ppl validation).
 #   bash scripts/sparse_experts/olmoe3_squares/baseline_point.sh <i>
-set -euo pipefail
+set -u
 cd "$(git rev-parse --show-toplevel)"
 i=$1; BASE=(20000 25000 30000 35000 38148); step=${BASE[$i]}
 S=sparse_experts; W=/weka/oe-training-default/ryanwang/EMO/sparse_experts

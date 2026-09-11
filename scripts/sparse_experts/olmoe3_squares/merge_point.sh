@@ -3,7 +3,7 @@
 # waiting for the four fixed-step checkpoints, then launch the merged model's evaluations on Beaker
 # (held-out 20B-window CE unrestricted + oracle group routing; v3-small ppl validation).
 #   bash scripts/sparse_experts/olmoe3_squares/merge_point.sh <i>
-set -euo pipefail
+set -u
 cd "$(git rev-parse --show-toplevel)"
 i=$1; BASE=(20000 25000 30000 35000 38148); NAME=match${BASE[$i]}
 S0=(212 1354 2496 3638 4357); S1=(370 2367 4364 6361 7618); S2=(140 893 1647 2401 2875); S3=(205 1314 2422 3530 4228)
