@@ -1,15 +1,15 @@
 {
   "policy": "dense_dclm111m_integrated_producer_eval_v1",
-  "updatedAt": "2026-09-11T23:06:00.000000+00:00",
+  "updatedAt": "2026-09-11T23:40:00.000000+00:00",
   "datasetManifest": "src/olmo_core/data/subsets/0802/dclm_0802_repeated_train_111m.json",
   "scheduling": "allocated",
   "minRuntimeOmitted": false,
   "trajectoryCount": 12,
-  "lastPolledAt": "2026-09-11T23:06:00.000000Z",
+  "lastPolledAt": "2026-09-11T23:40:00.000000Z",
   "liveSummary": {
     "queued": 0,
-    "running": 8,
-    "terminal": 4,
+    "running": 7,
+    "terminal": 5,
     "telemetryAvailable": true,
     "warning": "1B BS32 LR5e-4 WD1.0 exhausted all eight retries with reproducible NaN loss at exact step 403"
   },
@@ -64,7 +64,6 @@
     ]
   },
   "jobAllowlist": [
-    "01M293GRQERDPDWXZB22JECGKR",
     "01M293GT8A8HJNB7H61K3B0P76",
     "01M293GVSD3XJ0J617W0QRW447",
     "01M293GX9M097ZJMVCNN3KA8SF",
@@ -213,20 +212,21 @@
         24
       ],
       "stopOnAdjacentPostNonImprovement": true,
-      "status": "running",
+      "status": "saturated",
       "experiment": "01M293GRKQG4WNN2F8DVMVVNQ1",
       "job": "01M293GRQERDPDWXZB22JECGKR",
-      "resolvedCheckpointEpochs": [2, 4, 6, 8, 10, 12, 14, 16],
-      "resolvedPostEpochs": [4, 8, 12, 16],
+      "resolvedCheckpointEpochs": [2, 4, 6, 8, 10, 12, 14, 16, 18, 20],
+      "resolvedPostEpochs": [4, 8, 12, 16, 20],
       "postDecayResults": {
         "4": {"status": "complete", "validationExact": 4.14644},
         "8": {"status": "complete", "validationExact": 4.07941},
         "12": {"status": "complete", "validationExact": 4.07021},
-        "16": {"status": "complete", "validationExact": 4.06879}
+        "16": {"status": "complete", "validationExact": 4.06879},
+        "20": {"status": "complete", "validationExact": 4.07484}
       },
       "currentEpoch": 20,
-      "currentPhase": "producer",
-      "expectedEta": "2026-09-11T23:14:00Z",
+      "currentPhase": "terminal",
+      "terminalReason": "adjacent POST non-improvement at E20 versus E16",
       "revision": "4f29bf3a76f246876cc5bc57e54e86caf6629731",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm111m/bs32_dr_wt_embwd_lr5e-4_wd3.0",
       "minRuntimeSeconds": 21600
@@ -313,14 +313,15 @@
       "status": "running",
       "experiment": "01M293GT4S5J5V6XAF9HHDT249",
       "job": "01M293GT8A8HJNB7H61K3B0P76",
-      "resolvedCheckpointEpochs": [2, 4, 6],
-      "resolvedPostEpochs": [4],
+      "resolvedCheckpointEpochs": [2, 4, 6, 8, 10],
+      "resolvedPostEpochs": [4, 8],
       "postDecayResults": {
-        "4": {"status": "complete", "validationExact": 4.31064}
+        "4": {"status": "complete", "validationExact": 4.31064},
+        "8": {"status": "complete", "validationExact": 4.15319}
       },
-      "currentEpoch": 8,
+      "currentEpoch": 12,
       "currentPhase": "producer",
-      "expectedEta": "2026-09-11T23:13:00Z",
+      "expectedEta": "2026-09-11T23:40:00Z",
       "revision": "4f29bf3a76f246876cc5bc57e54e86caf6629731",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm111m/bs64_dr_wt_embwd_lr1e-3_wd3.0",
       "minRuntimeSeconds": 21600
@@ -394,14 +395,15 @@
       "status": "running",
       "experiment": "01M293GVNRR123W9AZJMXB74VX",
       "job": "01M293GVSD3XJ0J617W0QRW447",
-      "resolvedCheckpointEpochs": [4, 8, 12],
-      "resolvedPostEpochs": [8],
+      "resolvedCheckpointEpochs": [4, 8, 12, 16],
+      "resolvedPostEpochs": [8, 16],
       "postDecayResults": {
-        "8": {"status": "complete", "validationExact": 3.73274}
+        "8": {"status": "complete", "validationExact": 3.73274},
+        "16": {"status": "complete", "validationExact": 3.66639}
       },
-      "currentEpoch": 16,
+      "currentEpoch": 20,
       "currentPhase": "producer",
-      "expectedEta": "2026-09-11T23:08:00Z",
+      "expectedEta": "2026-09-11T23:45:00Z",
       "revision": "4f29bf3a76f246876cc5bc57e54e86caf6629731",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm111m/bs32_dr_wt_embwd_lr1e-3_wd1.0",
       "minRuntimeSeconds": 23400
@@ -475,15 +477,16 @@
       "status": "running",
       "experiment": "01M293GX61H7EDQV8BK2DRBBJ2",
       "job": "01M293GX9M097ZJMVCNN3KA8SF",
-      "resolvedCheckpointEpochs": [4, 8, 12, 16, 20],
-      "resolvedPostEpochs": [8, 16],
+      "resolvedCheckpointEpochs": [4, 8, 12, 16, 20, 24, 28],
+      "resolvedPostEpochs": [8, 16, 24],
       "postDecayResults": {
         "8": {"status": "complete", "validationExact": 3.79271},
-        "16": {"status": "complete", "validationExact": 3.68683}
+        "16": {"status": "complete", "validationExact": 3.68683},
+        "24": {"status": "complete", "validationExact": 3.67063}
       },
-      "currentEpoch": 24,
+      "currentEpoch": 32,
       "currentPhase": "producer",
-      "expectedEta": "2026-09-11T23:12:00Z",
+      "expectedEta": "2026-09-11T23:50:00Z",
       "revision": "4f29bf3a76f246876cc5bc57e54e86caf6629731",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm111m/bs64_dr_wt_embwd_lr2e-3_wd1.0",
       "minRuntimeSeconds": 14400
@@ -528,12 +531,14 @@
       "status": "running",
       "experiment": "01M293GY098DADZ2FHGK3QTWCY",
       "job": "01M293GY41MSMEQMCFM4CH0W8T",
-      "resolvedCheckpointEpochs": [],
-      "resolvedPostEpochs": [],
-      "postDecayResults": {},
-      "currentEpoch": 8,
+      "resolvedCheckpointEpochs": [8, 16],
+      "resolvedPostEpochs": [16],
+      "postDecayResults": {
+        "16": {"status": "complete", "validationExact": 3.7701}
+      },
+      "currentEpoch": 24,
       "currentPhase": "producer",
-      "expectedEta": "2026-09-11T23:07:00Z",
+      "expectedEta": "2026-09-11T23:54:00Z",
       "revision": "4f29bf3a76f246876cc5bc57e54e86caf6629731",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm111m/bs32_dr_wt_embwd_lr1e-3_wd0.3",
       "minRuntimeSeconds": 28800
@@ -578,12 +583,14 @@
       "status": "running",
       "experiment": "01M293GYR2MV1ZXQC3GXGMC70V",
       "job": "01M293GYVXPQF8K7SB27834CZ6",
-      "resolvedCheckpointEpochs": [],
-      "resolvedPostEpochs": [],
-      "postDecayResults": {},
-      "currentEpoch": 8,
+      "resolvedCheckpointEpochs": [8, 16],
+      "resolvedPostEpochs": [16],
+      "postDecayResults": {
+        "16": {"status": "complete", "validationExact": 3.94581}
+      },
+      "currentEpoch": 24,
       "currentPhase": "producer",
-      "expectedEta": "2026-09-11T23:07:00Z",
+      "expectedEta": "2026-09-11T23:55:00Z",
       "revision": "4f29bf3a76f246876cc5bc57e54e86caf6629731",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm111m/bs32_dr_wt_embwd_lr1e-3_wd1.0",
       "minRuntimeSeconds": 28800
@@ -628,12 +635,14 @@
       "status": "running",
       "experiment": "01M293GZFRV32HRHN9W6QKDMR0",
       "job": "01M293GZM0MSQT2YJ5EB7HBEW2",
-      "resolvedCheckpointEpochs": [8],
-      "resolvedPostEpochs": [],
-      "postDecayResults": {},
-      "currentEpoch": 16,
+      "resolvedCheckpointEpochs": [8, 16, 24],
+      "resolvedPostEpochs": [16],
+      "postDecayResults": {
+        "16": {"status": "complete", "validationExact": 3.77252}
+      },
+      "currentEpoch": 32,
       "currentPhase": "producer",
-      "expectedEta": "2026-09-11T23:14:00Z",
+      "expectedEta": "2026-09-11T23:45:00Z",
       "revision": "4f29bf3a76f246876cc5bc57e54e86caf6629731",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm111m/bs64_dr_wt_embwd_lr2e-3_wd0.3",
       "minRuntimeSeconds": 23400
@@ -678,12 +687,14 @@
       "status": "running",
       "experiment": "01M293H08JR4PFDC8GR31D2GAY",
       "job": "01M293H0C6Y8NHJZ4D55E2SYF8",
-      "resolvedCheckpointEpochs": [8],
-      "resolvedPostEpochs": [],
-      "postDecayResults": {},
-      "currentEpoch": 16,
+      "resolvedCheckpointEpochs": [8, 16, 24],
+      "resolvedPostEpochs": [16],
+      "postDecayResults": {
+        "16": {"status": "complete", "validationExact": 3.94414}
+      },
+      "currentEpoch": 32,
       "currentPhase": "producer",
-      "expectedEta": "2026-09-11T23:14:00Z",
+      "expectedEta": "2026-09-11T23:49:00Z",
       "revision": "4f29bf3a76f246876cc5bc57e54e86caf6629731",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm111m/bs64_dr_wt_embwd_lr2e-3_wd1.0",
       "minRuntimeSeconds": 23400
