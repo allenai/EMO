@@ -286,9 +286,20 @@ HELD = ROOT / "sparse_experts/olmoe3_routing/runs_heldout20b"; PPL = ROOT / "spa
 MATCH = [(20000, "match20000"), (25000, "match25000"), (30000, "match30000"), (35000, "match35000"), (38148, "match38148")]
 
 
+ROBUST_NOTE = []
+
+
 def _ce(d):
+    """mean CE of a held-out pass; if non-finite (a few documents blew up), fall back to the token-weighted CE over
+    documents with finite CE < 10 and record the note (the std baseline finetune hit this: 31 of 56,547 docs)."""
     f = d / "meta.json"
-    return json.load(open(f))["mean_ce"] if f.exists() else None
+    if not f.exists(): return None
+    ce = json.load(open(f))["mean_ce"]
+    if ce == ce and ce < 50: return ce
+    import numpy as np
+    s = np.load(d / "doc_stats.npz"); dc = s["ce_sum"] / np.maximum(s["ce_len"], 1); ok = np.isfinite(dc) & (dc < 10)
+    ROBUST_NOTE.append(f"{d.parent.name}/{d.name}: {int((~ok).sum())} of {len(dc):,} documents non-finite or CE &gt; 10; number shown excludes them ({100*s['ce_len'][ok].sum()/s['ce_len'].sum():.2f}% of tokens kept)")
+    return float(s["ce_sum"][ok].sum() / s["ce_len"][ok].sum())
 
 
 def _ppl(f):
@@ -357,6 +368,7 @@ def squares_results(HELD=HELD, PPL=PPL, SQO=SQO, start="emo_step19074", start_pp
             "that is the routing the squares give up." if (ref_none and ref_orc) else "Reference passes pending.")
     if not have: take += " Baseline and merged evaluations are pending."
     else: take += " " + take_main
+    if ROBUST_NOTE: take += " <b>Caveat:</b> " + "; ".join(ROBUST_NOTE) + "."; ROBUST_NOTE.clear()
     out = section(f"Stages 2&ndash;4: merged squares vs continued baseline{label}", intro, tbl, take)
     # piecewise diagnostic: each held-out document scored by its own square, no merge
     pw = {name: json.load(open(SQO / f"piecewise_{name}.json")) for _, name in MATCH if (SQO / f"piecewise_{name}.json").exists() and json.load(open(SQO / f"piecewise_{name}.json")).get("piecewise")}
