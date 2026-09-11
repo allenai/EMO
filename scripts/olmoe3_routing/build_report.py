@@ -256,8 +256,53 @@ def build_q3():
             f"selections a sub-model's documents make are inside its own expert group.")
     else:
         body += card("warn", "Stage 1", "<p>Assignment pass running.</p>")
-    body += card("warn", "Stages 2&ndash;4", "<p>Sub-model training, baseline continuation and merges: pending.</p>")
+    body += squares_results()
     return body
+
+
+HELD = ROOT / "sparse_experts/olmoe3_routing/runs_heldout20b"; PPL = ROOT / "sparse_experts/olmoe3_squares/ppl_validation"
+MATCH = [(20000, "match20000"), (25000, "match25000"), (30000, "match30000"), (35000, "match35000"), (38148, "match38148")]
+
+
+def _ce(d):
+    f = d / "meta.json"
+    return json.load(open(f))["mean_ce"] if f.exists() else None
+
+
+def _ppl(f):
+    if not f.exists(): return None
+    d = json.load(open(f))["per_set"]; return sum(v["CE loss"] for v in d.values()) / len(d)
+
+
+def squares_results():
+    ref_none, ref_orc = _ce(HELD / "emo_step19074/none"), _ce(HELD / "emo_step19074/oracle")
+    ref_ppl = _ppl(ROOT / "claude_outputs/debug_validation/ppl_validation/olmoe3_275m_emo_10b/step19074.json")
+    rows = [["start (step 19074, full model)", "&mdash;", f(ref_none), f(ref_orc), f(ref_ppl), "&mdash;", "&mdash;", "&mdash;"]]
+    have = False
+    for step, name in MATCH:
+        b_none, b_orc = _ce(HELD / f"baseline_step{step}/none"), _ce(HELD / f"baseline_step{step}/oracle")
+        b_ppl = next((_ppl(PPL / run / f"step{step}.json") for run in ("olmoe3_275m_emo_20b", "olmoe3_275m_emo_20b_filler") if (PPL / run / f"step{step}.json").exists()), None)
+        m_none, m_orc = _ce(HELD / f"merged_{name}/none"), _ce(HELD / f"merged_{name}/oracle")
+        m_ppl = _ppl(PPL / "merged" / f"{name}.json")
+        if any(x is not None for x in (b_none, m_none, b_ppl, m_ppl)): have = True
+        frac = (step - 19074) / 19074
+        rows.append([f"baseline step {step:,} ({100*frac:.0f}% of the 10B)", "baseline", f(b_none), f(b_orc), f(b_ppl), "", "", ""])
+        rows.append([f"merged squares @ {100*frac:.0f}%", "merged", f(m_none), f(m_orc), f(m_ppl),
+                     f"{m_none-b_none:+.3f}" if (m_none is not None and b_none is not None) else "&mdash;",
+                     f"{m_orc-b_orc:+.3f}" if (m_orc is not None and b_orc is not None) else "&mdash;",
+                     f"{m_ppl-b_ppl:+.3f}" if (m_ppl is not None and b_ppl is not None) else "&mdash;"])
+    tbl = table(["checkpoint", "model", "held-out CE (20B window, 65M tok)", "held-out CE, oracle group routing", "v3-small ppl sets, mean CE", "&Delta; CE vs baseline", "&Delta; oracle", "&Delta; ppl"], rows)
+    intro = ("<b>Held-out CE</b>: mean token cross-entropy of 7,991 unseen instances (65.5M tokens) sampled from the 20B&ndash;30B window of the "
+             "training stream, which neither the baseline nor the sub-models see. <b>Oracle group routing</b>: the same pass, but every document is "
+             "restricted in layers 2&ndash;9 to the experts of the one group that receives most of its own unrestricted routing (the sub-model that "
+             "would have served it); on the start model this measures the cost of the partition alone. <b>v3-small ppl sets</b>: OLMo-core's 11 "
+             "validation sets (c4, dolma books / common-crawl / pes2o / reddit / stack / wiki, ice, m2d2, pile, wikitext), mean CE over sets. "
+             "Baseline = the full model continued from step 19,074 on the same 10B tokens; merged = the four sub-models at the same fraction of "
+             "progress, experts concatenated and shared parameters averaged with token-share weights.")
+    take = (f"Restricting the start model to one group per document costs {ref_orc-ref_none:+.3f} CE before any training ({f(ref_none)} &rarr; {f(ref_orc)}): "
+            "that is the routing the squares give up." if (ref_none and ref_orc) else "Reference passes pending.")
+    if not have: take += " Baseline and merged evaluations are pending."
+    return section("Stages 2&ndash;4: merged squares vs continued baseline", intro, tbl, take)
 
 
 def build_next():
