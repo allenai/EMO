@@ -313,8 +313,23 @@ def squares_results(HELD=HELD, PPL=PPL, SQO=SQO, start="emo_step19074", start_pp
                      f"{m_none-b_none:+.3f}" if (m_none is not None and b_none is not None) else "&mdash;",
                      f"{m_orc-b_orc:+.3f}" if (m_orc is not None and b_orc is not None) else "&mdash;",
                      f"{m_ppl-b_ppl:+.3f}" if (m_ppl is not None and b_ppl is not None) else "&mdash;"])
+    # post-merge finetuning: +0.5B tokens (steps 38548-39502) for the 100% merge and, for fairness, for the baseline
+    ft = {tag: (_ce(HELD / f"{tag}/none"), _ce(HELD / f"{tag}/oracle")) for tag in ("baseline_ft", "merged_ft")}
+    ppl_ft = {}
+    for r in PPL.glob("*_ft"):
+        if (r / "step39502.json").exists(): ppl_ft["merged_ft" if "merged" in r.name else "baseline_ft"] = _ppl(r / "step39502.json")
+    b_ft, m_ft = ft["baseline_ft"], ft["merged_ft"]
+    if any(x is not None for x in b_ft[:2] + m_ft[:2]) or ppl_ft:
+        rows.append(["baseline + 0.5B finetune (steps 38548&ndash;39502)", "baseline", f(b_ft[0]), f(b_ft[1]), f(ppl_ft.get("baseline_ft")), "", "", ""])
+        rows.append(["merged @ 100% + 0.5B finetune (Adam state merged, same tokens)", "merged", f(m_ft[0]), f(m_ft[1]), f(ppl_ft.get("merged_ft")),
+                     f"{m_ft[0]-b_ft[0]:+.3f}" if (m_ft[0] is not None and b_ft[0] is not None) else "&mdash;",
+                     f"{m_ft[1]-b_ft[1]:+.3f}" if (m_ft[1] is not None and b_ft[1] is not None) else "&mdash;",
+                     f"{ppl_ft['merged_ft']-ppl_ft['baseline_ft']:+.3f}" if ("merged_ft" in ppl_ft and "baseline_ft" in ppl_ft) else "&mdash;"])
     tbl = table(["checkpoint", "model", "held-out CE (20B window, 65M tok)", "held-out CE, oracle group routing", "v3-small ppl sets, mean CE", "&Delta; CE vs baseline", "&Delta; oracle", "&Delta; ppl"], rows)
-    intro = ("<b>Held-out CE</b>: mean token cross-entropy of 7,991 unseen instances (65.5M tokens) sampled from the 20B&ndash;30B window of the "
+    intro = ("<b>Post-merge finetuning</b> rows (when present): the 100% merged model, with the four squares' Adam moments merged the same way as the weights, "
+             "trained for 0.5B more tokens (steps 38,548&ndash;39,502 of the training stream, past the held-out window) at the same constant LR; the baseline "
+             "is continued on exactly the same tokens so the comparison stays at equal data. "
+             "<b>Held-out CE</b>: mean token cross-entropy of 7,991 unseen instances (65.5M tokens) sampled from the 20B&ndash;30B window of the "
              "training stream, which neither the baseline nor the sub-models see. <b>Oracle group routing</b>: the same pass, but every document is "
              "restricted in layers 2&ndash;9 to the experts of the one group that receives most of its own unrestricted routing (the sub-model that "
              "would have served it); on the start model this measures the cost of the partition alone. <b>v3-small ppl sets</b>: OLMo-core's 11 "
