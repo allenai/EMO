@@ -99,6 +99,46 @@ def make_pool_masked_router_class():
     return PoolMaskedRouter
 
 
+def make_group_masked_router_class():
+    """Oracle group routing (olmoe3_squares): each document may only use the experts of ONE
+    block-group, chosen per document from the model's own unrestricted routing (the group receiving
+    most of its layer 2-9 selections). `allowed` (k, E) bool per layer; `doc_group` (B, n_seg) long
+    is set before every forward from the segment -> group assignment of the current batch."""
+    import torch.nn.functional as F
+    from olmo_core.nn.moe.v2.router import MoERouterV2
+    from olmo_core.ops import moe as ops
+
+    class GroupMaskedRouter(MoERouterV2):
+        allowed: Optional[torch.Tensor] = None   # (k, E) bool
+        doc_group: Optional[torch.Tensor] = None  # (B, n_seg) long
+        requires_segment_ids = True
+        eos_token_id = EOS
+
+        def forward(self, x, scores_only, *, loss_div_factor=None, segment_ids=None):
+            if self.allowed is None or self.doc_group is None or scores_only:
+                return MoERouterV2.forward(self, x, scores_only, loss_div_factor=loss_div_factor)
+            assert segment_ids is not None and segment_ids.shape == x.shape[:2]
+            logits = self.get_expert_logits(x.float()).float()
+            scores = logits.softmax(dim=-1)
+            g = torch.gather(self.doc_group, 1, segment_ids.long())          # (B, S)
+            keep = self.allowed[g]                                             # (B, S, E)
+            selection_scores = scores.masked_fill(~keep, float("-inf"))
+            _, expert_indices = selection_scores.topk(self.top_k, dim=-1)
+            expert_weights = scores.gather(-1, expert_indices)
+            if self.normalize_expert_weights is not None:
+                expert_weights = F.normalize(expert_weights, p=self.normalize_expert_weights, dim=-1)
+            if self.restore_weight_scale:
+                expert_weights = expert_weights * self.top_k
+            if self.expert_weight_scale is not None:
+                expert_weights = expert_weights * self.expert_weight_scale
+            with torch.no_grad():
+                batched_counts = ops.batched_histc(expert_indices, self.num_experts).sum(dim=1)
+                counts = batched_counts.sum(dim=0)
+            return expert_weights, expert_indices, counts, (scores, logits, counts, batched_counts, loss_div_factor)
+
+    return GroupMaskedRouter
+
+
 def parse_restrict(spec: str) -> Tuple[List[int], Optional[int]]:
     if spec == "none":
         return [], None
@@ -305,9 +345,28 @@ def run(args):
     model, routers, mcfg = build_model(args.checkpoint, device, args.attn_backend, args.use_cute_kda)
     E = mcfg["block"]["routed_experts"]["num_experts"]; k = mcfg["block"]["routed_experts_router"]["top_k"]
     L = len(MOE_LAYERS)
-    kinds = apply_restriction(routers, layers, pool, E)
+    group_cfg = json.load(open(args.group_restrict)) if args.group_restrict else None
+    if group_cfg:
+        assert args.restrict == "none", "--group-restrict is exclusive with --restrict"
+        GroupMasked = make_group_masked_router_class(); kinds = {}
+        g_part = [int(l) for l in group_cfg["partitioned_layers"]]
+        for l, r in routers.items():
+            r.__class__ = GroupMasked; r.doc_group = None
+            if l in g_part:
+                allowed = torch.zeros(group_cfg["k"], E, dtype=torch.bool)
+                for gi in range(group_cfg["k"]): allowed[gi, group_cfg["groups"][str(l)][gi]] = True
+                r.allowed = allowed.to(device); kinds[l] = "group-masked"
+            else:
+                r.allowed = None; kinds[l] = "free"
+        e2g = torch.full((L, E), -1, dtype=torch.long)
+        for l in g_part:
+            for gi in range(group_cfg["k"]): e2g[MOE_LAYERS.index(l), group_cfg["groups"][str(l)][gi]] = gi
+        e2g = e2g.to(device); g_pl = torch.tensor([MOE_LAYERS.index(l) for l in g_part], device=device)
+    else:
+        kinds = apply_restriction(routers, layers, pool, E)
     log("routers: " + ", ".join(f"L{l}:{kinds[l]}" for l in MOE_LAYERS))
     for l, r in routers.items():  # read-back check of the effective per-layer pool
+        if group_cfg: break
         eff = r.emo.eval_pool_size() if hasattr(r, "emo") and r.emo is not None else (r.pool or E)
         want = pool if l in layers else E
         assert eff == want, f"layer {l}: effective pool {eff} != wanted {want}"
@@ -331,6 +390,21 @@ def run(args):
         for b0 in range(0, N, B):
             ids = torch.from_numpy(tokens[b0 : b0 + B].astype(np.int64)).to(device)
             labels = get_labels({"input_ids": ids})
+            if group_cfg:
+                # pass 1 (unrestricted): which group gets most of each document's layer 2-9 selections
+                for r in routers.values(): r.doc_group = None
+                model(ids, labels=labels, loss_reduction="none", return_logits=False)
+                idx1 = torch.stack([captured[l][0] for l in MOE_LAYERS], dim=2).long()      # (B, S, L, k)
+                seg = torch.from_numpy(doc_of[b0 : b0 + B] - doc_of[b0 : b0 + B].min(axis=1, keepdims=True)).to(device)  # local segment ids
+                gsel = torch.gather(e2g[g_pl][None, None].expand(idx1.shape[0], S, -1, -1), 3, idx1[:, :, g_pl])  # (B,S,PL,k)
+                n_seg = int(seg.max().item()) + 1
+                mass = torch.zeros(idx1.shape[0], n_seg, group_cfg["k"], device=device)
+                oh = torch.nn.functional.one_hot(gsel, group_cfg["k"]).sum((2, 3)).float()   # (B, S, k)
+                mass.scatter_add_(1, seg[:, :, None].expand(-1, -1, group_cfg["k"]), oh)
+                doc_group = mass.argmax(2)                                                     # (B, n_seg)
+                for r in routers.values(): r.doc_group = doc_group
+                if b0 == 0:
+                    log(f"oracle groups, first batch: {torch.bincount(doc_group.reshape(-1), minlength=group_cfg['k']).tolist()} segments per group")
             out = model(ids, labels=labels, loss_reduction="none", return_logits=False)
             loss = out.ce_loss if hasattr(out, "ce_loss") else out  # LMOutputWithLoss -> per-token CE (B, S)
             assert loss.shape == ids.shape, loss.shape
@@ -365,7 +439,7 @@ def run(args):
     acc.save(args.out_dir)
     if raw is not None: raw.flush()
     np.savez(args.out_dir / "docs.npz", doc_inst=doc_inst, sel=sel, **meta)
-    json.dump({"checkpoint": str(args.checkpoint), "restrict": args.restrict, "layers": layers, "pool": pool,
+    json.dump({"checkpoint": str(args.checkpoint), "restrict": args.restrict, "group_restrict": str(args.group_restrict) if args.group_restrict else None, "layers": layers, "pool": pool,
                "kinds": kinds, "n_instances": int(N), "n_tokens": int(N * S), "n_docs": n_doc,
                "mean_ce": float(acc.doc_ce.sum() / acc.doc_ce_len.sum()), "E": E, "top_k": k,
                "rank": args.rank, "world": args.world, "raw_instances": raw_n,
@@ -447,6 +521,7 @@ def main():
     ap.add_argument("--instances", type=Path)
     ap.add_argument("--out-dir", type=Path)
     ap.add_argument("--restrict", default="none")
+    ap.add_argument("--group-restrict", type=Path, default=None, help="olmoe3_squares groups.json: oracle group routing (two passes per batch)")
     ap.add_argument("--max-instances", type=int, default=0)
     ap.add_argument("--batch-size", type=int, default=8)
     ap.add_argument("--rank", type=int, default=0)
