@@ -35,10 +35,21 @@ context.window.ICSL_HISTORICAL_474M_DATA = context.window.ICSL_REPORT_DATA;
 run("data/wsd_batch_size_153m.js");
 context.window.ICSL_HISTORICAL_153M_DATA = context.window.ICSL_REPORT_DATA;
 run("data/wsd_checkpoint_producer_grid.js");
+run("data/wsd_pool111m_grid.js");
 run("checkpoint_producer_grid_report.js");
 
 const current = context.window.ICSL_CHECKPOINT_PRODUCER_GRID;
 const expected = new Map();
+const pool111 = context.window.ICSL_POOL111M_GRID;
+for (const run of pool111.trajectories || []) {
+  for (const [epochText, result] of Object.entries(run.postDecayResults || {})) {
+    if (result?.status !== "complete") continue;
+    const value = Number(result.validationExact ?? result.validation);
+    if (!Number.isFinite(value)) continue;
+    const key = `${run.model}:dclm111m:${run.batchSequences}:${epochText}`;
+    expected.set(key, Math.min(expected.get(key) ?? Infinity, value));
+  }
+}
 for (const evaluator of current.smallEvaluators || []) {
   const result = evaluator.postDecayResult;
   if (evaluator.status !== "complete" || result?.status !== "complete") continue;
@@ -58,20 +69,26 @@ for (const run of current.dclm333mIntegratedRuns || []) {
 }
 
 const columnIndex = new Map([
-  ["1b:dclm333m:32", 0],
-  ["1b:dclm333m:64", 1],
-  ["474m:dclm333m:32", 6],
-  ["474m:dclm333m:64", 7],
-  ["474m:dclm333m:128", 8],
-  ["474m:dclm3b:128", 11],
-  ["474m:dclm3b:256", 12],
-  ["474m:dclm3b:512", 13],
-  ["153m:dclm333m:32", 14],
-  ["153m:dclm333m:64", 15],
-  ["153m:dclm333m:128", 16],
-  ["153m:dclm3b:128", 19],
-  ["153m:dclm3b:256", 20],
-  ["153m:dclm3b:512", 21],
+  ["1b:dclm111m:32", 0],
+  ["1b:dclm111m:64", 1],
+  ["1b:dclm333m:32", 2],
+  ["1b:dclm333m:64", 3],
+  ["474m:dclm111m:32", 8],
+  ["474m:dclm111m:64", 9],
+  ["474m:dclm333m:32", 10],
+  ["474m:dclm333m:64", 11],
+  ["474m:dclm333m:128", 12],
+  ["474m:dclm3b:128", 15],
+  ["474m:dclm3b:256", 16],
+  ["474m:dclm3b:512", 17],
+  ["153m:dclm111m:32", 18],
+  ["153m:dclm111m:64", 19],
+  ["153m:dclm333m:32", 20],
+  ["153m:dclm333m:64", 21],
+  ["153m:dclm333m:128", 22],
+  ["153m:dclm3b:128", 25],
+  ["153m:dclm3b:256", 26],
+  ["153m:dclm3b:512", 27],
 ]);
 const rows = new Map();
 for (const match of rendered.get("validation-summary").matchAll(/<tr><td>E([0-9,]+)<\/td>(.*?)<\/tr>/g)) {
@@ -173,13 +190,31 @@ for (const run of current.dclm333mIntegratedRuns || []) {
     throw new Error(`coordinate grid omits active Pool-333M state for ${run.id}`);
   }
 }
+for (const run of pool111.trajectories || []) {
+  if (!["submitted", "queued", "scheduled", "running"].includes(run.status)) continue;
+  const model = run.model === "1b" ? "1B" : run.model === "474m" ? "474M" : "153M";
+  const epoch = run.currentEpoch ?? run.retainedCheckpointEpochs?.[0];
+  const label = `${model} · Pool-111M · BS${run.batchSequences}`;
+  const rowPattern = new RegExp(
+    `<tr><td>E${epoch}<\\/td><td>${label.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")}<\\/td>(.*?)<\\/tr>`,
+  );
+  const row = grid.match(rowPattern)?.[1];
+  const queued = ["submitted", "queued", "scheduled"].includes(run.status);
+  const expectedState = run.currentPhase === "post"
+    ? (queued ? "POST queued" : "POST running")
+    : (queued ? "producer queued" : "producer running");
+  if (!row || !row.includes(`WD ${run.weightDecay})`) || !row.includes(expectedState)) {
+    throw new Error(`coordinate grid omits active Pool-111M state for ${run.id}`);
+  }
+}
 
 const html = fs.readFileSync(path.join(reportRoot, "wsd_checkpoint_producer_grid.html"), "utf8");
-if (!html.includes('<th colspan="6" class="model-start">1B</th>') ||
-    !html.includes('<th colspan="8" class="model-start">474M</th>') ||
-    !html.includes('<th colspan="8" class="model-start">153M</th>') ||
+if (!html.includes('<th colspan="8" class="model-start">1B</th>') ||
+    !html.includes('<th colspan="10" class="model-start">474M</th>') ||
+    !html.includes('<th colspan="10" class="model-start">153M</th>') ||
+    (html.match(/Pool-111M/g) || []).length !== 3 ||
     (html.match(/Pool-333M/g) || []).length !== 3) {
-  throw new Error("Pool-333M summary header topology is stale");
+  throw new Error("Pool-111M/333M summary header topology is stale");
 }
 
 console.log(`validated rendered checkpoint report with ${expected.size} current summary cells`);
