@@ -21,6 +21,10 @@ import run_small_dense_dr_wt_embedwd_chain as small
 import run_small_dense_saturation_chain as common
 
 POLICY = "dense_dclm333m_integrated_producer_eval_v1"
+POOL_SLUG = "dclm333m"
+POOL_DISPLAY_NAME = "DCLM-333M"
+MARKER_PREFIX = "DENSE_DCLM333M"
+STATE_DIR_NAME = ".dclm333m_integrated_producer_eval_v1"
 TRAINING_SCRIPT = "src/scripts/train/olmo2-1B.py"
 DATA_BASE_DIR = Path("/weka/oe-training-default/ai2-llm")
 OUTPUT_ROOT = Path("/weka/oe-training-default/sewonm/icsl/models")
@@ -35,6 +39,12 @@ EXPECTED_DATASET_MANIFEST = Path(
 EXPECTED_MATERIALIZED_PATH = (
     "../sewonm/icsl/data/dclm_0802_nested_333m_from_1b/dclm_0802_repeated_train_333m_uint32.npy"
 )
+EXPECTED_BASE_TOKENS = 1_000_000_000
+EXPECTED_BASE_MANIFEST = Path(
+    "src/olmo_core/data/subsets/0802/dclm_0802_repeated_train_1b.json"
+)
+EXPECTED_COORDINATE_COUNT = 16
+EXPECTED_MODEL_COORDINATE_COUNTS = {"1b": 3, "474m": 7, "153m": 6}
 
 MODEL_POLICIES: dict[str, dict[str, Any]] = {
     "1b": {
@@ -122,7 +132,7 @@ def gpu_count(item: dict[str, Any]) -> int:
 def expected_output(item: dict[str, Any]) -> Path:
     return (
         OUTPUT_ROOT
-        / f"dense_{item['model']}_dclm333m"
+        / f"dense_{item['model']}_{POOL_SLUG}"
         / (
             f"bs{item['batchSequences']}_dr_wt_embwd_"
             f"lr{item['learningRate']}_wd{item['weightDecay']}"
@@ -135,33 +145,31 @@ def validate_dataset_manifest(path: Path, *, check_artifacts: bool = False) -> d
     selection = value.get("selection", {})
     audit = value.get("nestedness_audit", {})
     if value.get("format") != "olmo-token-subset-v1":
-        raise ValueError("DCLM-333M manifest has the wrong format")
+        raise ValueError(f"{POOL_DISPLAY_NAME} manifest has the wrong format")
     if int(selection.get("requested_tokens", 0)) != POOL_TOKENS:
-        raise ValueError("DCLM-333M manifest has the wrong requested-token count")
+        raise ValueError(f"{POOL_DISPLAY_NAME} manifest has the wrong requested-token count")
     if selection.get("method") != "global-sha256-document-order-prefix":
-        raise ValueError("DCLM-333M must retain the Pool-1B global document order prefix")
+        raise ValueError(f"{POOL_DISPLAY_NAME} must retain the global document order prefix")
     if (
         selection.get("domain") != "dclm-train-repeated-sample-v1"
         or int(selection.get("seed", -1)) != 1
     ):
-        raise ValueError("DCLM-333M selection domain/seed does not match Pool-1B")
+        raise ValueError(f"{POOL_DISPLAY_NAME} selection domain/seed is invalid")
     if value.get("materialized", {}).get("path") != EXPECTED_MATERIALIZED_PATH:
-        raise ValueError("DCLM-333M materialized path has the wrong directory semantics")
-    if value.get("source", {}).get("nested_base_manifest") != str(
-        Path("src/olmo_core/data/subsets/0802/dclm_0802_repeated_train_1b.json")
-    ):
-        raise ValueError("DCLM-333M manifest has the wrong Pool-1B provenance pointer")
+        raise ValueError(f"{POOL_DISPLAY_NAME} materialized path has the wrong semantics")
+    if value.get("source", {}).get("nested_base_manifest") != str(EXPECTED_BASE_MANIFEST):
+        raise ValueError(f"{POOL_DISPLAY_NAME} manifest has the wrong base provenance pointer")
     base_manifest = Path(str(value["source"]["nested_base_manifest"]))
     base_digest = hashlib.sha256(base_manifest.read_bytes()).hexdigest()
     if base_digest != value["source"].get("nested_base_manifest_sha256"):
-        raise ValueError("DCLM-333M Pool-1B provenance hash does not match")
+        raise ValueError(f"{POOL_DISPLAY_NAME} base provenance hash does not match")
     entries_digest = hashlib.sha256(
         json.dumps(value.get("entries"), sort_keys=True, separators=(",", ":")).encode()
     ).hexdigest()
     if entries_digest != value.get("entries_sha256"):
-        raise ValueError("DCLM-333M manifest entry checksum mismatch")
+        raise ValueError(f"{POOL_DISPLAY_NAME} manifest entry checksum mismatch")
     if audit.get("passed") is not True:
-        raise ValueError("DCLM-333M nestedness audit did not pass")
+        raise ValueError(f"{POOL_DISPLAY_NAME} nestedness audit did not pass")
     required_audit = (
         "selection_is_exact_leading_ledger_prefix",
         "all_selected_documents_are_in_base",
@@ -169,13 +177,13 @@ def validate_dataset_manifest(path: Path, *, check_artifacts: bool = False) -> d
         "boundary_is_strictly_before_base_boundary",
     )
     if not all(audit.get(key) is True for key in required_audit):
-        raise ValueError("DCLM-333M nestedness audit is incomplete")
-    if int(audit.get("base_requested_tokens", 0)) != 1_000_000_000:
-        raise ValueError("DCLM-333M base is not the sealed Pool-1B")
+        raise ValueError(f"{POOL_DISPLAY_NAME} nestedness audit is incomplete")
+    if int(audit.get("base_requested_tokens", 0)) != EXPECTED_BASE_TOKENS:
+        raise ValueError(f"{POOL_DISPLAY_NAME} has the wrong sealed base pool")
     if int(audit.get("selected_document_intersection_with_base", -1)) != int(
         selection.get("selected_documents", -2)
     ):
-        raise ValueError("DCLM-333M selected-document intersection is incomplete")
+        raise ValueError(f"{POOL_DISPLAY_NAME} selected-document intersection is incomplete")
     if check_artifacts:
         materialized = value["materialized"]
         artifacts = {
@@ -185,10 +193,10 @@ def validate_dataset_manifest(path: Path, *, check_artifacts: bool = False) -> d
         }
         missing = [f"{name}:{path}" for name, path in artifacts.items() if not path.is_file()]
         if missing:
-            raise FileNotFoundError("missing DCLM-333M artifacts: " + ", ".join(missing))
+            raise FileNotFoundError(f"missing {POOL_DISPLAY_NAME} artifacts: " + ", ".join(missing))
         expected_bytes = int(selection["selected_tokens"]) * 4
         if artifacts["tokens"].stat().st_size != expected_bytes:
-            raise RuntimeError("DCLM-333M token artifact size does not match its manifest")
+            raise RuntimeError(f"{POOL_DISPLAY_NAME} token artifact size does not match its manifest")
     return value
 
 
@@ -267,8 +275,8 @@ def load_manifest(path: Path) -> dict[str, Any]:
     value = json.loads(path.read_text())
     if value.get("policy") != POLICY:
         raise ValueError(f"manifest policy must be {POLICY}")
-    if value.get("pool") != "dclm333m" or int(value.get("poolTokens", 0)) != POOL_TOKENS:
-        raise ValueError("producer manifest must remain scoped to DCLM-333M")
+    if value.get("pool") != POOL_SLUG or int(value.get("poolTokens", 0)) != POOL_TOKENS:
+        raise ValueError(f"producer manifest must remain scoped to {POOL_DISPLAY_NAME}")
     if Path(str(value.get("datasetManifest"))) != EXPECTED_DATASET_MANIFEST:
         raise ValueError("producer manifest references the wrong dataset manifest")
     if int(value.get("sequenceLength", 0)) != SEQUENCE_LENGTH:
@@ -276,20 +284,18 @@ def load_manifest(path: Path) -> dict[str, Any]:
     if Decimal(str(value.get("decayFraction"))) != Decimal(str(DECAY_FRACTION)):
         raise ValueError("pre-decay step convention must remain the uncapped 10% WSD boundary")
     coordinates = value.get("producerCoordinates", [])
-    if len(coordinates) != 16:
-        raise ValueError("producer manifest must contain exactly sixteen registered coordinates")
+    if len(coordinates) != EXPECTED_COORDINATE_COUNT:
+        raise ValueError(
+            f"producer manifest must contain exactly {EXPECTED_COORDINATE_COUNT} coordinates"
+        )
     ids = [str(item["id"]) for item in coordinates]
     outputs = [str(item["output"]) for item in coordinates]
     if len(ids) != len(set(ids)) or len(outputs) != len(set(outputs)):
         raise ValueError("producer IDs and output directories must be unique")
     for item in coordinates:
         validate_coordinate(item)
-    for model, policy in MODEL_POLICIES.items():
-        expected = len(policy["batches"]) * len(policy["wds"]) + len(
-            BS32_POLICIES[model]["wds"]
-        )
-        if model == "474m":
-            expected += 1
+    for model in MODEL_POLICIES:
+        expected = EXPECTED_MODEL_COORDINATE_COUNTS[model]
         if sum(item["model"] == model for item in coordinates) != expected:
             raise ValueError(f"manifest does not contain exactly {expected} {model} coordinates")
     validate_dataset_manifest(EXPECTED_DATASET_MANIFEST)
@@ -395,7 +401,7 @@ def checkpoint_complete(path: Path, expected_world_size: int) -> bool:
 
 
 def state_dir(item: dict[str, Any]) -> Path:
-    return Path(str(item["output"])) / ".dclm333m_integrated_producer_eval_v1"
+    return Path(str(item["output"])) / STATE_DIR_NAME
 
 
 def atomic_json(path: Path, value: dict[str, Any]) -> None:
@@ -469,7 +475,7 @@ def constant_arguments(
         f"--trainer.max_duration={{value: {checkpoint_step}, unit: steps}}",
         f"--trainer.callbacks.wandb.name={name}",
         (
-            "--trainer.callbacks.wandb.tags=[pretraining,step1,0802,dclm333m,"
+            f"--trainer.callbacks.wandb.tags=[pretraining,step1,0802,{POOL_SLUG},"
             "integrated-producer,constant-lr,pre-decay,dr,wt,embwd,"
             f"dense-{item['model']},bs{batch},e{epoch},lr{item['learningRate']},"
             f"wd{item['weightDecay']}]"
@@ -551,7 +557,7 @@ def postdecay_arguments(
         f"--trainer.max_duration={{value: {endpoint}, unit: steps}}",
         f"--trainer.callbacks.wandb.name={name}",
         (
-            "--trainer.callbacks.wandb.tags=[pretraining,step1,0802,dclm333m,"
+            f"--trainer.callbacks.wandb.tags=[pretraining,step1,0802,{POOL_SLUG},"
             "integrated-producer,post-decay,heldout-eval,dr,wt,embwd,"
             f"dense-{item['model']},bs{batch},e{epoch},lr{item['learningRate']},"
             f"wd{item['weightDecay']}]"
@@ -591,7 +597,7 @@ def recovered_evaluation_arguments(
         "--dynamic-repacking",
         f"--save-folder={output}",
         f"--trainer.callbacks.wandb.name={name}",
-        "--trainer.callbacks.wandb.tags=[pretraining,step1,0802,dclm333m,recovered-heldout-eval]",
+        f"--trainer.callbacks.wandb.tags=[pretraining,step1,0802,{POOL_SLUG},recovered-heldout-eval]",
         "--trainer.max_duration={value: 1000000000000, unit: steps}",
         "--trainer.callbacks.checkpointer.enabled=false",
         f"--load_path={checkpoint}",
@@ -621,7 +627,7 @@ def evaluate(item: dict[str, Any], epoch: int) -> dict[str, Any]:
     else:
         log_path = state_dir(item) / "logs" / f"e{epoch}.log"
         print(
-            f"DENSE_DCLM333M_POST_START id={item['id']} epoch={epoch} "
+            f"{MARKER_PREFIX}_POST_START id={item['id']} epoch={epoch} "
             f"source={source} output={output}",
             flush=True,
         )
@@ -643,7 +649,7 @@ def evaluate(item: dict[str, Any], epoch: int) -> dict[str, Any]:
     )
     atomic_json(result_path, result)
     print(
-        f"DENSE_DCLM333M_POST_RESULT id={item['id']} epoch={epoch} "
+        f"{MARKER_PREFIX}_POST_RESULT id={item['id']} epoch={epoch} "
         f"json={json.dumps(result, separators=(',', ':'), sort_keys=True)}",
         flush=True,
     )
@@ -686,7 +692,7 @@ def run(item: dict[str, Any]) -> None:
             state.update({"status": "producer_running", "currentEpoch": epoch})
             atomic_json(state_dir(item) / "producer.json", state)
             print(
-                f"DENSE_DCLM333M_PD_START id={item['id']} epoch={epoch} "
+                f"{MARKER_PREFIX}_PD_START id={item['id']} epoch={epoch} "
                 f"step={checkpoint_step} sourceEpoch={source_epoch} source={source} "
                 f"output={output}",
                 flush=True,
@@ -700,17 +706,46 @@ def run(item: dict[str, Any]) -> None:
         if not checkpoint_complete(checkpoint, gpu_count(item)):
             raise RuntimeError(f"producer exited without complete E{epoch} checkpoint")
         print(
-            f"DENSE_DCLM333M_PD_RETAINED id={item['id']} epoch={epoch} checkpoint={checkpoint}",
+            f"{MARKER_PREFIX}_PD_RETAINED id={item['id']} epoch={epoch} checkpoint={checkpoint}",
             flush=True,
         )
         if epoch in evaluation_epochs:
             state.update({"status": "post_running", "currentEpoch": epoch})
             atomic_json(state_dir(item) / "producer.json", state)
-            evaluate(item, epoch)
+            result = evaluate(item, epoch)
             print(
-                f"DENSE_DCLM333M_POST_COMPLETE id={item['id']} epoch={epoch}",
+                f"{MARKER_PREFIX}_POST_COMPLETE id={item['id']} epoch={epoch}",
                 flush=True,
             )
+            prior_epochs = [value for value in sorted(evaluation_epochs) if value < epoch]
+            if item.get("stopOnAdjacentPostNonImprovement") and prior_epochs:
+                prior_epoch = prior_epochs[-1]
+                prior_path = state_dir(item) / "results" / f"e{prior_epoch}.json"
+                if prior_path.is_file():
+                    prior = json.loads(prior_path.read_text())
+                    current_value = float(result["validationExact"])
+                    prior_value = float(prior["validationExact"])
+                    if current_value >= prior_value:
+                        state.update(
+                            {
+                                "status": "saturated",
+                                "currentEpoch": epoch,
+                                "saturationDecision": {
+                                    "previousEpoch": prior_epoch,
+                                    "currentEpoch": epoch,
+                                    "criterion": "adjacent_post_validationExact_non_improvement",
+                                    "previousValidationExact": prior_value,
+                                    "currentValidationExact": current_value,
+                                },
+                            }
+                        )
+                        atomic_json(state_dir(item) / "producer.json", state)
+                        print(
+                            f"{MARKER_PREFIX}_SATURATED id={item['id']} epoch={epoch} "
+                            f"previousEpoch={prior_epoch}",
+                            flush=True,
+                        )
+                        return
 
     missing = [
         epoch
@@ -729,7 +764,7 @@ def run(item: dict[str, Any]) -> None:
     state.update({"status": "complete", "currentEpoch": epochs[-1]})
     atomic_json(state_dir(item) / "producer.json", state)
     print(
-        f"DENSE_DCLM333M_JOB_COMPLETE id={item['id']} retained={epochs} "
+        f"{MARKER_PREFIX}_JOB_COMPLETE id={item['id']} retained={epochs} "
         f"evaluated={sorted(evaluation_epochs)}",
         flush=True,
     )
@@ -790,7 +825,7 @@ def main() -> None:
     if args.validate_only:
         if args.check_data_artifacts:
             validate_dataset_manifest(EXPECTED_DATASET_MANIFEST, check_artifacts=True)
-        print(f"validated DCLM-333M producer {args.coordinate}")
+        print(f"validated {POOL_DISPLAY_NAME} producer {args.coordinate}")
         return
     if args.dry_run_stages:
         batch = int(item["batchSequences"])

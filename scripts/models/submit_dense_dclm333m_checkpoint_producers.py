@@ -25,6 +25,7 @@ REPORT = Path("reports/0802/data/wsd_checkpoint_producer_grid.json")
 REPORT_JS = REPORT.with_suffix(".js")
 REPORT_JS_PREFIX = "window.ICSL_CHECKPOINT_PRODUCER_GRID="
 MAX_MIN_RUNTIME_SECONDS = 8 * 60 * 60
+POOL_DISPLAY_NAME = "DCLM-333M"
 
 
 def command(arguments: list[str], *, input_text: str | None = None) -> str:
@@ -173,7 +174,6 @@ def spec_for(
     omit_min_runtime: bool = True,
 ) -> dict[str, Any]:
     config = load_manifest()
-    estimate = runner.runtime_estimate(item, config["runtimeEstimate"])
     min_runtime = reserved_min_runtime(
         item,
         config["runtimeEstimate"],
@@ -240,7 +240,7 @@ def spec_for(
         task.pop(key, None)
     spec["retry"] = {"allowedTaskRetries": 8}
     spec["description"] = (
-        f"{item['model']} DCLM-333M BS{item['batchSequences']} DR+WT+EmbedWD "
+        f"{item['model']} {POOL_DISPLAY_NAME} BS{item['batchSequences']} DR+WT+EmbedWD "
         f"LR{item['learningRate']} WD{item['weightDecay']}; {runner.gpu_count(item)} GPUs; "
         "gradient accumulation 1; "
         + (
