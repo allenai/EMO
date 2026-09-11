@@ -8,7 +8,7 @@ cd "$(git rev-parse --show-toplevel)"
 i=$1; BASE=(20000 25000 30000 35000 38148); step=${BASE[$i]}
 S=sparse_experts; W=/weka/oe-training-default/ryanwang/EMO/sparse_experts
 while true; do
-  for run in olmoe3_275m_emo_20b olmoe3_275m_emo_20b_filler; do
+  for run in olmoe3_275m_emo_20b olmoe3_275m_emo_20b_filler olmoe3_275m_emo_20b_1node; do
     [ -f "$S/$run/step$step/train/rank0.pt" ] && { RUN=$run; break 2; }
   done; sleep 120
 done
