@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -48,6 +49,9 @@ def plan_rows(config: dict[str, Any]) -> list[dict[str, Any]]:
                 "wd": item["weightDecay"],
                 "rawSeconds": estimate["rawSeconds"],
                 "bufferedSeconds": estimate["bufferedSeconds"],
+                "minRuntimeSeconds": min(
+                    int(estimate["minRuntimeSeconds"]), base.MAX_MIN_RUNTIME_SECONDS
+                ),
             }
         )
     return rows
@@ -60,7 +64,46 @@ def atomic_text(path: Path, value: str) -> None:
     os.replace(temporary, path)
 
 
-def write_registry(created: list[tuple[dict[str, Any], str]], revision: str) -> None:
+def allocated_spec(
+    item: dict[str, Any], revision: str, priority: str
+) -> tuple[dict[str, Any], int]:
+    spec = base.spec_for(item, revision, priority, omit_min_runtime=True)
+    estimate = runner.runtime_estimate(item, load_manifest()["runtimeEstimate"])
+    min_runtime = min(
+        int(estimate["minRuntimeSeconds"]), base.MAX_MIN_RUNTIME_SECONDS
+    )
+    spec["tasks"][0]["context"]["minRuntime"] = f"{min_runtime}s"
+    spec["description"] = re.sub(
+        r"minRuntime omitted\.$", f"minRuntime={min_runtime}s.", spec["description"]
+    )
+    return spec, min_runtime
+
+
+def create_allocated(item: dict[str, Any], revision: str, priority: str) -> str:
+    spec, _ = allocated_spec(item, revision, priority)
+    name = f"{item['id']}-integrated-producer-eval-allocated-v2"
+    output = base.command(
+        [
+            "beaker",
+            "experiment",
+            "create",
+            "-",
+            "--name",
+            name,
+            "--workspace",
+            base.WORKSPACE,
+        ],
+        input_text=json.dumps(spec),
+    )
+    identifiers = re.findall(r"\b[0-9A-HJKMNP-TV-Z]{26}\b", output)
+    if not identifiers:
+        raise RuntimeError(f"submission returned no experiment ID for {name}")
+    return identifiers[0]
+
+
+def write_registry(
+    created: list[tuple[dict[str, Any], str]], revision: str, *, allocated: bool
+) -> None:
     records = []
     for item, experiment in created:
         records.append(
@@ -79,14 +122,26 @@ def write_registry(created: list[tuple[dict[str, Any], str]], revision: str) -> 
                 "experiment": experiment,
                 "revision": revision,
                 "output": item["output"],
+                "minRuntimeSeconds": (
+                    min(
+                        int(
+                            runner.runtime_estimate(
+                                item, load_manifest()["runtimeEstimate"]
+                            )["minRuntimeSeconds"]
+                        ),
+                        base.MAX_MIN_RUNTIME_SECONDS,
+                    )
+                    if allocated
+                    else None
+                ),
             }
         )
     value = {
         "policy": runner.POLICY,
         "updatedAt": datetime.now(timezone.utc).isoformat(),
         "datasetManifest": str(runner.EXPECTED_DATASET_MANIFEST),
-        "scheduling": "unallocated",
-        "minRuntimeOmitted": True,
+        "scheduling": "allocated" if allocated else "unallocated",
+        "minRuntimeOmitted": not allocated,
         "trajectoryCount": len(records),
         "trajectories": records,
     }
@@ -103,6 +158,7 @@ def main() -> None:
     parser.add_argument("--print-plan", action="store_true")
     parser.add_argument("--print-specs", action="store_true")
     parser.add_argument("--submit-if-ready", action="store_true")
+    parser.add_argument("--allocated", action="store_true")
     args = parser.parse_args()
     config = load_manifest()
     selected = [
@@ -122,28 +178,32 @@ def main() -> None:
     for item in selected:
         configure_submitter()
         if args.print_specs:
-            print(
-                json.dumps(
-                    base.spec_for(
-                        item,
-                        args.revision,
-                        args.priority,
-                        omit_min_runtime=True,
-                    ),
-                    indent=2,
+            spec = (
+                allocated_spec(item, args.revision, args.priority)[0]
+                if args.allocated
+                else base.spec_for(
+                    item,
+                    args.revision,
+                    args.priority,
+                    omit_min_runtime=True,
                 )
             )
+            print(json.dumps(spec, indent=2))
         else:
-            experiment = base.create(
-                item,
-                args.revision,
-                args.priority,
-                omit_min_runtime=True,
+            experiment = (
+                create_allocated(item, args.revision, args.priority)
+                if args.allocated
+                else base.create(
+                    item,
+                    args.revision,
+                    args.priority,
+                    omit_min_runtime=True,
+                )
             )
             created.append((item, experiment))
             print(f"{item['id']}: {experiment}")
     if created:
-        write_registry(created, args.revision)
+        write_registry(created, args.revision, allocated=args.allocated)
 
 
 if __name__ == "__main__":
