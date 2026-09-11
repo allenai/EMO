@@ -373,7 +373,7 @@ def run(args):
     for l, r in routers.items():  # read-back check of the effective per-layer pool
         if group_cfg: break
         eff = r.emo.eval_pool_size() if hasattr(r, "emo") and r.emo is not None else (r.pool or E)
-        want = pool if l in layers else E
+        want = pool if l in layers else E_layer[l]
         assert eff == want, f"layer {l}: effective pool {eff} != wanted {want}"
 
     captured: Dict[int, Tuple[torch.Tensor, torch.Tensor]] = {}
