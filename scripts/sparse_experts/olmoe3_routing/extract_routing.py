@@ -372,7 +372,7 @@ def run(args):
     log("routers: " + ", ".join(f"L{l}:{kinds[l]}" for l in MOE_LAYERS))
     for l, r in routers.items():  # read-back check of the effective per-layer pool
         if group_cfg: break
-        eff = r.emo.eval_pool_size() if hasattr(r, "emo") and r.emo is not None else (r.pool or E)
+        eff = r.emo.eval_pool_size() if hasattr(r, "emo") and r.emo is not None else (r.pool or r.num_experts)
         want = pool if l in layers else E_layer[l]
         assert eff == want, f"layer {l}: effective pool {eff} != wanted {want}"
 
