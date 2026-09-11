@@ -68,6 +68,7 @@ from __future__ import annotations
 
 import dataclasses
 import math
+import json
 import os
 import re
 import sys
@@ -202,6 +203,30 @@ EMO_MAX_POOL = int(os.environ.get("OLMOE3_EMO_MAX_POOL", str(NUM_ROUTED_EXPERTS)
 EMO_EVAL_POOL = int(os.environ.get("OLMOE3_EMO_EVAL_POOL", str(NUM_ROUTED_EXPERTS)))
 EMO_POOL_DIST = os.environ.get("OLMOE3_EMO_POOL_DIST", "uniform").strip().lower()
 EXPERIMENT_TAG = os.environ.get("OLMOE3_EXPERIMENT", "sparse_experts")
+# olmoe3_squares sub-model knobs: a block-group partition (groups.json from olmoe3_squares/partition.py)
+# + group index -> per-layer routed-expert counts; a custom token stream; init from a sliced
+# checkpoint with a fresh trainer; explicit checkpoint steps; warmup override.
+def _local_path(p: Optional[str]) -> Optional[str]:
+    """Weka save-root paths are only mounted on the workers; in a GPU-attached session the same
+    storage is the repo's sparse_experts/ tree. Resolve for local config builds / dry runs."""
+    if p and not os.path.exists(p) and p.startswith("/weka/oe-training-default/ryanwang/EMO/"):
+        local = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), p[len("/weka/oe-training-default/ryanwang/EMO/"):])
+        if os.path.exists(local):
+            return local
+    return p
+
+
+SQUARES_GROUPS = _local_path(os.environ.get("OLMOE3_GROUPS") or None)
+SQUARES_GROUP = int(os.environ["OLMOE3_GROUP"]) if os.environ.get("OLMOE3_GROUP") else None
+SQUARES_LAYER_EXPERTS = None
+if SQUARES_GROUPS:
+    assert SQUARES_GROUP is not None, "OLMOE3_GROUP required with OLMOE3_GROUPS"
+    _G = json.load(open(SQUARES_GROUPS))
+    SQUARES_LAYER_EXPERTS = {int(l): len(_G["groups"][l][SQUARES_GROUP]) for l in _G["groups"]}
+DATA_PATHS = [p for p in os.environ.get("OLMOE3_DATA_PATHS", "").split(",") if p]
+INIT_FROM = os.environ.get("OLMOE3_INIT_FROM") or None
+FIXED_STEPS = [int(x) for x in os.environ.get("OLMOE3_FIXED_STEPS", "").split(",") if x]
+WARMUP_STEPS = int(os.environ.get("OLMOE3_WARMUP", "2000"))
 
 
 def _parse_pool_dist(spec: str) -> Optional[float]:
@@ -295,7 +320,16 @@ def _shared_expert(hidden_size: int = EXPERT_HIDDEN_SIZE) -> SharedExpertsConfig
     )
 
 
-def _moe_block(layer_norm: LayerNormConfig, sequence_mixer) -> OLMoDDPTransformerBlockConfig:
+def _moe_block(layer_norm: LayerNormConfig, sequence_mixer, num_experts: Optional[int] = None) -> OLMoDDPTransformerBlockConfig:
+    if num_experts is not None and num_experts != NUM_ROUTED_EXPERTS:
+        b = _moe_block(layer_norm, sequence_mixer)
+        b.routed_experts.num_experts = num_experts
+        b.routed_experts_router.num_experts = num_experts
+        if b.routed_experts_router.emo is not None:
+            # the sub-model's pool range is [top_k, its own expert count] (same convention as the arms)
+            b.routed_experts_router.emo.max_document_expert_pool = min(EMO_MAX_POOL, num_experts)
+            b.routed_experts_router.emo.eval_document_expert_pool = min(EMO_EVAL_POOL, num_experts)
+        return b
     return OLMoDDPTransformerBlockConfig(
         name=TransformerBlockType.moe_fused_v2,
         sequence_mixer=sequence_mixer,
@@ -380,6 +414,8 @@ def build_model_config(common: CommonComponents) -> OLMoDDPModelConfig:
         block_overrides={
             0: _dense_first_block(layer_norm),
             **{i: deepcopy(full_attention) for i in FULL_ATTENTION_LAYERS},
+            **({i: _moe_block(layer_norm, _full_attention(layer_norm) if i in FULL_ATTENTION_LAYERS else _kda(), n)
+                for i, n in SQUARES_LAYER_EXPERTS.items()} if SQUARES_LAYER_EXPERTS else {}),
         },
         lm_head=LMHeadConfig(layer_norm=deepcopy(layer_norm), bias=False, dtype=DType.float32),
         embedding_norm=deepcopy(layer_norm),
@@ -402,7 +438,7 @@ def build_model_config(common: CommonComponents) -> OLMoDDPModelConfig:
         raise ValueError(f"mixer layout drifted: kda={kda} attn={attn}")
     if resolved[0].routed_experts is not None or resolved[0].latent_moe is not None:
         raise ValueError("layer 0 must remain dense")
-    if vocab_size == VOCAB_SIZE and NUM_ROUTED_EXPERTS in EXPECTED_PARAMS:
+    if vocab_size == VOCAB_SIZE and NUM_ROUTED_EXPERTS in EXPECTED_PARAMS and not SQUARES_LAYER_EXPERTS:
         actual = (model.num_active_params, model.num_active_non_embedding_params, model.num_params)
         expected = EXPECTED_PARAMS[NUM_ROUTED_EXPERTS]
         if actual != expected:
@@ -458,6 +494,7 @@ FORWARDED_ENV = (
     "OLMOE3_SAVE_ROOT", "OLMOE3_WORK_DIR", "OLMOE3_WANDB_TAGS", "OLMOE3_IMAGE", "OLMOE3_SAVE_INTERVAL",
     "OLMOE3_EMO", "OLMOE3_EMO_MIN_POOL", "OLMOE3_EMO_MAX_POOL", "OLMOE3_EMO_EVAL_POOL", "OLMOE3_NUM_EXPERTS",
     "OLMOE3_EMO_POOL_DIST", "OLMOE3_EXPERIMENT", "OLMOE3_PPL_EVAL_INTERVAL",
+    "OLMOE3_GROUPS", "OLMOE3_GROUP", "OLMOE3_DATA_PATHS", "OLMOE3_INIT_FROM", "OLMOE3_FIXED_STEPS", "OLMOE3_WARMUP",
 )
 
 
@@ -533,6 +570,28 @@ def build_common_components(cli_context, **kwargs) -> CommonComponents:
 
 
 def build_data_components(common: CommonComponents) -> DataComponents:
+    if DATA_PATHS:
+        # raw uint32 token files (dolma format, EOS between documents), e.g. the olmoe3_squares group streams
+        from olmo_core.data.types import NumpyDatasetDType
+        dataset = NumpyFSLDatasetConfig(
+            paths=DATA_PATHS,
+            expand_glob=True,
+            dtype=NumpyDatasetDType.uint32,
+            tokenizer=common.tokenizer,
+            work_dir=common.work_dir,
+            sequence_length=common.max_sequence_length,
+            max_target_sequence_length=SEQUENCE_LENGTH,
+            generate_doc_lengths=False,
+            instance_filter_config=InstanceFilterConfig(
+                repetition_max_period=13, repetition_min_period=1, repetition_max_count=32
+            ),
+        )
+        return DataComponents(
+            dataset=dataset,
+            data_loader=NumpyDataLoaderConfig(
+                global_batch_size=common.global_batch_size, seed=LOADER_SEED, num_workers=8, prefetch_factor=8, num_threads=4
+            ),
+        )
     dataset = NumpyFSLDatasetConfig.from_data_mix(
         DATA_MIX,
         tokenizer=common.tokenizer,
@@ -569,9 +628,9 @@ def _wsd_decay_start_step(tokens: int) -> int:
 
 def _scheduler(tokens: int):
     if SCHEDULER == "wsd":
-        return ConstantWithWarmup(warmup=WSD_WARMUP_STEPS)
+        return ConstantWithWarmup(warmup=WARMUP_STEPS)
     if SCHEDULER == "wsd_decay":
-        return WSD(warmup=WSD_WARMUP_STEPS, decay_fraction=WSD_DECAY_FRACTION)
+        return WSD(warmup=WARMUP_STEPS, decay_fraction=WSD_DECAY_FRACTION)
     if SCHEDULER != "cosine":
         raise ValueError(f"OLMOE3_SCHEDULER must be wsd, wsd_decay or cosine, got {SCHEDULER!r}")
     return _cosine_scheduler(tokens)
@@ -602,7 +661,7 @@ def build_train_module_config(common: CommonComponents) -> OLMoDDPTrainModuleCon
     assert TOKENS is not None, "set OLMOE3_TOKENS"
     print(
         f"[olmoe3_275m] experts={NUM_ROUTED_EXPERTS} tokens={TOKENS:,} steps={_max_steps(TOKENS):,} lr={LR:g} sched={SCHEDULER}"
-        + (f" (warmup {WSD_WARMUP_STEPS}, constant, no decay)" if SCHEDULER == "wsd" else "")
+        + (f" (warmup {WARMUP_STEPS}, constant, no decay)" if SCHEDULER == "wsd" else "")
         + (f" (warmup {WSD_WARMUP_STEPS}, decay from step {_wsd_decay_start_step(TOKENS):,})" if SCHEDULER == "wsd_decay" else "")
         + " "
         f"nodes={NUM_NODES} gpus/node={NUM_GPUS} rank_mb={RANK_MICROBATCH_SEQUENCES} ep={EP_SIZE}/{EP_PATH} attn={ATTN_BACKEND} "
@@ -666,7 +725,11 @@ def build_trainer_config(common: CommonComponents, cluster: str) -> TrainerConfi
     assert TOKENS is not None, "set OLMOE3_TOKENS"
     cancel_check_interval = 1000
     trainer = TrainerConfig(
-        load_strategy=LoadStrategy.if_available,
+        load_strategy=LoadStrategy.always if INIT_FROM else LoadStrategy.if_available,
+        # OLMOE3_INIT_FROM: model + optimizer weights from a (sliced) checkpoint, fresh trainer/data order
+        load_path=INIT_FROM,
+        load_trainer_state=False if INIT_FROM else None,
+        load_optim_state=True if INIT_FROM else None,
         save_folder=common.save_folder,
         work_dir=common.work_dir,
         save_overwrite=False,
@@ -682,11 +745,12 @@ def build_trainer_config(common: CommonComponents, cluster: str) -> TrainerConfi
         trainer.with_callback(
             "checkpointer",
             CheckpointerCallback(
-                save_interval=SAVE_INTERVAL,
+                save_interval=10**9 if FIXED_STEPS else SAVE_INTERVAL,
                 ephemeral_save_interval=500,  # rolling resume point; only the latest is kept
                 # wsd_decay: keep the last stable-phase checkpoint (the ladder's trunk fork step)
                 # so a longer run can resume from it instead of from a decayed model.
-                fixed_steps=[_wsd_decay_start_step(TOKENS)] if SCHEDULER == "wsd_decay" else None,
+                fixed_steps=(FIXED_STEPS or None) if FIXED_STEPS else ([_wsd_decay_start_step(TOKENS)] if SCHEDULER == "wsd_decay" else None),
+                max_checkpoints=None if FIXED_STEPS else 3,
                 save_async=False,
                 pre_train_checkpoint=False,
                 remove=CheckpointRemovalStrategy.ephemeral_only,
@@ -703,7 +767,7 @@ def build_trainer_config(common: CommonComponents, cluster: str) -> TrainerConfi
                 entity=WANDB_ENTITY,
                 cancel_check_interval=cancel_check_interval,
                 enabled=True,
-                tags=["pretraining", EXPERIMENT_TAG, "olmoe3_275m", f"{NUM_ROUTED_EXPERTS}e",
+                tags=["pretraining", EXPERIMENT_TAG, "olmoe3_275m", f"{NUM_ROUTED_EXPERTS}e", *([f"group{SQUARES_GROUP}"] if SQUARES_GROUP is not None else []),
                       "emo" if EMO_ENABLED else "noemo",
                       *([f"pool_{EMO_POOL_DIST.replace(':', '')}"] if EMO_ENABLED and EMO_POOL_ALPHA is not None else []),
                       cluster.rsplit("/", 1)[-1], *EXTRA_WANDB_TAGS],
