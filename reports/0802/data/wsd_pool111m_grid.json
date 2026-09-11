@@ -1,16 +1,17 @@
 {
   "policy": "dense_dclm111m_integrated_producer_eval_v1",
-  "updatedAt": "2026-09-11T20:46:12.053433+00:00",
+  "updatedAt": "2026-09-11T21:03:49.000000+00:00",
   "datasetManifest": "src/olmo_core/data/subsets/0802/dclm_0802_repeated_train_111m.json",
   "scheduling": "allocated",
   "minRuntimeOmitted": false,
   "trajectoryCount": 12,
-  "lastPolledAt": "2026-09-11T20:50:30.102984Z",
+  "lastPolledAt": "2026-09-11T21:03:49.000000Z",
   "liveSummary": {
-    "queued": 10,
-    "running": 2,
+    "queued": 8,
+    "running": 4,
     "terminal": 0,
-    "telemetryAvailable": false
+    "telemetryAvailable": true,
+    "warning": "1B BS32 LR5e-4 WD1.0 failed twice with NaN loss at exact step 403; owner-matched retry 2 is active"
   },
   "crossWeightDecayPruning": {
     "enabled": true,
@@ -63,7 +64,7 @@
     ]
   },
   "jobAllowlist": [
-    "01M293GQY5MJQK65953FCDZB6V",
+    "01M2948P5JGKHBQBMFA2W2NZ8Y",
     "01M293GRQERDPDWXZB22JECGKR",
     "01M293GSGEF4Z1BQBMTZSYBRZF",
     "01M293GT8A8HJNB7H61K3B0P76",
@@ -127,7 +128,19 @@
       "stopOnAdjacentPostNonImprovement": true,
       "status": "running",
       "experiment": "01M293GQQV3Q0231SE2AZN7RTX",
-      "job": "01M293GQY5MJQK65953FCDZB6V",
+      "job": "01M2948P5JGKHBQBMFA2W2NZ8Y",
+      "jobHistory": [
+        {
+          "job": "01M293GQY5MJQK65953FCDZB6V",
+          "status": "failed",
+          "failure": "nan loss at step 403"
+        },
+        {
+          "job": "01M293ZS255H9RXYH177PFM84R",
+          "status": "failed",
+          "failure": "nan loss at step 403"
+        }
+      ],
       "revision": "4f29bf3a76f246876cc5bc57e54e86caf6629731",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm111m/bs32_dr_wt_embwd_lr5e-4_wd1.0",
       "minRuntimeSeconds": 21600
@@ -163,7 +176,7 @@
         24
       ],
       "stopOnAdjacentPostNonImprovement": true,
-      "status": "queued",
+      "status": "running",
       "experiment": "01M293GRKQG4WNN2F8DVMVVNQ1",
       "job": "01M293GRQERDPDWXZB22JECGKR",
       "revision": "4f29bf3a76f246876cc5bc57e54e86caf6629731",
@@ -201,7 +214,7 @@
         24
       ],
       "stopOnAdjacentPostNonImprovement": true,
-      "status": "queued",
+      "status": "running",
       "experiment": "01M293GSCT5TERP8583VVDRR38",
       "job": "01M293GSGEF4Z1BQBMTZSYBRZF",
       "revision": "4f29bf3a76f246876cc5bc57e54e86caf6629731",
