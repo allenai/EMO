@@ -115,6 +115,43 @@ def parse_restrict(spec: str) -> Tuple[List[int], Optional[int]]:
 # --------------------------------------------------------------------------------------------
 # model
 # --------------------------------------------------------------------------------------------
+GROUPED_MM_MAX_GROUPS = 1000  # torch's CUTLASS grouped GEMM (and the pinned copy) reject >= 1024 groups
+
+
+def install_chunked_gmm(num_experts: int) -> None:
+    """Run models with > 1023 experts on ONE GPU by splitting each grouped GEMM into expert chunks.
+
+    Training runs such models with expert parallelism (each rank holds <= 1000 experts); here the
+    pass is single-GPU, so wrap olmo_core's `gmm` to call the original on consecutive expert chunks.
+    Rows of `a` are grouped by expert in order (sizes = batch_sizes), so chunk c covers rows
+    [offs[c0], offs[c1]); the last chunk also takes any trailing padded rows so shapes match.
+    """
+    if num_experts <= GROUPED_MM_MAX_GROUPS:
+        return
+    import olmo_core.nn.moe.v2.routed_experts as re_mod
+    orig = re_mod.gmm
+
+    def chunked_gmm(a, b, batch_sizes, trans_b=False, out=None, input_grad_out=None):
+        E = b.shape[0]
+        if E <= GROUPED_MM_MAX_GROUPS:
+            return orig(a, b, batch_sizes, trans_b=trans_b, out=out, input_grad_out=input_grad_out)
+        assert input_grad_out is None, "chunked gmm is forward-only"
+        sizes = batch_sizes.tolist(); offs = [0]
+        for n in sizes: offs.append(offs[-1] + n)
+        pieces = []
+        for c0 in range(0, E, GROUPED_MM_MAX_GROUPS):
+            c1 = min(c0 + GROUPED_MM_MAX_GROUPS, E)
+            r0 = offs[c0]; r1 = a.shape[0] if c1 == E else offs[c1]
+            pieces.append(orig(a[r0:r1], b[c0:c1], batch_sizes[c0:c1], trans_b=trans_b))
+        res = torch.cat(pieces, dim=0)
+        if out is not None:
+            out.copy_(res); return out
+        return res
+
+    re_mod.gmm = chunked_gmm
+    print(f"[extract_routing] {num_experts} experts > {GROUPED_MM_MAX_GROUPS}: grouped GEMM chunked per {GROUPED_MM_MAX_GROUPS} experts")
+
+
 def build_model(checkpoint: Path, device, attn_backend: Optional[str], use_cute_kda: bool):
     from olmo_core.distributed.checkpoint import load_model_and_optim_state
     from olmo_core.nn.transformer import OLMoDDPModelConfig
@@ -126,6 +163,8 @@ def build_model(checkpoint: Path, device, attn_backend: Optional[str], use_cute_
             sm["backend"] = attn_backend
         if "use_cute_kernel" in sm:
             sm["use_cute_kernel"] = use_cute_kda
+    n_exp = int(mcfg["block"]["routed_experts"]["num_experts"]) if mcfg["block"].get("routed_experts") else 0
+    install_chunked_gmm(n_exp)
     model = OLMoDDPModelConfig.from_dict(mcfg).build(init_device="meta")
     model.to(torch.bfloat16)  # fwd precision used in training; DCP casts the fp32 shards on load
     model.to_empty(device=device)
