@@ -302,7 +302,34 @@ def squares_results():
     take = (f"Restricting the start model to one group per document costs {ref_orc-ref_none:+.3f} CE before any training ({f(ref_none)} &rarr; {f(ref_orc)}): "
             "that is the routing the squares give up." if (ref_none and ref_orc) else "Reference passes pending.")
     if not have: take += " Baseline and merged evaluations are pending."
-    return section("Stages 2&ndash;4: merged squares vs continued baseline", intro, tbl, take)
+    out = section("Stages 2&ndash;4: merged squares vs continued baseline", intro, tbl, take)
+    # piecewise diagnostic: each held-out document scored by its own square, no merge
+    pw = {name: json.load(open(SQO / f"piecewise_{name}.json")) for _, name in MATCH if (SQO / f"piecewise_{name}.json").exists() and json.load(open(SQO / f"piecewise_{name}.json")).get("piecewise")}
+    if pw:
+        rows = []
+        for name, d in pw.items():
+            step = int(name[5:]); frac = (step - 19074) / 19074
+            b_none = _ce(HELD / f"baseline_step{step}/none")
+            rows.append([f"{100*frac:.0f}%", f(d["piecewise"]), f(d[f"merged_{name}_oracle"]), f(d[f"merged_{name}"]), f(b_none)])
+        grp_rows = []
+        for name, d in pw.items():
+            step = int(name[5:]); frac = (step - 19074) / 19074
+            for g in range(4):
+                grp_rows.append([f"{100*frac:.0f}%", f"group {g}", f"{d['docs_per_group'][g]:,}", f(d["start_full_by_group"][str(g)]), f(d["sub_on_group"][str(g)][str(g)]), f(d[f"merged_{name}_oracle_by_group"][str(g)]), f(d[f"merged_{name}_by_group"][str(g)])])
+        out += section("Where the merge loses: each square alone vs the merged model",
+            "<b>Piecewise CE</b>: every held-out document is scored by the sub-model of its own group (group = the start model's routing), with "
+            "no merging at all. Compared with the merged model under oracle routing (same documents, same expert groups, but shared parameters "
+            "averaged) it isolates the cost of averaging; compared with the merged model's free routing it shows what cross-group experts add.",
+            table(["progress", "piecewise CE (own square, no merge)", "merged, oracle routing", "merged, free routing", "baseline"], rows)
+            + "<p><b>By document group</b> (held-out documents of each group; sub-model g on its own group vs the merged model on the same documents):</p>"
+            + table(["progress", "group", "docs", "start model", "own square", "merged, oracle", "merged, free"], grp_rows),
+            "At 5% the squares alone (2.509) equal the merged oracle number (2.511): averaging is harmless while the four copies of the shared "
+            "parameters are still nearly identical, and free routing across groups then adds a large gain (2.424). At 31% the squares alone keep "
+            "improving (2.437, about the baseline's 2.434) but the merged model does not (2.530 under oracle routing): the averaged shared "
+            "parameters now cost ~0.09, and the damage is concentrated on group 0, the code group, whose own square scores 1.50 while the "
+            "merged model scores 1.77 on the same documents. The partition and the sub-models are not the problem; averaging diverged shared "
+            "parameters is.")
+    return out
 
 
 def build_next():
