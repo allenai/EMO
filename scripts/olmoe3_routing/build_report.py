@@ -223,19 +223,13 @@ def build_q3():
     G = json.load(open(SQ / "groups.json")) if (SQ / "groups.json").exists() else None
     stats = json.load(open(SQO / "stats.json")) if (SQO / "stats.json").exists() else None
     body += card("info", "Plan",
-        "<ol><li><b>Partition</b> (done locally). Spectral blocks of the EMO 512e experts, k = 4, in layers 2&ndash;9, matched to the "
-        "layer-9 blocks with the Q2 rule. Layer 1 is left whole in every sub-model (its blocks show no document agreement). "
-        "Each group therefore owns 97&ndash;162 experts per layer from 2 on and all 512 in layer 1.</li>"
-        "<li><b>Assign documents</b> (1 forward pass of the full model over the next 10B tokens, the 10B&ndash;20B window in training order). "
-        "A document goes to the group whose experts receive most of its top-16 selections in layers 2&ndash;9. The full per-layer "
-        "(group &times; count) table is kept per document, so the share of routing a sub-model cannot serve is known.</li>"
-        "<li><b>Train four sub-models</b> from the step-19074 weights (experts and router rows sliced to the group; everything else copied), "
-        "each on its own documents re-packed in training order, same EMO loss, same 64 &times; 8192 batch, constant LR 8e-4 (the WSD trunk). "
-        "Token budgets are the groups' shares of the 10B, so total compute equals the baseline. Checkpoints at the same fractions of "
-        "progress as the baseline's (steps 20000 / 25000 / 30000 / 35000 / 38148).</li>"
-        "<li><b>Baseline</b>: the full EMO 512e continued from step 19074 on the same 10B tokens.</li>"
-        "<li><b>Merge</b> at every matched checkpoint: experts concatenated, shared parameters (and layer 1) averaged with token-share weights; "
-        "evaluated as-is (one 512-way router) and with oracle group routing, on the v3-small validation sets and a fresh held-out sample.</li></ol>")
+        "<p>For each model we split each layer's experts into 4 spectral blocks and, using the block agreement across layers from Q2, "
+        "build 4 sub-models, each owning one block per layer (layer 1 is kept whole in every sub-model). We then assign the documents we are "
+        "going to train on to the four sub-models (each document goes to the sub-model whose experts it routes to most), train each "
+        "sub-model on its documents, and merge the four sub-models back into one model (experts side by side; the shared parameters "
+        "averaged). The baseline is the original model, continuously trained on all the documents together, without splitting into "
+        "sub-models. Both see the same 10B tokens in total, and the merged model is compared with the baseline at matching points of "
+        "that training.</p>")
     if G:
         rows = [[f"layer {l}", *[str(s) for s in G["sizes"][str(l)]], f(G["layer9_agreement"].get(str(l)), 2) if str(l) in G["layer9_agreement"] else "&mdash; (whole)"] for l in range(1, 10)]
         pv = G["preview"]
