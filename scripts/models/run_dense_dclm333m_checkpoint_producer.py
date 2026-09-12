@@ -626,7 +626,8 @@ def recovered_evaluation_arguments(
         else small.HELDOUT_EVALUATOR
     )
     heldout = heldout_template.replace(
-        "eval_on_finish: true", "eval_on_finish: false, eval_on_startup: true"
+        "eval_on_finish: true",
+        "eval_on_finish: false, eval_on_startup: true, cancel_after_first_eval: true",
     )
     arguments = common.upsert(
         base_arguments(item),
