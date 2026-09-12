@@ -18,6 +18,7 @@ COORDINATE = "dense-153m-dclm111m-bs64-lr2e-3-wd0.3"
 TARGET_EPOCH = 48
 SOURCE_EPOCH = 32
 NAME = f"{COORDINATE}-continuation-e32-e48-allocated-v1"
+MIN_RUNTIME = "2h"
 REGISTRY = Path("reports/0802/data/wsd_pool111m_grid.json")
 REGISTRY_JS = REGISTRY.with_suffix(".js")
 
@@ -127,13 +128,14 @@ def main() -> None:
         target_epoch=TARGET_EPOCH,
         omit_min_runtime=False,
     )
+    spec["tasks"][0]["context"]["minRuntime"] = MIN_RUNTIME
     spec["description"] = (
         "Explicitly authorized 153M DCLM-111M BS64 LR2e-3 WD0.3 continuation "
         "from exact retained E32 PD through E40 recovery PD and exact E48 PD, "
         "then isolated uncapped 10% WSD decay plus heldout/downstream evaluation "
         "at E48 and hard stop. One 4-H100 node, rank microbatch 16, GA1, "
         "canonical output, forced exact source, auto-resume and eight retries; "
-        f"allocated with minRuntime={spec['tasks'][0]['context'].get('minRuntime')}."
+        f"allocated with minRuntime={MIN_RUNTIME}."
     )
     if args.print_spec:
         print(json.dumps(spec, indent=2))
