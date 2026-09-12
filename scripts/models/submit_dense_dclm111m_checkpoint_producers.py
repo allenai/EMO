@@ -104,47 +104,62 @@ def create_allocated(item: dict[str, Any], revision: str, priority: str) -> str:
 def write_registry(
     created: list[tuple[dict[str, Any], str]], revision: str, *, allocated: bool
 ) -> None:
-    records = []
-    for item, experiment in created:
-        records.append(
-            {
-                "id": item["id"],
-                "model": item["model"],
-                "pool": "dclm111m",
-                "batchSequences": item["batchSequences"],
-                "learningRate": item["learningRate"],
-                "weightDecay": item["weightDecay"],
-                "gpuCount": runner.gpu_count(item),
-                "retainedCheckpointEpochs": item["retainedCheckpointEpochs"],
-                "evaluationEpochs": item["evaluationEpochs"],
-                "stopOnAdjacentPostNonImprovement": True,
-                "status": "submitted",
-                "experiment": experiment,
-                "revision": revision,
-                "output": item["output"],
-                "minRuntimeSeconds": (
-                    min(
-                        int(
-                            runner.runtime_estimate(
-                                item, load_manifest()["runtimeEstimate"]
-                            )["minRuntimeSeconds"]
-                        ),
-                        base.MAX_MIN_RUNTIME_SECONDS,
-                    )
-                    if allocated
-                    else None
-                ),
-            }
-        )
-    value = {
-        "policy": runner.POLICY,
-        "updatedAt": datetime.now(timezone.utc).isoformat(),
-        "datasetManifest": str(runner.EXPECTED_DATASET_MANIFEST),
-        "scheduling": "allocated" if allocated else "unallocated",
-        "minRuntimeOmitted": not allocated,
-        "trajectoryCount": len(records),
-        "trajectories": records,
+    config = load_manifest()
+    value = json.loads(REGISTRY.read_text()) if REGISTRY.exists() else {}
+    records = {
+        str(record["id"]): record for record in value.get("trajectories", [])
     }
+    outputs = {str(record.get("output")) for record in records.values()}
+    for item, experiment in created:
+        coordinate_id = str(item["id"])
+        output = str(item["output"])
+        if coordinate_id in records:
+            raise RuntimeError(f"registry already contains coordinate {coordinate_id}")
+        if output in outputs:
+            raise RuntimeError(f"registry already contains output writer {output}")
+        records[coordinate_id] = {
+            "id": coordinate_id,
+            "model": item["model"],
+            "pool": "dclm111m",
+            "batchSequences": item["batchSequences"],
+            "learningRate": item["learningRate"],
+            "weightDecay": item["weightDecay"],
+            "gpuCount": runner.gpu_count(item),
+            "retainedCheckpointEpochs": item["retainedCheckpointEpochs"],
+            "evaluationEpochs": item["evaluationEpochs"],
+            "stopOnAdjacentPostNonImprovement": True,
+            "status": "submitted",
+            "experiment": experiment,
+            "revision": revision,
+            "output": output,
+            "minRuntimeSeconds": (
+                min(
+                    int(
+                        runner.runtime_estimate(item, config["runtimeEstimate"])[
+                            "minRuntimeSeconds"
+                        ]
+                    ),
+                    base.MAX_MIN_RUNTIME_SECONDS,
+                )
+                if allocated
+                else None
+            ),
+        }
+        outputs.add(output)
+    ordered_ids = [str(item["id"]) for item in config["producerCoordinates"]]
+    if set(records) != set(ordered_ids):
+        raise RuntimeError("registry and manifest Pool-111M coordinates differ")
+    value.update(
+        {
+            "policy": runner.POLICY,
+            "updatedAt": datetime.now(timezone.utc).isoformat(),
+            "datasetManifest": str(runner.EXPECTED_DATASET_MANIFEST),
+            "scheduling": "allocated" if allocated else "unallocated",
+            "minRuntimeOmitted": not allocated,
+            "trajectoryCount": len(records),
+            "trajectories": [records[item_id] for item_id in ordered_ids],
+        }
+    )
     rendered = json.dumps(value, indent=2) + "\n"
     atomic_text(REGISTRY, rendered)
     atomic_text(REGISTRY_JS, "window.ICSL_POOL111M_GRID=" + rendered.rstrip() + ";\n")

@@ -239,7 +239,8 @@ def validate_coordinate(item: dict[str, Any]) -> None:
     else:
         if batch not in policy["batches"]:
             raise ValueError(f"{model} does not authorize BS{batch}")
-        if Decimal(lr) != Decimal(str(policy["lr"])):
+        allowed_lrs = policy.get("lrs", (policy["lr"],))
+        if Decimal(lr) not in {Decimal(str(value)) for value in allowed_lrs}:
             raise ValueError(f"{model} has the wrong LR")
         if wd not in policy["wds"]:
             raise ValueError(f"{model}/BS{batch} has unauthorized WD{wd}")

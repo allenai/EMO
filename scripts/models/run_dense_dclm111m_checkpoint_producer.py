@@ -48,6 +48,7 @@ MODEL_POLICIES: dict[str, dict[str, Any]] = {
     "153m": {
         "batches": (64,),
         "lr": "2e-3",
+        "lrs": ("1e-3", "2e-3"),
         "wds": ("0.3", "1.0"),
         "retained_checkpoint_epochs": tuple(range(8, 129, 8)),
         "evaluation_epochs": tuple(range(16, 129, 16)),
@@ -76,8 +77,8 @@ def configure_base() -> None:
     base.EXPECTED_MATERIALIZED_PATH = EXPECTED_MATERIALIZED_PATH
     base.EXPECTED_BASE_TOKENS = EXPECTED_BASE_TOKENS
     base.EXPECTED_BASE_MANIFEST = EXPECTED_BASE_MANIFEST
-    base.EXPECTED_COORDINATE_COUNT = 12
-    base.EXPECTED_MODEL_COORDINATE_COUNTS = {"1b": 4, "474m": 4, "153m": 4}
+    base.EXPECTED_COORDINATE_COUNT = 13
+    base.EXPECTED_MODEL_COORDINATE_COUNTS = {"1b": 4, "474m": 4, "153m": 5}
     base.MODEL_POLICIES = MODEL_POLICIES
     base.BS32_POLICIES = BS32_POLICIES
     base.BS64_474M_CONTINUATION_TARGETS = (96,)
