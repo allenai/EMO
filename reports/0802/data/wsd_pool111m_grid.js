@@ -1,15 +1,15 @@
 window.ICSL_POOL111M_GRID={
   "policy": "dense_dclm111m_integrated_producer_eval_v1",
-  "updatedAt": "2026-09-12T02:29:40.000000+00:00",
+  "updatedAt": "2026-09-12T02:32:00.000000+00:00",
   "datasetManifest": "src/olmo_core/data/subsets/0802/dclm_0802_repeated_train_111m.json",
   "scheduling": "allocated",
   "minRuntimeOmitted": false,
   "trajectoryCount": 13,
-  "lastPolledAt": "2026-09-12T02:29:40.000000Z",
+  "lastPolledAt": "2026-09-12T02:32:00.000000Z",
   "liveSummary": {
     "queued": 0,
-    "running": 3,
-    "terminal": 10,
+    "running": 2,
+    "terminal": 11,
     "telemetryAvailable": true,
     "warning": "1B BS32 LR5e-4 WD1.0 exhausted all eight retries with reproducible NaN loss at exact step 403"
   },
@@ -65,7 +65,6 @@ window.ICSL_POOL111M_GRID={
   },
   "jobAllowlist": [
     "01M29FHPP74W513SVWMCH1JVRS",
-    "01M293GYVXPQF8K7SB27834CZ6",
     "01M29Q3Z0D6Z98X8NNKZM0VP7H"
   ],
   "replacedUnallocated": {
@@ -818,7 +817,7 @@ window.ICSL_POOL111M_GRID={
         128
       ],
       "stopOnAdjacentPostNonImprovement": true,
-      "status": "running",
+      "status": "saturated",
       "experiment": "01M293GYR2MV1ZXQC3GXGMC70V",
       "job": "01M293GYVXPQF8K7SB27834CZ6",
       "resolvedCheckpointEpochs": [
@@ -834,7 +833,8 @@ window.ICSL_POOL111M_GRID={
       "resolvedPostEpochs": [
         16,
         32,
-        48
+        48,
+        64
       ],
       "postDecayResults": {
         "16": {
@@ -848,11 +848,16 @@ window.ICSL_POOL111M_GRID={
         "48": {
           "status": "complete",
           "validationExact": 3.9156
+        },
+        "64": {
+          "status": "complete",
+          "validationExact": 3.92091
         }
       },
       "currentEpoch": 64,
-      "currentPhase": "post_decay",
-      "expectedEta": "2026-09-12T06:35:00Z",
+      "currentPhase": "terminal",
+      "terminalReason": "adjacent POST non-improvement at E64 versus E48",
+      "completedAt": "2026-09-12T02:22:25.958704Z",
       "revision": "4f29bf3a76f246876cc5bc57e54e86caf6629731",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm111m/bs32_dr_wt_embwd_lr1e-3_wd1.0",
       "minRuntimeSeconds": 28800
