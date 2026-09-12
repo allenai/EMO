@@ -95,9 +95,11 @@ configure_base()
 
 load_manifest = base.load_manifest
 coordinate_for_target = base.coordinate_for_target
+continuation_source_epoch = base.continuation_source_epoch
 validate_coordinate = base.validate_coordinate
 validate_dataset_manifest = base.validate_dataset_manifest
 gpu_count = base.gpu_count
+NPROC_PER_NODE = base.NPROC_PER_NODE
 runtime_estimate = base.runtime_estimate
 state_dir = base.state_dir
 stable_step = base.stable_step
