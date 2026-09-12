@@ -59,3 +59,18 @@ def test_474m_bs64_lr1e3_wd1_is_an_independent_valid_coordinate() -> None:
     assert item["gpuCount"] == 4
     assert item["rankMicrobatchSequences"] == 16
     producer.validate_coordinate(item)
+
+
+def test_153m_bs64_lr2e3_wd03_explicitly_continues_from_e32_to_e48() -> None:
+    producer.configure_base()
+    config = producer.load_manifest(MANIFEST)
+    item = producer.coordinate_for_target(
+        config, "dense-153m-dclm111m-bs64-lr2e-3-wd0.3", 48
+    )
+
+    assert item["retainedCheckpointEpochs"] == [8, 16, 24, 32, 40, 48]
+    assert item["evaluationEpochs"] == [16, 32, 48]
+    assert item["continuationSourceEpoch"] == 32
+    assert item["continuationTargetEpoch"] == 48
+    assert item["stopOnAdjacentPostNonImprovement"] is False
+    producer.validate_coordinate(item)

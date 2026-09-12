@@ -41,6 +41,25 @@ run("checkpoint_producer_grid_report.js");
 const current = context.window.ICSL_CHECKPOINT_PRODUCER_GRID;
 const expected = new Map();
 const pool111 = context.window.ICSL_POOL111M_GRID;
+const retainedCheckpointEvaluation = pool111.retainedCheckpointEvaluation;
+if (retainedCheckpointEvaluation?.status === "blocked_missing_source_checkpoints") {
+  const producer = (pool111.trajectories || []).find(
+    (run) => run.id === retainedCheckpointEvaluation.producerId,
+  );
+  if (!producer) {
+    throw new Error(`missing producer for ${retainedCheckpointEvaluation.id}`);
+  }
+  const resolved = new Set((producer.resolvedCheckpointEpochs || []).map(Number));
+  const contradictedEpochs = (retainedCheckpointEvaluation.epochs || [])
+    .map(Number)
+    .filter((epoch) => resolved.has(epoch));
+  if (contradictedEpochs.length) {
+    throw new Error(
+      `${retainedCheckpointEvaluation.id} says source checkpoints are missing but ` +
+      `${contradictedEpochs.map((epoch) => `E${epoch}`).join(", ")} are marked resolved`,
+    );
+  }
+}
 for (const run of pool111.trajectories || []) {
   for (const [epochText, result] of Object.entries(run.postDecayResults || {})) {
     if (result?.status !== "complete") continue;

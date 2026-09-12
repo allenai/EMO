@@ -87,6 +87,8 @@ BS64_474M_CONTINUATION_COORDINATE_IDS: tuple[str, ...] = ()
 BS64_474M_CONTINUATION_RETAIN_INTERVAL = 8
 BS64_474M_CONTINUATION_EVAL_INTERVAL = 16
 BS64_153M_WD03_CONTINUATION_TARGETS = (160, 192)
+BS64_153M_CONTINUATION_RETAIN_INTERVAL = 16
+BS64_153M_CONTINUATION_EVALUATION_EPOCHS = (32, 64, 96, 128, 160, 192)
 BS64_474M_LR1E3_WD03_PROBE = "dense-474m-dclm333m-bs64-lr1e-3-wd0.3"
 BS64_474M_LR1E3_WD10_SATURATION = "dense-474m-dclm333m-bs64-lr1e-3-wd1.0"
 ALL_CONTINUATION_TARGETS = tuple(
@@ -274,9 +276,13 @@ def validate_coordinate(item: dict[str, Any]) -> None:
             )
         )
     elif model == "153m" and max_epoch in continuation_targets:
-        expected_retained = list(range(16, max_epoch + 1, 16))
+        expected_retained = list(
+            range(BS64_153M_CONTINUATION_RETAIN_INTERVAL, max_epoch + 1,
+                  BS64_153M_CONTINUATION_RETAIN_INTERVAL)
+        )
         expected_evaluations = [
-            epoch for epoch in (32, 64, 96, 128, 160, 192) if epoch <= max_epoch
+            epoch for epoch in BS64_153M_CONTINUATION_EVALUATION_EPOCHS
+            if epoch <= max_epoch
         ]
     else:
         expected_retained = list(policy["retained_checkpoint_epochs"])
@@ -373,9 +379,13 @@ def coordinate_for_target(
             )
         )
     elif item["model"] == "153m":
-        item["retainedCheckpointEpochs"] = list(range(16, target_epoch + 1, 16))
+        item["retainedCheckpointEpochs"] = list(
+            range(BS64_153M_CONTINUATION_RETAIN_INTERVAL, target_epoch + 1,
+                  BS64_153M_CONTINUATION_RETAIN_INTERVAL)
+        )
         item["evaluationEpochs"] = [
-            epoch for epoch in (32, 64, 96, 128, 160, 192) if epoch <= target_epoch
+            epoch for epoch in BS64_153M_CONTINUATION_EVALUATION_EPOCHS
+            if epoch <= target_epoch
         ]
     else:
         raise ValueError(f"{item['model']} has no authorized continuation targets")

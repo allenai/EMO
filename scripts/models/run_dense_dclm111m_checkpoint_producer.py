@@ -88,15 +88,31 @@ def configure_base() -> None:
     )
     base.BS64_474M_CONTINUATION_RETAIN_INTERVAL = 4
     base.BS64_474M_CONTINUATION_EVAL_INTERVAL = 8
-    base.BS64_153M_WD03_CONTINUATION_TARGETS = ()
+    base.BS64_153M_WD03_CONTINUATION_TARGETS = (48,)
+    base.BS64_153M_CONTINUATION_RETAIN_INTERVAL = 8
+    base.BS64_153M_CONTINUATION_EVALUATION_EPOCHS = (16, 32, 48)
     base.BS64_474M_LR1E3_WD03_PROBE = "unused-dclm111m-coordinate"
-    base.ALL_CONTINUATION_TARGETS = (96,)
+    base.ALL_CONTINUATION_TARGETS = (48, 96)
+
+
+def coordinate_for_target(
+    manifest: dict[str, Any], coordinate_id: str, target_epoch: int | None
+) -> dict[str, Any]:
+    item = base.coordinate_for_target(manifest, coordinate_id, target_epoch)
+    if (
+        coordinate_id == "dense-153m-dclm111m-bs64-lr2e-3-wd0.3"
+        and target_epoch == 48
+    ):
+        # The user explicitly authorized training past the prior E32 POST gate.
+        # The continuation has a hard E48 ceiling, so it must not replay the old
+        # E16-vs-E32 saturation decision while walking existing checkpoints.
+        item["stopOnAdjacentPostNonImprovement"] = False
+    return item
 
 
 configure_base()
 
 load_manifest = base.load_manifest
-coordinate_for_target = base.coordinate_for_target
 continuation_source_epoch = base.continuation_source_epoch
 validate_coordinate = base.validate_coordinate
 validate_dataset_manifest = base.validate_dataset_manifest
