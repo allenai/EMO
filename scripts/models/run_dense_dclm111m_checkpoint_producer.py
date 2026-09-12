@@ -62,6 +62,8 @@ BS32_POLICIES: dict[str, dict[str, Any]] = {
     "153m": {"lr": "1e-3", "wds": ("0.3", "1.0")},
 }
 
+BS64_474M_WD1_CONTINUATION_ID = "dense-474m-dclm111m-bs64-lr2e-3-wd1.0"
+
 
 def configure_base() -> None:
     base.POLICY = POLICY
@@ -78,15 +80,21 @@ def configure_base() -> None:
     base.EXPECTED_MODEL_COORDINATE_COUNTS = {"1b": 4, "474m": 4, "153m": 4}
     base.MODEL_POLICIES = MODEL_POLICIES
     base.BS32_POLICIES = BS32_POLICIES
-    base.BS64_474M_CONTINUATION_TARGETS = ()
+    base.BS64_474M_CONTINUATION_TARGETS = (96,)
+    base.BS64_474M_CONTINUATION_COORDINATE_IDS = (
+        BS64_474M_WD1_CONTINUATION_ID,
+    )
+    base.BS64_474M_CONTINUATION_RETAIN_INTERVAL = 4
+    base.BS64_474M_CONTINUATION_EVAL_INTERVAL = 8
     base.BS64_153M_WD03_CONTINUATION_TARGETS = ()
     base.BS64_474M_LR1E3_WD03_PROBE = "unused-dclm111m-coordinate"
-    base.ALL_CONTINUATION_TARGETS = ()
+    base.ALL_CONTINUATION_TARGETS = (96,)
 
 
 configure_base()
 
 load_manifest = base.load_manifest
+coordinate_for_target = base.coordinate_for_target
 validate_coordinate = base.validate_coordinate
 validate_dataset_manifest = base.validate_dataset_manifest
 gpu_count = base.gpu_count

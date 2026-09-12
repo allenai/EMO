@@ -83,6 +83,9 @@ BS32_POLICIES: dict[str, dict[str, Any]] = {
 }
 
 BS64_474M_CONTINUATION_TARGETS = (48, 64)
+BS64_474M_CONTINUATION_COORDINATE_IDS: tuple[str, ...] = ()
+BS64_474M_CONTINUATION_RETAIN_INTERVAL = 8
+BS64_474M_CONTINUATION_EVAL_INTERVAL = 16
 BS64_153M_WD03_CONTINUATION_TARGETS = (160, 192)
 BS64_474M_LR1E3_WD03_PROBE = "dense-474m-dclm333m-bs64-lr1e-3-wd0.3"
 ALL_CONTINUATION_TARGETS = tuple(
@@ -94,7 +97,14 @@ def authorized_continuation_targets(item: dict[str, Any]) -> tuple[int, ...]:
     model = str(item["model"])
     batch = int(item["batchSequences"])
     wd = str(item["weightDecay"])
-    if model == "474m" and batch == 64:
+    if (
+        model == "474m"
+        and batch == 64
+        and (
+            not BS64_474M_CONTINUATION_COORDINATE_IDS
+            or str(item["id"]) in BS64_474M_CONTINUATION_COORDINATE_IDS
+        )
+    ):
         return BS64_474M_CONTINUATION_TARGETS
     if model == "153m" and batch == 64 and wd == "0.3":
         return BS64_153M_WD03_CONTINUATION_TARGETS
@@ -235,8 +245,20 @@ def validate_coordinate(item: dict[str, Any]) -> None:
         expected_retained = [8, 16, 32]
         expected_evaluations = [8, 16, 32]
     elif model == "474m" and max_epoch in continuation_targets:
-        expected_retained = list(range(8, max_epoch + 1, 8))
-        expected_evaluations = [epoch for epoch in (16, 32, 48, 64) if epoch <= max_epoch]
+        expected_retained = list(
+            range(
+                BS64_474M_CONTINUATION_RETAIN_INTERVAL,
+                max_epoch + 1,
+                BS64_474M_CONTINUATION_RETAIN_INTERVAL,
+            )
+        )
+        expected_evaluations = list(
+            range(
+                BS64_474M_CONTINUATION_EVAL_INTERVAL,
+                max_epoch + 1,
+                BS64_474M_CONTINUATION_EVAL_INTERVAL,
+            )
+        )
     elif model == "153m" and max_epoch in continuation_targets:
         expected_retained = list(range(16, max_epoch + 1, 16))
         expected_evaluations = [
@@ -321,10 +343,20 @@ def coordinate_for_target(
             f"{item['id']} does not authorize continuation target E{target_epoch}"
         )
     if item["model"] == "474m":
-        item["retainedCheckpointEpochs"] = list(range(8, target_epoch + 1, 8))
-        item["evaluationEpochs"] = [
-            epoch for epoch in (16, 32, 48, 64) if epoch <= target_epoch
-        ]
+        item["retainedCheckpointEpochs"] = list(
+            range(
+                BS64_474M_CONTINUATION_RETAIN_INTERVAL,
+                target_epoch + 1,
+                BS64_474M_CONTINUATION_RETAIN_INTERVAL,
+            )
+        )
+        item["evaluationEpochs"] = list(
+            range(
+                BS64_474M_CONTINUATION_EVAL_INTERVAL,
+                target_epoch + 1,
+                BS64_474M_CONTINUATION_EVAL_INTERVAL,
+            )
+        )
     elif item["model"] == "153m":
         item["retainedCheckpointEpochs"] = list(range(16, target_epoch + 1, 16))
         item["evaluationEpochs"] = [
