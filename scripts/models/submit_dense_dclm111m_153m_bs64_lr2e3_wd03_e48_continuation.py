@@ -17,7 +17,7 @@ import submit_dense_dclm333m_checkpoint_producers as submit_base
 COORDINATE = "dense-153m-dclm111m-bs64-lr2e-3-wd0.3"
 TARGET_EPOCH = 48
 SOURCE_EPOCH = 32
-NAME = f"{COORDINATE}-continuation-e32-e48-allocated-v1"
+NAME = f"{COORDINATE}-continuation-e32-e48-allocated-v2"
 MIN_RUNTIME = "2h"
 REGISTRY = Path("reports/0802/data/wsd_pool111m_grid.json")
 REGISTRY_JS = REGISTRY.with_suffix(".js")

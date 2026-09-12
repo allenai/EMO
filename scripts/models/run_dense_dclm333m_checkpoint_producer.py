@@ -89,6 +89,7 @@ BS64_474M_CONTINUATION_EVAL_INTERVAL = 16
 BS64_153M_WD03_CONTINUATION_TARGETS = (160, 192)
 BS64_153M_CONTINUATION_RETAIN_INTERVAL = 16
 BS64_153M_CONTINUATION_EVALUATION_EPOCHS = (32, 64, 96, 128, 160, 192)
+CONTINUATIONS_IGNORING_PRIOR_SATURATION: tuple[tuple[str, int], ...] = ()
 BS64_474M_LR1E3_WD03_PROBE = "dense-474m-dclm333m-bs64-lr1e-3-wd0.3"
 BS64_474M_LR1E3_WD10_SATURATION = "dense-474m-dclm333m-bs64-lr1e-3-wd1.0"
 ALL_CONTINUATION_TARGETS = tuple(
@@ -392,6 +393,8 @@ def coordinate_for_target(
     item["maxEpoch"] = target_epoch
     item["continuationSourceEpoch"] = source_epoch
     item["continuationTargetEpoch"] = target_epoch
+    if (str(item["id"]), target_epoch) in CONTINUATIONS_IGNORING_PRIOR_SATURATION:
+        item["stopOnAdjacentPostNonImprovement"] = False
     if int(item["batchSequences"]) == 64:
         item["gpuCount"] = 4
         item["rankMicrobatchSequences"] = 16
