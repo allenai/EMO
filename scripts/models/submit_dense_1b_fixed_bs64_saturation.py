@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Submit the reviewer-requested Dense-1B / DCLM-1B / BS64 fixed-order chain.
 
-The exact Original E1 pre-decay checkpoint is inherited.  The first stage keeps
-constant LR through E4, retaining E2 and E4, and evaluates only E4.  Later
-stages evaluate E8, E12, ... and stop at the first held-out CE non-improvement.
+The first stage trains from scratch through the E4 WSD endpoint while retaining
+the E1, E2, and E4 pre-decay checkpoints; only E4 is evaluated. Later stages
+evaluate E8, E12, ... and stop at the first held-out CE non-improvement.
 """
 
 from __future__ import annotations
@@ -27,14 +27,9 @@ REPORT_PATH = Path("reports/0802/data/wsd_data_loader_1b.json")
 REPORT_JS_PATH = REPORT_PATH.with_suffix(".js")
 MANIFEST_PATH = Path("scripts/models/manifests/dense-1b-fixed-bs64-lr1e-3-wd0.3.json")
 SOURCE_EXPERIMENT = "01KZDCD9AYJ0REGZTE2YG18NHF"
-SOURCE_CHECKPOINT = (
-    "/weka/oe-training-default/sewonm/icsl/models/"
-    "dense_1b_step1_0802_repeated_dclm1b_wsd_bs64_e1_lr1e-3_wd0.3_"
-    "warmup384_coord_e1_r2/step3432"
-)
 OUTPUT = (
     "/weka/oe-training-default/sewonm/icsl/models/"
-    "dense_1b_dclm1b_fixed_reviewer_v1/bs64_lr1e-3_wd0.3"
+    "dense_1b_dclm1b_fixed_reviewer_v2/bs64_lr1e-3_wd0.3"
 )
 TARGETS = tuple(range(4, 65, 4))
 RUN_ID = "fixed64-lr1e-3-wd0.3"
@@ -109,10 +104,16 @@ def build_submission(args: argparse.Namespace) -> tuple[dict[str, Any], list[dic
     previous_epoch: int | None = None
     try:
         for epoch in TARGETS:
-            source = SOURCE_CHECKPOINT if previous_epoch is None else (
+            source = "fresh" if previous_epoch is None else (
                 f"{OUTPUT}/step{endpoint.stable_step(previous_epoch, 64)}"
             )
-            current = stage_args(epoch, source, args.revision, args.name, args.priority)
+            # The generic endpoint builder intentionally treats E1 as the common
+            # from-scratch case. Build that clean source-free command, then extend
+            # the same WSD schedule to E4 and retain E1/E2/E4 along the way.
+            build_epoch = 1 if previous_epoch is None else epoch
+            current = stage_args(
+                build_epoch, source, args.revision, args.name, args.priority
+            )
             spec, generated_output = endpoint.build_spec(
                 copy.deepcopy(base), current, script, base_arguments
             )
@@ -120,29 +121,35 @@ def build_submission(args: argparse.Namespace) -> tuple[dict[str, Any], list[dic
                 raise RuntimeError(f"unexpected canonical output {generated_output}")
             shell = spec["tasks"][0]["arguments"][2]
             if previous_epoch is None:
-                shell = replace_once(
+                shell = replace_twice(
                     shell,
-                    shlex.join(["test", "-d", OUTPUT]),
-                    "\n".join(
-                        [
-                            shlex.join(["test", "!", "-e", OUTPUT]),
-                            shlex.join(["mkdir", "-p", OUTPUT]),
-                        ]
+                    shlex.quote(
+                        "--trainer.max_duration={value: 1000000000, unit: tokens}"
                     ),
-                )
-                e4_step = endpoint.stable_step(4, 64)
-                e2_step = endpoint.stable_step(2, 64)
-                old_fixed_steps = (
-                    f"--trainer.callbacks.checkpointer.fixed_steps=[{e4_step}]"
-                )
-                new_fixed_steps = (
-                    f"--trainer.callbacks.checkpointer.fixed_steps=[{e2_step},{e4_step}]"
+                    shlex.quote(
+                        "--trainer.max_duration={value: 4000000000, unit: tokens}"
+                    ),
                 )
                 shell = replace_twice(
                     shell,
-                    shlex.quote(old_fixed_steps),
-                    shlex.quote(new_fixed_steps),
+                    shlex.quote(
+                        "--trainer.callbacks.checkpointer.fixed_steps="
+                        f"[{endpoint.stable_step(1, 64)}]"
+                    ),
+                    shlex.quote(
+                        "--trainer.callbacks.checkpointer.fixed_steps="
+                        f"[{endpoint.stable_step(1, 64)},"
+                        f"{endpoint.stable_step(2, 64)},"
+                        f"{endpoint.stable_step(4, 64)}]"
+                    ),
                 )
+                shell = replace_twice(
+                    shell,
+                    "--model.tie_embeddings=false",
+                    "--model.tie_embeddings=false --fixed-data-order",
+                )
+                shell = shell.replace("_fixed_e1_", "_fixed_e4_")
+                shell = shell.replace(",e1,", ",e4,")
             shell, log_path = sequential.with_stage_log_capture(shell, OUTPUT, epoch)
             stage_shell = "\n".join(
                 [
@@ -198,7 +205,7 @@ def build_submission(args: argparse.Namespace) -> tuple[dict[str, Any], list[dic
     submission["retry"] = {"allowedTaskRetries": 8}
     submission["description"] = (
         "Dense 1B, repeated DCLM-1B, global BS64, LR1e-3, WD0.3, fixed order, "
-        "untied embeddings, zero embedding WD. Inherit Original E1; retain E2; "
+        "untied embeddings, zero embedding WD. Train from scratch; retain E1/E2; "
         "evaluate E4/E8/E12/... and stop at first held-out non-improvement."
     )
     return submission, records
@@ -208,11 +215,6 @@ def register(experiment: str, revision: str, stages: list[dict[str, Any]]) -> No
     report = json.loads(REPORT_PATH.read_text())
     if any(run.get("id") == RUN_ID for run in report.get("runs", [])):
         raise RuntimeError(f"duplicate registered run {RUN_ID}")
-    e1 = next(
-        run["results"]["1"]
-        for run in report["runs"]
-        if run.get("id") == "dr64-lr1e-3-wd0.3"
-    )
     report.setdefault("columns", []).insert(
         next(i for i, column in enumerate(report["columns"]) if column["key"] == "dr64"),
         {
@@ -237,14 +239,14 @@ def register(experiment: str, revision: str, stages: list[dict[str, Any]]) -> No
             "status": "submitted",
             "activeEpoch": 4,
             "attemptedEpochs": list(TARGETS),
-            "sourceExperiment": SOURCE_EXPERIMENT,
-            "sourceCheckpoint": SOURCE_CHECKPOINT,
+            "templateExperiment": SOURCE_EXPERIMENT,
+            "sourceCheckpoint": "fresh",
             "gpuCount": 8,
             "nodeCount": 1,
             "rankMicrobatchSequences": 8,
             "gradientAccumulationSteps": 1,
             "plannedTargets": [1, 2, *TARGETS],
-            "results": {"1": dict(e1, inherited=True)},
+            "results": {},
             "retainedOnlyEpochs": [1, 2],
             "evaluatedEpochs": list(TARGETS),
             "experiment": experiment,
@@ -252,9 +254,9 @@ def register(experiment: str, revision: str, stages: list[dict[str, Any]]) -> No
             "revision": revision,
             "output": OUTPUT,
             "reason": (
-                "Reviewer-requested fixed-order Original recipe. E1 is inherited and E2 is "
-                "retained without decay; E4/E8/E12/... are WSD-decayed and evaluated until "
-                "the first adjacent held-out non-improvement."
+                "Reviewer-requested fixed-order Original recipe trained from scratch. E1 and "
+                "E2 are retained without evaluation; E4/E8/E12/... are WSD-decayed and "
+                "evaluated until the first adjacent held-out non-improvement."
             ),
         }
     )
