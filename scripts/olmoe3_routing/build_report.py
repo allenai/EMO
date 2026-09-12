@@ -274,6 +274,14 @@ def build_q3():
                                [[f"group {g}", f"{st['docs_per_group'][g]:,}", f"{st['tokens_per_group'][g]/1e9:.2f}B", f"{100*st['token_share'][g]:.1f}%", f(st['in_group_share_by_group'][str(g)], 2), f(st['ce_by_group'][str(g)], 3)] for g in range(4)]))
         body += squares_results(HELD=ROOT / "sparse_experts/olmoe3_routing/runs_heldout20b_std", PPL=ROOT / "sparse_experts/olmoe3_squares_std/ppl_validation", SQO=OUT / "olmoe3_squares_std",
                                 start="std_step19074", start_ppl="olmoe3_275m_10b", base_runs=("olmoe3_275m_20b_1node",), label=" (standard MoE)", take_main=STD_TAKE, take_pw=STD_PW_TAKE)
+    if (ROOT / "sparse_experts/olmoe3_routing/runs_heldout20b_noemo").exists():
+        body += card("info", "EMO squares trained without the EMO loss",
+                     "<p>Same EMO 512e partition, document assignment and sliced start checkpoints as above, but the four sub-models and the "
+                     "post-merge 0.5B finetune train with plain top-16 routing (no per-document pool rule, instance-level load balancing). "
+                     "Compared against the same EMO baseline.</p>")
+        body += squares_results(HELD=ROOT / "sparse_experts/olmoe3_routing/runs_heldout20b_noemo", PPL=ROOT / "sparse_experts/olmoe3_squares_noemo/ppl_validation", SQO=OUT / "olmoe3_squares_noemo",
+                                start="emo_step19074", start_ppl="olmoe3_275m_emo_10b", base_runs=("olmoe3_275m_emo_20b_1node",), label=" (EMO squares, no EMO loss)",
+                                take_main="", take_pw="")
     return body
 
 
