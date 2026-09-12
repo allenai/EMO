@@ -697,6 +697,44 @@ def evaluate(item: dict[str, Any], epoch: int) -> dict[str, Any]:
     return result
 
 
+def run_recovered_evaluation_only(item: dict[str, Any], epoch: int) -> None:
+    if epoch not in {int(value) for value in item["evaluationEpochs"]}:
+        raise ValueError(f"E{epoch} is not an evaluation epoch for {item['id']}")
+    output = state_dir(item) / "post_decay_runs" / f"e{epoch}"
+    endpoint = output / f"step{total_step(epoch, int(item['batchSequences']))}"
+    if not checkpoint_complete(endpoint, gpu_count(item)):
+        raise FileNotFoundError(f"incomplete recovered POST checkpoint {endpoint}")
+    name = f"{item['id']}-post-e{epoch}-fast-recovered-eval"
+    log_path = state_dir(item) / "logs" / f"e{epoch}_fast_recovered_eval.log"
+    run_torch(
+        item,
+        name,
+        recovered_evaluation_arguments(
+            item, endpoint, output / "fast_recovered_eval", name
+        ),
+        log_path,
+    )
+    result = dense1b.parse_validation(log_path, epoch, "post_decay", endpoint)
+    result.update(
+        {
+            "policy": POLICY,
+            "model": str(item["model"]),
+            "batchSequences": int(item["batchSequences"]),
+            "lr": str(item["learningRate"]),
+            "wd": str(item["weightDecay"]),
+            "variant": "DR+WT+EmbedWD",
+            "source": "fast_recovered_heldout_eval_only",
+        }
+    )
+    result_path = state_dir(item) / "results" / f"e{epoch}_fast_recovered_eval.json"
+    atomic_json(result_path, result)
+    print(
+        f"{MARKER_PREFIX}_RECOVERED_EVAL_ONLY_RESULT id={item['id']} epoch={epoch} "
+        f"json={json.dumps(result, separators=(',', ':'), sort_keys=True)}",
+        flush=True,
+    )
+
+
 def run(item: dict[str, Any]) -> None:
     validate_coordinate(item)
     validate_dataset_manifest(EXPECTED_DATASET_MANIFEST, check_artifacts=True)
@@ -859,6 +897,7 @@ def main() -> None:
     parser.add_argument("--check-data-artifacts", action="store_true")
     parser.add_argument("--dry-run-stages", action="store_true")
     parser.add_argument("--target-epoch", type=int, choices=ALL_CONTINUATION_TARGETS)
+    parser.add_argument("--recovered-eval-only-epoch", type=int)
     args = parser.parse_args()
     manifest = load_manifest(args.manifest)
     item = coordinate_for_target(manifest, args.coordinate, args.target_epoch)
@@ -906,6 +945,9 @@ def main() -> None:
             check=True,
         )
         print(f"dry-run validated producer and POST stages for {args.coordinate}")
+        return
+    if args.recovered_eval_only_epoch is not None:
+        run_recovered_evaluation_only(item, args.recovered_eval_only_epoch)
         return
     run(item)
 

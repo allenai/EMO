@@ -145,7 +145,6 @@ class EvaluatorCallback(Callback):
             eval_step = 0
             eval_tokens = 0
             first_batch_hash = None
-            label_token_counts: Dict[str, int] = {}
             paired_doc_starts: Optional[np.ndarray] = None
             paired_doc_ends: Optional[np.ndarray] = None
             paired_loss_sums: Optional[np.ndarray] = None
@@ -280,17 +279,6 @@ class EvaluatorCallback(Callback):
                                 f"batch_mean_ce_loss={batch_mean_loss}"
                             )
 
-                # Track per-label token counts.
-                # TODO(kevinf): remove this debugging code before merging to production.
-                with cuda_sync_debug_mode(0):
-                    for idx, metadata in enumerate(batch.get("metadata", [])):
-                        label = metadata["label"]
-                        if "label_mask" in batch:
-                            n_tokens = int(batch["label_mask"][idx].sum().item())
-                        else:
-                            n_tokens = batch["input_ids"].shape[-1]
-                        label_token_counts[label] = label_token_counts.get(label, 0) + n_tokens
-
                 if self.eval_duration.due(step=eval_step, tokens=eval_tokens, epoch=1):
                     self._log_progress(evaluator, eval_step)
                     break
@@ -303,11 +291,6 @@ class EvaluatorCallback(Callback):
                 f"[eval={evaluator.name}] completed: steps={eval_step}, "
                 f"tokens={eval_tokens:,d}, first_batch_hash={first_batch_hash}"
             )
-            label_counts_str = ", ".join(
-                f"{k}={v:,d}" for k, v in sorted(label_token_counts.items())
-            )
-            log.info(f"[eval={evaluator.name}] per-label tokens: {label_counts_str}")
-
             if paired_loss_sums is not None:
                 assert paired_token_counts is not None
                 assert paired_doc_starts is not None
