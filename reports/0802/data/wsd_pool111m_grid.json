@@ -974,7 +974,7 @@
       "postDecayResults": {},
       "currentEpoch": 0,
       "currentPhase": "starting",
-      "expectedEta": "2026-09-12T08:00:00Z",
+      "expectedEta": "2026-09-12T09:00:00Z",
       "revision": "c1425d6d0b0d212d7023842027fe35d2e81b61cb",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm111m/bs64_dr_wt_embwd_lr1e-3_wd0.3",
       "minRuntimeSeconds": 23400
