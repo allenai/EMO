@@ -33,8 +33,8 @@ SOURCE_CHECKPOINT = (
     "warmup384_coord_e1_r2/step3432"
 )
 OUTPUT = (
-    "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b/"
-    "bs64_lr1e-3_wd0.3"
+    "/weka/oe-training-default/sewonm/icsl/models/"
+    "dense_1b_dclm1b_fixed_reviewer_v1/bs64_lr1e-3_wd0.3"
 )
 TARGETS = tuple(range(4, 65, 4))
 RUN_ID = "fixed64-lr1e-3-wd0.3"
