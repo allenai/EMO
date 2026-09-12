@@ -1,14 +1,14 @@
 window.ICSL_POOL111M_GRID={
   "policy": "dense_dclm111m_integrated_producer_eval_v1",
-  "updatedAt": "2026-09-12T02:22:00.000000+00:00",
+  "updatedAt": "2026-09-12T02:29:40.000000+00:00",
   "datasetManifest": "src/olmo_core/data/subsets/0802/dclm_0802_repeated_train_111m.json",
   "scheduling": "allocated",
   "minRuntimeOmitted": false,
-  "trajectoryCount": 12,
-  "lastPolledAt": "2026-09-12T02:22:00.000000Z",
+  "trajectoryCount": 13,
+  "lastPolledAt": "2026-09-12T02:29:40.000000Z",
   "liveSummary": {
     "queued": 0,
-    "running": 2,
+    "running": 3,
     "terminal": 10,
     "telemetryAvailable": true,
     "warning": "1B BS32 LR5e-4 WD1.0 exhausted all eight retries with reproducible NaN loss at exact step 403"
@@ -65,7 +65,8 @@ window.ICSL_POOL111M_GRID={
   },
   "jobAllowlist": [
     "01M29FHPP74W513SVWMCH1JVRS",
-    "01M293GYVXPQF8K7SB27834CZ6"
+    "01M293GYVXPQF8K7SB27834CZ6",
+    "01M29Q3Z0D6Z98X8NNKZM0VP7H"
   ],
   "replacedUnallocated": {
     "status": "canceled_after_protected_replacements_accepted",
@@ -926,6 +927,56 @@ window.ICSL_POOL111M_GRID={
       "terminalReason": "adjacent POST non-improvement at E32 versus E16",
       "revision": "4f29bf3a76f246876cc5bc57e54e86caf6629731",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm111m/bs64_dr_wt_embwd_lr2e-3_wd0.3",
+      "minRuntimeSeconds": 23400
+    },
+    {
+      "id": "dense-153m-dclm111m-bs64-lr1e-3-wd0.3",
+      "model": "153m",
+      "pool": "dclm111m",
+      "batchSequences": 64,
+      "learningRate": "1e-3",
+      "weightDecay": "0.3",
+      "gpuCount": 4,
+      "retainedCheckpointEpochs": [
+        8,
+        16,
+        24,
+        32,
+        40,
+        48,
+        56,
+        64,
+        72,
+        80,
+        88,
+        96,
+        104,
+        112,
+        120,
+        128
+      ],
+      "evaluationEpochs": [
+        16,
+        32,
+        48,
+        64,
+        80,
+        96,
+        112,
+        128
+      ],
+      "stopOnAdjacentPostNonImprovement": true,
+      "status": "starting",
+      "experiment": "01M29Q3YRQ7RTZ72NGADHM4TYP",
+      "job": "01M29Q3Z0D6Z98X8NNKZM0VP7H",
+      "resolvedCheckpointEpochs": [],
+      "resolvedPostEpochs": [],
+      "postDecayResults": {},
+      "currentEpoch": 0,
+      "currentPhase": "starting",
+      "expectedEta": "2026-09-12T08:00:00Z",
+      "revision": "c1425d6d0b0d212d7023842027fe35d2e81b61cb",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm111m/bs64_dr_wt_embwd_lr1e-3_wd0.3",
       "minRuntimeSeconds": 23400
     },
     {

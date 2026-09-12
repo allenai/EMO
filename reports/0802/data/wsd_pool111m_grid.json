@@ -1,14 +1,14 @@
 {
   "policy": "dense_dclm111m_integrated_producer_eval_v1",
-  "updatedAt": "2026-09-12T02:22:00.000000+00:00",
+  "updatedAt": "2026-09-12T02:29:40.000000+00:00",
   "datasetManifest": "src/olmo_core/data/subsets/0802/dclm_0802_repeated_train_111m.json",
   "scheduling": "allocated",
   "minRuntimeOmitted": false,
-  "trajectoryCount": 12,
-  "lastPolledAt": "2026-09-12T02:22:00.000000Z",
+  "trajectoryCount": 13,
+  "lastPolledAt": "2026-09-12T02:29:40.000000Z",
   "liveSummary": {
     "queued": 0,
-    "running": 2,
+    "running": 3,
     "terminal": 10,
     "telemetryAvailable": true,
     "warning": "1B BS32 LR5e-4 WD1.0 exhausted all eight retries with reproducible NaN loss at exact step 403"
@@ -65,7 +65,8 @@
   },
   "jobAllowlist": [
     "01M29FHPP74W513SVWMCH1JVRS",
-    "01M293GYVXPQF8K7SB27834CZ6"
+    "01M293GYVXPQF8K7SB27834CZ6",
+    "01M29Q3Z0D6Z98X8NNKZM0VP7H"
   ],
   "replacedUnallocated": {
     "status": "canceled_after_protected_replacements_accepted",
@@ -210,14 +211,46 @@
       "status": "saturated",
       "experiment": "01M293GRKQG4WNN2F8DVMVVNQ1",
       "job": "01M293GRQERDPDWXZB22JECGKR",
-      "resolvedCheckpointEpochs": [2, 4, 6, 8, 10, 12, 14, 16, 18, 20],
-      "resolvedPostEpochs": [4, 8, 12, 16, 20],
+      "resolvedCheckpointEpochs": [
+        2,
+        4,
+        6,
+        8,
+        10,
+        12,
+        14,
+        16,
+        18,
+        20
+      ],
+      "resolvedPostEpochs": [
+        4,
+        8,
+        12,
+        16,
+        20
+      ],
       "postDecayResults": {
-        "4": {"status": "complete", "validationExact": 4.14644},
-        "8": {"status": "complete", "validationExact": 4.07941},
-        "12": {"status": "complete", "validationExact": 4.07021},
-        "16": {"status": "complete", "validationExact": 4.06879},
-        "20": {"status": "complete", "validationExact": 4.07484}
+        "4": {
+          "status": "complete",
+          "validationExact": 4.14644
+        },
+        "8": {
+          "status": "complete",
+          "validationExact": 4.07941
+        },
+        "12": {
+          "status": "complete",
+          "validationExact": 4.07021
+        },
+        "16": {
+          "status": "complete",
+          "validationExact": 4.06879
+        },
+        "20": {
+          "status": "complete",
+          "validationExact": 4.07484
+        }
       },
       "currentEpoch": 20,
       "currentPhase": "terminal",
@@ -260,12 +293,32 @@
       "status": "saturated",
       "experiment": "01M293GSCT5TERP8583VVDRR38",
       "job": "01M293GSGEF4Z1BQBMTZSYBRZF",
-      "resolvedCheckpointEpochs": [2, 4, 6, 8, 10, 12],
-      "resolvedPostEpochs": [4, 8, 12],
+      "resolvedCheckpointEpochs": [
+        2,
+        4,
+        6,
+        8,
+        10,
+        12
+      ],
+      "resolvedPostEpochs": [
+        4,
+        8,
+        12
+      ],
       "postDecayResults": {
-        "4": {"status": "complete", "validationExact": 3.72232},
-        "8": {"status": "complete", "validationExact": 3.60106},
-        "12": {"status": "complete", "validationExact": 3.64293}
+        "4": {
+          "status": "complete",
+          "validationExact": 3.72232
+        },
+        "8": {
+          "status": "complete",
+          "validationExact": 3.60106
+        },
+        "12": {
+          "status": "complete",
+          "validationExact": 3.64293
+        }
       },
       "currentEpoch": 12,
       "currentPhase": "terminal",
@@ -308,15 +361,53 @@
       "status": "complete",
       "experiment": "01M293GT4S5J5V6XAF9HHDT249",
       "job": "01M293GT8A8HJNB7H61K3B0P76",
-      "resolvedCheckpointEpochs": [2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24],
-      "resolvedPostEpochs": [4, 8, 12, 16, 20, 24],
+      "resolvedCheckpointEpochs": [
+        2,
+        4,
+        6,
+        8,
+        10,
+        12,
+        14,
+        16,
+        18,
+        20,
+        22,
+        24
+      ],
+      "resolvedPostEpochs": [
+        4,
+        8,
+        12,
+        16,
+        20,
+        24
+      ],
       "postDecayResults": {
-        "4": {"status": "complete", "validationExact": 4.31064},
-        "8": {"status": "complete", "validationExact": 4.15319},
-        "12": {"status": "complete", "validationExact": 4.09019},
-        "16": {"status": "complete", "validationExact": 4.0613},
-        "20": {"status": "complete", "validationExact": 4.04639},
-        "24": {"status": "complete", "validationExact": 4.03187}
+        "4": {
+          "status": "complete",
+          "validationExact": 4.31064
+        },
+        "8": {
+          "status": "complete",
+          "validationExact": 4.15319
+        },
+        "12": {
+          "status": "complete",
+          "validationExact": 4.09019
+        },
+        "16": {
+          "status": "complete",
+          "validationExact": 4.0613
+        },
+        "20": {
+          "status": "complete",
+          "validationExact": 4.04639
+        },
+        "24": {
+          "status": "complete",
+          "validationExact": 4.03187
+        }
       },
       "currentEpoch": 24,
       "currentPhase": "terminal",
@@ -354,11 +445,26 @@
       "status": "saturated",
       "experiment": "01M293GTX16M9QRY3WPSG8BFBQ",
       "job": "01M293GV0H055Q1W5BTDTB37ZA",
-      "resolvedCheckpointEpochs": [4, 8, 12, 16, 20],
-      "resolvedPostEpochs": [8, 16],
+      "resolvedCheckpointEpochs": [
+        4,
+        8,
+        12,
+        16,
+        20
+      ],
+      "resolvedPostEpochs": [
+        8,
+        16
+      ],
       "postDecayResults": {
-        "8": {"status": "complete", "validationExact": 3.69019},
-        "16": {"status": "complete", "validationExact": 3.81034}
+        "8": {
+          "status": "complete",
+          "validationExact": 3.69019
+        },
+        "16": {
+          "status": "complete",
+          "validationExact": 3.81034
+        }
       },
       "currentEpoch": 16,
       "currentPhase": "terminal",
@@ -395,13 +501,39 @@
       "status": "saturated",
       "experiment": "01M293GVNRR123W9AZJMXB74VX",
       "job": "01M293GVSD3XJ0J617W0QRW447",
-      "resolvedCheckpointEpochs": [4, 8, 12, 16, 20, 24, 28, 32],
-      "resolvedPostEpochs": [8, 16, 24, 32],
+      "resolvedCheckpointEpochs": [
+        4,
+        8,
+        12,
+        16,
+        20,
+        24,
+        28,
+        32
+      ],
+      "resolvedPostEpochs": [
+        8,
+        16,
+        24,
+        32
+      ],
       "postDecayResults": {
-        "8": {"status": "complete", "validationExact": 3.73274},
-        "16": {"status": "complete", "validationExact": 3.66639},
-        "24": {"status": "complete", "validationExact": 3.66229},
-        "32": {"status": "complete", "validationExact": 3.66676}
+        "8": {
+          "status": "complete",
+          "validationExact": 3.73274
+        },
+        "16": {
+          "status": "complete",
+          "validationExact": 3.66639
+        },
+        "24": {
+          "status": "complete",
+          "validationExact": 3.66229
+        },
+        "32": {
+          "status": "complete",
+          "validationExact": 3.66676
+        }
       },
       "currentEpoch": 32,
       "currentPhase": "terminal",
@@ -439,11 +571,25 @@
       "status": "saturated",
       "experiment": "01M293GWE1VJC8ZJAZRAKC4M6J",
       "job": "01M293GWHHG3TRP6BAYW64787Q",
-      "resolvedCheckpointEpochs": [4, 8, 12, 16],
-      "resolvedPostEpochs": [8, 16],
+      "resolvedCheckpointEpochs": [
+        4,
+        8,
+        12,
+        16
+      ],
+      "resolvedPostEpochs": [
+        8,
+        16
+      ],
       "postDecayResults": {
-        "8": {"status": "complete", "validationExact": 3.72114},
-        "16": {"status": "complete", "validationExact": 3.86078}
+        "8": {
+          "status": "complete",
+          "validationExact": 3.72114
+        },
+        "16": {
+          "status": "complete",
+          "validationExact": 3.86078
+        }
       },
       "currentEpoch": 16,
       "currentPhase": "terminal",
@@ -509,14 +655,48 @@
       "previousExperimentStatus": "completed_hard_ceiling_e32",
       "continuationSourceEpoch": 32,
       "continuationTargetEpoch": 96,
-      "resolvedCheckpointEpochs": [4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48],
-      "resolvedPostEpochs": [8, 16, 24, 32, 40],
+      "resolvedCheckpointEpochs": [
+        4,
+        8,
+        12,
+        16,
+        20,
+        24,
+        28,
+        32,
+        36,
+        40,
+        44,
+        48
+      ],
+      "resolvedPostEpochs": [
+        8,
+        16,
+        24,
+        32,
+        40
+      ],
       "postDecayResults": {
-        "8": {"status": "complete", "validationExact": 3.79271},
-        "16": {"status": "complete", "validationExact": 3.68683},
-        "24": {"status": "complete", "validationExact": 3.67063},
-        "32": {"status": "complete", "validationExact": 3.65843},
-        "40": {"status": "complete", "validationExact": 3.65725}
+        "8": {
+          "status": "complete",
+          "validationExact": 3.79271
+        },
+        "16": {
+          "status": "complete",
+          "validationExact": 3.68683
+        },
+        "24": {
+          "status": "complete",
+          "validationExact": 3.67063
+        },
+        "32": {
+          "status": "complete",
+          "validationExact": 3.65843
+        },
+        "40": {
+          "status": "complete",
+          "validationExact": 3.65725
+        }
       },
       "currentEpoch": 48,
       "currentPhase": "post_decay",
@@ -566,12 +746,32 @@
       "status": "saturated",
       "experiment": "01M293GY098DADZ2FHGK3QTWCY",
       "job": "01M293GY41MSMEQMCFM4CH0W8T",
-      "resolvedCheckpointEpochs": [8, 16, 24, 32, 40, 48],
-      "resolvedPostEpochs": [16, 32, 48],
+      "resolvedCheckpointEpochs": [
+        8,
+        16,
+        24,
+        32,
+        40,
+        48
+      ],
+      "resolvedPostEpochs": [
+        16,
+        32,
+        48
+      ],
       "postDecayResults": {
-        "16": {"status": "complete", "validationExact": 3.7701},
-        "32": {"status": "complete", "validationExact": 3.76751},
-        "48": {"status": "complete", "validationExact": 3.77021}
+        "16": {
+          "status": "complete",
+          "validationExact": 3.7701
+        },
+        "32": {
+          "status": "complete",
+          "validationExact": 3.76751
+        },
+        "48": {
+          "status": "complete",
+          "validationExact": 3.77021
+        }
       },
       "currentEpoch": 48,
       "currentPhase": "terminal",
@@ -621,12 +821,34 @@
       "status": "running",
       "experiment": "01M293GYR2MV1ZXQC3GXGMC70V",
       "job": "01M293GYVXPQF8K7SB27834CZ6",
-      "resolvedCheckpointEpochs": [8, 16, 24, 32, 40, 48, 56, 64],
-      "resolvedPostEpochs": [16, 32, 48],
+      "resolvedCheckpointEpochs": [
+        8,
+        16,
+        24,
+        32,
+        40,
+        48,
+        56,
+        64
+      ],
+      "resolvedPostEpochs": [
+        16,
+        32,
+        48
+      ],
       "postDecayResults": {
-        "16": {"status": "complete", "validationExact": 3.94581},
-        "32": {"status": "complete", "validationExact": 3.92103},
-        "48": {"status": "complete", "validationExact": 3.9156}
+        "16": {
+          "status": "complete",
+          "validationExact": 3.94581
+        },
+        "32": {
+          "status": "complete",
+          "validationExact": 3.92103
+        },
+        "48": {
+          "status": "complete",
+          "validationExact": 3.9156
+        }
       },
       "currentEpoch": 64,
       "currentPhase": "post_decay",
@@ -675,17 +897,86 @@
       "status": "saturated",
       "experiment": "01M293GZFRV32HRHN9W6QKDMR0",
       "job": "01M293GZM0MSQT2YJ5EB7HBEW2",
-      "resolvedCheckpointEpochs": [8, 16, 24, 32, 40, 48, 56, 64],
-      "resolvedPostEpochs": [16, 32, 48],
+      "resolvedCheckpointEpochs": [
+        8,
+        16,
+        24,
+        32,
+        40,
+        48,
+        56,
+        64
+      ],
+      "resolvedPostEpochs": [
+        16,
+        32,
+        48
+      ],
       "postDecayResults": {
-        "16": {"status": "complete", "validationExact": 3.77252},
-        "32": {"status": "complete", "validationExact": 3.77322}
+        "16": {
+          "status": "complete",
+          "validationExact": 3.77252
+        },
+        "32": {
+          "status": "complete",
+          "validationExact": 3.77322
+        }
       },
       "currentEpoch": 32,
       "currentPhase": "terminal",
       "terminalReason": "adjacent POST non-improvement at E32 versus E16",
       "revision": "4f29bf3a76f246876cc5bc57e54e86caf6629731",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm111m/bs64_dr_wt_embwd_lr2e-3_wd0.3",
+      "minRuntimeSeconds": 23400
+    },
+    {
+      "id": "dense-153m-dclm111m-bs64-lr1e-3-wd0.3",
+      "model": "153m",
+      "pool": "dclm111m",
+      "batchSequences": 64,
+      "learningRate": "1e-3",
+      "weightDecay": "0.3",
+      "gpuCount": 4,
+      "retainedCheckpointEpochs": [
+        8,
+        16,
+        24,
+        32,
+        40,
+        48,
+        56,
+        64,
+        72,
+        80,
+        88,
+        96,
+        104,
+        112,
+        120,
+        128
+      ],
+      "evaluationEpochs": [
+        16,
+        32,
+        48,
+        64,
+        80,
+        96,
+        112,
+        128
+      ],
+      "stopOnAdjacentPostNonImprovement": true,
+      "status": "starting",
+      "experiment": "01M29Q3YRQ7RTZ72NGADHM4TYP",
+      "job": "01M29Q3Z0D6Z98X8NNKZM0VP7H",
+      "resolvedCheckpointEpochs": [],
+      "resolvedPostEpochs": [],
+      "postDecayResults": {},
+      "currentEpoch": 0,
+      "currentPhase": "starting",
+      "expectedEta": "2026-09-12T08:00:00Z",
+      "revision": "c1425d6d0b0d212d7023842027fe35d2e81b61cb",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm111m/bs64_dr_wt_embwd_lr1e-3_wd0.3",
       "minRuntimeSeconds": 23400
     },
     {
@@ -728,14 +1019,46 @@
       "status": "saturated",
       "experiment": "01M293H08JR4PFDC8GR31D2GAY",
       "job": "01M293H0C6Y8NHJZ4D55E2SYF8",
-      "resolvedCheckpointEpochs": [8, 16, 24, 32, 40, 48, 56, 64, 72, 80],
-      "resolvedPostEpochs": [16, 32, 48, 64, 80],
+      "resolvedCheckpointEpochs": [
+        8,
+        16,
+        24,
+        32,
+        40,
+        48,
+        56,
+        64,
+        72,
+        80
+      ],
+      "resolvedPostEpochs": [
+        16,
+        32,
+        48,
+        64,
+        80
+      ],
       "postDecayResults": {
-        "16": {"status": "complete", "validationExact": 3.94414},
-        "32": {"status": "complete", "validationExact": 3.89755},
-        "48": {"status": "complete", "validationExact": 3.8816},
-        "64": {"status": "complete", "validationExact": 3.87971},
-        "80": {"status": "complete", "validationExact": 3.8834}
+        "16": {
+          "status": "complete",
+          "validationExact": 3.94414
+        },
+        "32": {
+          "status": "complete",
+          "validationExact": 3.89755
+        },
+        "48": {
+          "status": "complete",
+          "validationExact": 3.8816
+        },
+        "64": {
+          "status": "complete",
+          "validationExact": 3.87971
+        },
+        "80": {
+          "status": "complete",
+          "validationExact": 3.8834
+        }
       },
       "currentEpoch": 80,
       "currentPhase": "terminal",
