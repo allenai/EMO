@@ -237,11 +237,10 @@ def build_q3():
         rows = [[f"layer {l}", *[str(s) for s in G["sizes"][str(l)]], f(G["layer9_agreement"].get(str(l)), 2) if str(l) in G["layer9_agreement"] else "&mdash; (whole)"] for l in range(1, 10)]
         pv = G["preview"]
         body += section("Stage 0: the four block-groups",
-            "Experts per group and layer, and how often a document's block in that layer agrees with its layer-9 block (the Q2 alignment).",
+            "Number of experts per group in each layer. The last column is how often a document's block in that layer agrees with its "
+            "layer-9 block (the Q2 alignment used to match blocks across layers).",
             table(["layer", "group 0", "group 1", "group 2", "group 3", "agreement with layer 9"], rows),
-            f"On the 8k-instance routing sample the groups would receive {' / '.join(f'{100*x:.0f}%' for x in pv['token_share'])} of the tokens, "
-            f"and a document keeps on average {100*pv['in_group_share_mean']:.0f}% of its layers 2&ndash;9 routing inside its chosen group "
-            f"(median {100*pv['in_group_share_median']:.0f}%, random assignment would give 25%). The other half is what a sub-model cannot serve.")
+            "Groups are uneven (97&ndash;162 experts per layer), so the four sub-models differ in size; layer 1 keeps all 512 experts in every group.")
     if stats:
         body += section("Stage 1: assigning the next 10B tokens",
             "Every document of the 10B&ndash;20B training window routed through the full model; in-group share = the fraction of its top-16 selections "
@@ -267,8 +266,7 @@ def build_q3():
                      "documents to the two biggest blocks); the same rule on the EMO model changes its group shares only slightly (21/35/26/18% vs "
                      "23/40/15/22%) and its in-group share not at all (0.50 vs 0.51).</p>")
         body += card("info", "Standard MoE: the four block-groups", std_intro + table(["layer", "group 0", "group 1", "group 2", "group 3", "agreement with layer 9"], rows)
-                     + f"<p>Routing-sample preview: token shares {' / '.join(f'{100*x:.0f}%' for x in pv['token_share'])}, mean in-group share {100*pv['in_group_share_mean']:.0f}% "
-                     f"(random 25%): a standard-model document keeps almost none of its routing inside any one group.</p>")
+                     )
         if Ss.exists():
             st = json.load(open(Ss))
             body += card("info", "Standard MoE: assigning the next 10B tokens",
