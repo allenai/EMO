@@ -112,6 +112,12 @@ def authorized_continuation_targets(item: dict[str, Any]) -> tuple[int, ...]:
 
 
 def continuation_source_epoch(item: dict[str, Any], target_epoch: int) -> int:
+    explicit_source = item.get("continuationSourceEpoch")
+    if explicit_source is not None:
+        source_epoch = int(explicit_source)
+        if source_epoch >= target_epoch:
+            raise ValueError("continuation source must precede its target")
+        return source_epoch
     candidates = [
         int(epoch) for epoch in item["evaluationEpochs"] if int(epoch) < target_epoch
     ]
@@ -337,6 +343,7 @@ def coordinate_for_target(
     item = copy.deepcopy(coordinate(manifest, coordinate_id))
     if target_epoch is None:
         return item
+    source_epoch = continuation_source_epoch(item, target_epoch)
     allowed_targets = authorized_continuation_targets(item)
     if target_epoch not in allowed_targets:
         raise ValueError(
@@ -365,6 +372,7 @@ def coordinate_for_target(
     else:
         raise ValueError(f"{item['model']} has no authorized continuation targets")
     item["maxEpoch"] = target_epoch
+    item["continuationSourceEpoch"] = source_epoch
     item["continuationTargetEpoch"] = target_epoch
     if int(item["batchSequences"]) == 64:
         item["gpuCount"] = 4

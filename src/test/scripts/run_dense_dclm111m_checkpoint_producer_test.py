@@ -29,6 +29,7 @@ def test_474m_bs64_wd1_continues_to_saturation_with_original_cadence() -> None:
 
     assert item["retainedCheckpointEpochs"] == list(range(4, 97, 4))
     assert item["evaluationEpochs"] == list(range(8, 97, 8))
+    assert item["continuationSourceEpoch"] == 32
     assert item["continuationTargetEpoch"] == 96
     assert item["maxEpoch"] == 96
     assert item["gpuCount"] == 4
