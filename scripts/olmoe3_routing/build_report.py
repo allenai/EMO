@@ -342,7 +342,7 @@ def squares_results(HELD=HELD, PPL=PPL, SQO=SQO, start="emo_step19074", start_pp
                      f"{m_orc-b_orc:+.3f}" if (m_orc is not None and b_orc is not None) else "&mdash;",
                      f"{m_ppl-b_ppl:+.3f}" if (m_ppl is not None and b_ppl is not None) else "&mdash;"])
     # post-merge finetuning: +0.5B tokens (steps 38548-39502) for the 100% merge and, for fairness, for the baseline
-    ft = {tag: (_ce(HELD / f"{tag}/none"), _ce(HELD / f"{tag}/oracle")) for tag in ("baseline_ft", "merged_ft")}
+    ft = {tag: (_ce(HELD / f"{tag}_rerun/none") if (HELD / f"{tag}_rerun/none/meta.json").exists() else _ce(HELD / f"{tag}/none"), _ce(HELD / f"{tag}/oracle")) for tag in ("baseline_ft", "merged_ft")}  # a rerun pass supersedes a pass with blown-up documents
     ppl_ft = {}
     for r in PPL.glob("*_ft"):
         if (r / "step39502.json").exists(): ppl_ft["merged_ft" if "merged" in r.name else "baseline_ft"] = _ppl(r / "step39502.json")
