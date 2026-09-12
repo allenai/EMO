@@ -357,6 +357,12 @@ def register_new_runs(
                 "status": "running",
                 "wd0.1Authorized": False,
             }
+        elif coordinate_id == runner.BS64_474M_LR1E3_WD10_SATURATION:
+            record["saturationGate"] = {
+                "evaluationEpochs": list(item["evaluationEpochs"]),
+                "criterion": "first_adjacent_post_validationExact_non_improvement",
+                "status": "pending",
+            }
         else:
             record["wdPruningGate"] = {
                 "decisionEpoch": 16 if item["model"] == "474m" else 32,

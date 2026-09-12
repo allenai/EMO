@@ -138,6 +138,22 @@
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm333m/bs64_dr_wt_embwd_lr2e-3_wd1.0"
     },
     {
+      "id": "dense-474m-dclm333m-bs64-lr1e-3-wd1.0",
+      "model": "474m",
+      "batchSequences": 64,
+      "gpuCount": 8,
+      "rankMicrobatchSequences": 8,
+      "learningRate": "1e-3",
+      "weightDecay": "1.0",
+      "retainedCheckpointEpochs": [8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96],
+      "evaluationEpochs": [16, 32, 48, 64, 80, 96],
+      "maxEpoch": 96,
+      "stopOnAdjacentPostNonImprovement": true,
+      "estimatedDeviceTokensPerSecond": 130000,
+      "baseExperiment": "01KZ7307CK7ZZQ1XCJ2QQ08KD4",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm333m/bs64_dr_wt_embwd_lr1e-3_wd1.0"
+    },
+    {
       "id": "dense-474m-dclm333m-bs128-lr2e-3-wd0.3",
       "model": "474m",
       "batchSequences": 128,
