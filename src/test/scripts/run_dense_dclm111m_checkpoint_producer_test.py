@@ -45,3 +45,17 @@ def test_474m_pool111m_continuation_is_restricted_to_requested_coordinate() -> N
         producer.coordinate_for_target(
             config, "dense-474m-dclm111m-bs64-lr2e-3-wd0.3", 96
         )
+
+
+def test_474m_bs64_lr1e3_wd1_is_an_independent_valid_coordinate() -> None:
+    producer.configure_base()
+    config = producer.load_manifest(MANIFEST)
+    item = producer.coordinate_for_target(
+        config, "dense-474m-dclm111m-bs64-lr1e-3-wd1.0", None
+    )
+
+    assert item["retainedCheckpointEpochs"] == list(range(4, 33, 4))
+    assert item["evaluationEpochs"] == [8, 16, 24, 32]
+    assert item["gpuCount"] == 4
+    assert item["rankMicrobatchSequences"] == 16
+    producer.validate_coordinate(item)
