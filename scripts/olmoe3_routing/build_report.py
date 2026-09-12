@@ -223,13 +223,16 @@ def build_q3():
     G = json.load(open(SQ / "groups.json")) if (SQ / "groups.json").exists() else None
     stats = json.load(open(SQO / "stats.json")) if (SQO / "stats.json").exists() else None
     body += card("info", "Plan",
-        "<p>For each model we split each layer's experts into 4 spectral blocks and, using the block agreement across layers from Q2, "
-        "build 4 sub-models, each owning one block per layer (layer 1 is kept whole in every sub-model). We then assign the documents we are "
-        "going to train on to the four sub-models (each document goes to the sub-model whose experts it routes to most), train each "
-        "sub-model on its documents, and merge the four sub-models back into one model (experts side by side; the shared parameters "
-        "averaged). The baseline is the original model, continuously trained on all the documents together, without splitting into "
-        "sub-models. Both see the same 10B tokens in total, and the merged model is compared with the baseline at matching points of "
-        "that training.</p>")
+        "<ol>"
+        "<li><b>Split.</b> For each model, split each layer's experts into 4 spectral blocks and, using the block agreement across layers (Q2), "
+        "build 4 sub-models, each owning one block per layer. Layer 1 is kept whole in every sub-model.</li>"
+        "<li><b>Assign.</b> Assign the documents we are going to train on to the four sub-models: each document goes to the sub-model whose "
+        "experts it routes to most.</li>"
+        "<li><b>Train.</b> Train each sub-model on its own documents.</li>"
+        "<li><b>Merge.</b> Merge the four sub-models back into one model: experts side by side, shared parameters averaged.</li>"
+        "<li><b>Baseline.</b> The original model, continuously trained on all the documents together, without splitting into sub-models. "
+        "Both routes see the same 10B tokens; the merged model is compared with the baseline at matching points of that training.</li>"
+        "</ol>")
     if G:
         rows = [[f"layer {l}", *[str(s) for s in G["sizes"][str(l)]], f(G["layer9_agreement"].get(str(l)), 2) if str(l) in G["layer9_agreement"] else "&mdash; (whole)"] for l in range(1, 10)]
         pv = G["preview"]
