@@ -2466,7 +2466,7 @@
       "plannedPostEpochs": []
     }
   ],
-  "updatedAt": "2026-09-13T03:20:27.030226+00:00",
+  "updatedAt": "2026-09-13T04:10:14.248525+00:00",
   "smallEvaluators": [
     {
       "id": "dense-153m-dclm3b-bs128-lr2e-3-wd0.033-post-e32-v1",
@@ -4349,7 +4349,7 @@
     }
   ],
   "smallEvaluatorCount": 32,
-  "dclm333mIntegratedCount": 17,
+  "dclm333mIntegratedCount": 18,
   "dclm333mIntegratedRuns": [
     {
       "id": "dense-1b-dclm333m-bs32-lr5e-4-wd0.3",
@@ -5740,6 +5740,63 @@
       },
       "terminalReason": "adjacent POST non-improvement at E48 versus E32",
       "completedAt": "2026-09-13T03:20:27.030226Z"
+    },
+    {
+      "id": "dense-474m-dclm333m-bs64-lr4e-3-wd0.3",
+      "role": "integrated_checkpoint_producer_and_evaluator",
+      "policy": "dense_dclm333m_integrated_producer_eval_v1",
+      "model": "474m",
+      "pool": "dclm333m",
+      "batchSequences": 64,
+      "learningRate": "4e-3",
+      "weightDecay": "0.3",
+      "gpuCount": 8,
+      "gradientAccumulationSteps": 1,
+      "retainedCheckpointEpochs": [
+        8,
+        16,
+        24,
+        32,
+        40,
+        48,
+        56,
+        64
+      ],
+      "evaluationEpochs": [
+        8,
+        16,
+        24,
+        32,
+        40,
+        48,
+        56,
+        64
+      ],
+      "resolvedCheckpointEpochs": [],
+      "resolvedPostEpochs": [],
+      "postDecayResults": {},
+      "currentEpoch": 8,
+      "currentPhase": "producer",
+      "status": "submitted",
+      "experiment": "01M2CFAS04EWPV6MAJ2ZCMJ4M5",
+      "job": "01M2CFAS3VKP15MP4QY0HYJQPN",
+      "revision": "f97bc1190fb065c0e8edaf575a9a649cd0e627ca",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm333m/bs64_dr_wt_embwd_lr4e-3_wd0.3",
+      "beakerStatus": "submitted",
+      "saturationGate": {
+        "evaluationEpochs": [
+          8,
+          16,
+          24,
+          32,
+          40,
+          48,
+          56,
+          64
+        ],
+        "criterion": "first_adjacent_post_validationExact_non_improvement",
+        "status": "pending"
+      }
     },
     {
       "id": "dense-474m-dclm333m-bs128-lr2e-3-wd0.3",

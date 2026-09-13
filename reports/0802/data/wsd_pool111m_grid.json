@@ -1,14 +1,14 @@
 {
   "policy": "dense_dclm111m_integrated_producer_eval_v1",
-  "updatedAt": "2026-09-13T04:00:07.330602+00:00",
+  "updatedAt": "2026-09-13T04:10:12.740199+00:00",
   "datasetManifest": "src/olmo_core/data/subsets/0802/dclm_0802_repeated_train_111m.json",
   "scheduling": "allocated",
   "minRuntimeOmitted": false,
-  "trajectoryCount": 15,
-  "lastPolledAt": "2026-09-13T04:00:15.000000Z",
+  "trajectoryCount": 16,
+  "lastPolledAt": "2026-09-13T04:02:10.000000Z",
   "liveSummary": {
-    "queued": 1,
-    "running": 0,
+    "queued": 0,
+    "running": 1,
     "terminal": 14,
     "telemetryAvailable": true,
     "warning": "1B BS32 LR5e-4 WD1.0 exhausted all eight retries with reproducible NaN loss at exact step 403"
@@ -844,6 +844,50 @@
       "minRuntimeSeconds": 14400
     },
     {
+      "id": "dense-474m-dclm111m-bs64-lr4e-3-wd1.0",
+      "model": "474m",
+      "pool": "dclm111m",
+      "batchSequences": 64,
+      "learningRate": "4e-3",
+      "weightDecay": "1.0",
+      "gpuCount": 8,
+      "retainedCheckpointEpochs": [
+        4,
+        8,
+        12,
+        16,
+        20,
+        24,
+        28,
+        32,
+        36,
+        40,
+        44,
+        48,
+        52,
+        56,
+        60,
+        64
+      ],
+      "evaluationEpochs": [
+        8,
+        16,
+        24,
+        32,
+        40,
+        48,
+        56,
+        64
+      ],
+      "stopOnAdjacentPostNonImprovement": true,
+      "status": "submitted",
+      "experiment": "01M2CFAQ893RPBV8YXZD7WQVKK",
+      "job": "01M2CFAQJEMSB3HXTGRZC59S1Q",
+      "revision": "f97bc1190fb065c0e8edaf575a9a649cd0e627ca",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_474m_dclm111m/bs64_dr_wt_embwd_lr4e-3_wd1.0",
+      "minRuntimeSeconds": 19800
+    },
+    {
       "id": "dense-153m-dclm111m-bs32-lr1e-3-wd0.3",
       "model": "153m",
       "pool": "dclm111m",
@@ -1282,20 +1326,38 @@
         8,
         16,
         24,
-        32
+        32,
+        40,
+        48,
+        56,
+        64,
+        72,
+        80,
+        88,
+        96,
+        104,
+        112,
+        120,
+        128
       ],
       "evaluationEpochs": [
         16,
-        32
+        32,
+        48,
+        64,
+        80,
+        96,
+        112,
+        128
       ],
       "stopOnAdjacentPostNonImprovement": true,
-      "status": "submitted",
+      "status": "running",
       "experiment": "01M2CER896M9TQZ4V8S7KTZ1WJ",
       "job": "01M2CER8CV4C68KDATR5Z3VWX1",
       "jobs": [
         "01M2CER8CV4C68KDATR5Z3VWX1"
       ],
-      "beakerStatus": "created",
+      "beakerStatus": "running",
       "revision": "eb3799b9d87ed905f62103d98d73286643775345",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm111m/bs64_dr_wt_embwd_lr4e-3_wd0.3",
       "minRuntimeSeconds": 14400,
@@ -1327,7 +1389,7 @@
       },
       "currentEpoch": 40,
       "currentPhase": "producer",
-      "startedAt": "2026-09-13T01:14:15.000000Z",
+      "startedAt": "2026-09-13T04:01:07.478019Z",
       "experimentHistory": [
         {
           "experiment": "01M2C4JGE3T55KDTTFTCZNJBNT",
@@ -1366,7 +1428,17 @@
       ],
       "continuationHardStopEpoch": 128,
       "submittedAt": "2026-09-13T04:00:07.327982+00:00",
-      "minRuntime": "4h"
+      "minRuntime": "4h",
+      "wandbHealth": {
+        "status": "healthy_startup",
+        "checkedAt": "2026-09-13T04:02:10.000000Z",
+        "beakerState": "running",
+        "latestStep": 12194,
+        "totalSteps": 15243,
+        "epoch": 32,
+        "eta": "pending/no reliable ETA until E40 training telemetry",
+        "criticalSignals": []
+      }
     }
   ]
 }
