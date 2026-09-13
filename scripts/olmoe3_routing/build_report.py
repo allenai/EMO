@@ -282,6 +282,22 @@ def build_q3():
         body += squares_results(HELD=ROOT / "sparse_experts/olmoe3_routing/runs_heldout20b_noemo", PPL=ROOT / "sparse_experts/olmoe3_squares_noemo/ppl_validation", SQO=OUT / "olmoe3_squares_noemo",
                                 start="emo_step19074", start_ppl="olmoe3_275m_emo_10b", base_runs=("olmoe3_275m_emo_20b_1node",), label=" (EMO squares, no EMO loss)",
                                 take_main="", take_pw="")
+    if (ROOT / "sparse_experts/olmoe3_routing/runs_heldout20b_k8").exists():
+        G8 = json.load(open(ROOT / "sparse_experts/olmoe3_squares_k8/groups.json")) if (ROOT / "sparse_experts/olmoe3_squares_k8/groups.json").exists() else None
+        body += card("info", "EMO squares with 8 sub-models (k = 8)",
+                     "<p>Same stages as the 4-square run on the EMO 512e model, with each layer's experts split into 8 spectral blocks instead of 4 "
+                     "(layer 1 kept whole), so each sub-model owns about an eighth of the experts and trains on about an eighth of the tokens. "
+                     "Compared against the same EMO baseline.</p>"
+                     + (table(["layer", *[f"group {g}" for g in range(8)], "agreement with layer 9"],
+                              [[f"layer {l}", *[str(s) for s in G8["sizes"][str(l)]], f(G8["layer9_agreement"].get(str(l)), 2) if str(l) in G8["layer9_agreement"] else "&mdash; (whole)"] for l in range(1, 10)]) if G8 else ""))
+        k8_stats = ROOT / "sparse_experts/olmoe3_squares_k8/pack/stats.json"
+        if k8_stats.exists():
+            st = json.load(open(k8_stats))
+            body += card("info", "k = 8: assigning the next 10B tokens",
+                         table(["group", "documents", "tokens", "token share", "mean in-group share", "full-model CE"],
+                               [[f"group {g}", f"{st['docs_per_group'][g]:,}", f"{st['tokens_per_group'][g]/1e9:.2f}B", f"{100*st['token_share'][g]:.1f}%", f(st['in_group_share_by_group'][str(g)], 2), f(st['ce_by_group'][str(g)], 3)] for g in range(8)]))
+        body += squares_results(HELD=ROOT / "sparse_experts/olmoe3_routing/runs_heldout20b_k8", PPL=ROOT / "sparse_experts/olmoe3_squares_k8/ppl_validation", SQO=OUT / "olmoe3_squares_k8",
+                                start="emo_step19074", start_ppl="olmoe3_275m_emo_10b", base_runs=("olmoe3_275m_emo_20b_1node",), label=" (EMO, 8 squares)", take_main="", take_pw="")
     return body
 
 
