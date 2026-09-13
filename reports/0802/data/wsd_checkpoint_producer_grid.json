@@ -2466,7 +2466,7 @@
       "plannedPostEpochs": []
     }
   ],
-  "updatedAt": "2026-09-13T04:10:14.248525+00:00",
+  "updatedAt": "2026-09-13T04:26:46.292868+00:00",
   "smallEvaluators": [
     {
       "id": "dense-153m-dclm3b-bs128-lr2e-3-wd0.033-post-e32-v1",
@@ -7907,5 +7907,75 @@
       "resolvedPostEpoch": 176
     }
   ],
-  "dclm333mRetainedEvaluatorCount": 13
+  "dclm333mRetainedEvaluatorCount": 13,
+  "pool3bLearningRateProbes": [
+    {
+      "id": "dense-153m-dclm3b-bs256-lr4e-3-wd0.1",
+      "role": "integrated_checkpoint_producer_and_evaluator",
+      "policy": "dense_153m_pool3b_bs256_lr4e3_wd01_saturation_v1",
+      "model": "153m",
+      "pool": "dclm3b",
+      "batchSequences": 256,
+      "learningRate": "4e-3",
+      "weightDecay": "0.1",
+      "nodeCount": 2,
+      "gpusPerNode": 8,
+      "gpuCount": 16,
+      "rankMicrobatchSequences": 16,
+      "gradientAccumulationSteps": 1,
+      "resolvedCheckpointEpochs": [],
+      "resolvedPostEpochs": [],
+      "postDecayResults": {},
+      "targetEpochs": [
+        32,
+        64,
+        96,
+        128,
+        160,
+        192,
+        224,
+        256,
+        288,
+        320,
+        352,
+        384
+      ],
+      "evaluationEpochs": [
+        64,
+        128,
+        192,
+        256,
+        320,
+        384
+      ],
+      "currentEpoch": 32,
+      "currentPhase": "repacked_shuffled_pool3b_constant_lr",
+      "status": "submitted",
+      "beakerStatus": "submitted",
+      "experiment": "01M2CG91D0ZMAZG13KCAFY3ER5",
+      "jobs": [
+        "01M2CG91JNA3ZNZY7R9K1SFFB3",
+        "01M2CG91P5VSQ3NTDCN47YKQ62"
+      ],
+      "job": "01M2CG91JNA3ZNZY7R9K1SFFB3",
+      "revision": "b3c6e1e81c5e74832861ec52da7b197d77bf6fa6",
+      "bootstrapOutput": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm1b/bs256_dr_wt_embwd_lr4e-3_wd0.1",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm3b/bs256_dr_wt_embwd_lr4e-3_wd0.1",
+      "minRuntime": "8h",
+      "stopOnAdjacentPostNonImprovement": true,
+      "submittedAt": "2026-09-13T04:26:46.292868+00:00",
+      "wandbHealth": {
+        "status": "pending",
+        "checkedAt": "2026-09-13T04:28:37.451313+00:00",
+        "beakerState": "submitted",
+        "latestStep": null,
+        "totalSteps": null,
+        "run": null,
+        "epoch": null,
+        "eta": null,
+        "criticalSignals": []
+      }
+    }
+  ],
+  "pool3bLearningRateProbeCount": 1
 }

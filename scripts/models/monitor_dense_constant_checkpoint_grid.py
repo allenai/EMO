@@ -65,6 +65,18 @@ POOL3B_INTEGRATED_DECISION = re.compile(
     r"DENSE_POOL3B_INTEGRATED_DECISION id=([^ ]+) epoch=([0-9]+) json=(\{.*\})$",
     re.MULTILINE,
 )
+POOL3B_LR4_PD_RETAINED = re.compile(
+    r"DENSE153M_POOL3B_LR4_PD_RETAINED epoch=([0-9]+) checkpoint=([^\s]+)$",
+    re.MULTILINE,
+)
+POOL3B_LR4_POST_RESULT = re.compile(
+    r"DENSE153M_POOL3B_LR4_POST_RESULT epoch=([0-9]+) json=(\{.*\})$",
+    re.MULTILINE,
+)
+POOL3B_LR4_SATURATED = re.compile(
+    r"DENSE153M_POOL3B_LR4_SATURATED epoch=([0-9]+) previousEpoch=([0-9]+)$",
+    re.MULTILINE,
+)
 
 
 def command(arguments: list[str]) -> str:
@@ -135,7 +147,7 @@ def write_report(report: dict[str, Any]) -> None:
     report["updatedAt"] = datetime.now(tz=UTC).isoformat()
     REPORT.write_text(json.dumps(report, indent=2) + "\n")
     REPORT_JS.write_text(
-        "window.ICSL_CHECKPOINT_PRODUCER_GRID=" + json.dumps(report, separators=(",", ":")) + ";\n"
+        "window.ICSL_CHECKPOINT_PRODUCER_GRID=" + json.dumps(report, indent=2) + ";\n"
     )
 
 
@@ -325,11 +337,34 @@ def refresh_producer(record: dict[str, Any]) -> str:
         for producer_id, epoch, raw in POOL3B_INTEGRATED_POST_RESULT.findall(logs):
             if producer_id == record["id"]:
                 results[str(int(epoch))] = json.loads(raw)
+        if record.get("policy") == "dense_153m_pool3b_bs256_lr4e3_wd01_saturation_v1":
+            for epoch, _checkpoint in POOL3B_LR4_PD_RETAINED.findall(logs):
+                retained_epoch = int(epoch)
+                resolved.add(retained_epoch)
+                retained_in_logs.add(retained_epoch)
+            for epoch, raw in POOL3B_LR4_POST_RESULT.findall(logs):
+                results[str(int(epoch))] = json.loads(raw)
         decisions = [
             (int(epoch), json.loads(raw))
             for producer_id, epoch, raw in POOL3B_INTEGRATED_DECISION.findall(logs)
             if producer_id == record["id"]
         ]
+        if record.get("policy") == "dense_153m_pool3b_bs256_lr4e3_wd01_saturation_v1":
+            saturation = POOL3B_LR4_SATURATED.findall(logs)
+            if saturation:
+                decision_epoch, previous_epoch = map(int, saturation[-1])
+                decisions = [
+                    (
+                        decision_epoch,
+                        {
+                            "status": "saturated",
+                            "criterion": "adjacent_post_validationExact_non_improvement",
+                            "producerStoppedAfterEpoch": decision_epoch,
+                            "previousEpoch": previous_epoch,
+                            "nextProducerEpoch": None,
+                        },
+                    )
+                ]
         record["resolvedPostEpochs"] = sorted(int(epoch) for epoch in results)
         if decisions:
             decision_epoch, decision = decisions[-1]
@@ -366,6 +401,7 @@ def refresh_producer(record: dict[str, Any]) -> str:
         f"DENSE_CHECKPOINT_PRODUCER_COMPLETE id={record['id']}",
         f"DENSE_SMALL_POOL3B_PRODUCER_COMPLETE id={record['id']}",
         f"DENSE_POOL3B_INTEGRATED_JOB_COMPLETE id={record['id']}",
+        "DENSE153M_POOL3B_LR4_COMPLETE hard_ceiling=384",
     )
     authorized_stop = (
         bool(record.get("stopAuthorized"))
@@ -749,6 +785,9 @@ def main() -> None:
         }
     for record in integrated:
         status = refreshed_by_id.get(str(record["id"]), str(record.get("status")))
+        print(f"{record['id']}: {status}")
+    for record in report.get("pool3bLearningRateProbes", []):
+        status = refresh_producer(record) if should_poll(record) else str(record.get("status"))
         print(f"{record['id']}: {status}")
     write_report(report)
 

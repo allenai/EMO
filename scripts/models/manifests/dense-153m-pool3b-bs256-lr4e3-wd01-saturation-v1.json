@@ -8,7 +8,7 @@
   "compositeManifest": "/weka/oe-training-default/sewonm/icsl/data/dclm_0802_nested_1b_3b_9b/manifests/dclm_0802_nested_train_3b.json",
   "poolAudit": "/weka/oe-training-default/sewonm/icsl/data/dclm_0802_nested_1b_3b_9b/manifests/dclm_0802_nested_1b_3b_9b.pool.json",
   "checkpointEpochs": [32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384],
-  "evaluationEpochs": [32, 64, 96, 128, 160, 192, 224, 256, 320, 384],
+  "evaluationEpochs": [64, 128, 192, 256, 320, 384],
   "maxEpoch": 384,
   "producerCoordinate": {
     "id": "dense-153m-dclm3b-bs256-lr4e-3-wd0.1",

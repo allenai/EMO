@@ -34,7 +34,7 @@ BOOTSTRAP_OUTPUT = Path(
 STATE_DIR = OUTPUT / ".lr4e3_wd01_saturation_v1"
 TRAINING_SCRIPT = "src/scripts/train/olmo2-1B.py"
 CHECKPOINT_EPOCHS = tuple(range(32, 385, 32))
-EVALUATION_EPOCHS = (32, 64, 96, 128, 160, 192, 224, 256, 320, 384)
+EVALUATION_EPOCHS = (64, 128, 192, 256, 320, 384)
 
 
 def checkpoint_step(epoch: int, pool_tokens: int = producer.TARGET_POOL_TOKENS) -> int:
