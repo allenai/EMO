@@ -88,9 +88,9 @@ def configure_base() -> None:
     )
     base.BS64_474M_CONTINUATION_RETAIN_INTERVAL = 4
     base.BS64_474M_CONTINUATION_EVAL_INTERVAL = 8
-    base.BS64_153M_WD03_CONTINUATION_TARGETS = (48,)
+    base.BS64_153M_WD03_CONTINUATION_TARGETS = (48, 128)
     base.BS64_153M_CONTINUATION_RETAIN_INTERVAL = 8
-    base.BS64_153M_CONTINUATION_EVALUATION_EPOCHS = (16, 32, 48)
+    base.BS64_153M_CONTINUATION_EVALUATION_EPOCHS = tuple(range(16, 129, 16))
     base.CONTINUATIONS_IGNORING_PRIOR_SATURATION = (
         ("dense-153m-dclm111m-bs64-lr2e-3-wd0.3", 48),
     )
@@ -98,7 +98,7 @@ def configure_base() -> None:
     base.BS64_153M_LR4E3_WD03_PROBE = (
         "dense-153m-dclm111m-bs64-lr4e-3-wd0.3"
     )
-    base.ALL_CONTINUATION_TARGETS = (48, 96)
+    base.ALL_CONTINUATION_TARGETS = (48, 96, 128)
 
 
 configure_base()

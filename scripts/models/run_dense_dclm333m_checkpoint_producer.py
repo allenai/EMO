@@ -262,7 +262,16 @@ def validate_coordinate(item: dict[str, Any]) -> None:
     evaluations = [int(epoch) for epoch in item["evaluationEpochs"]]
     max_epoch = int(item["maxEpoch"])
     continuation_targets = authorized_continuation_targets(item)
-    if is_bs64_153m_lr4e3_probe:
+    if is_bs64_153m_lr4e3_probe and max_epoch in continuation_targets:
+        expected_retained = list(
+            range(BS64_153M_CONTINUATION_RETAIN_INTERVAL, max_epoch + 1,
+                  BS64_153M_CONTINUATION_RETAIN_INTERVAL)
+        )
+        expected_evaluations = [
+            epoch for epoch in BS64_153M_CONTINUATION_EVALUATION_EPOCHS
+            if epoch <= max_epoch
+        ]
+    elif is_bs64_153m_lr4e3_probe:
         expected_retained = [8, 16, 24, 32]
         expected_evaluations = [16, 32]
     elif is_bs64_lr_probe:
