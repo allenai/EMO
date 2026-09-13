@@ -128,6 +128,14 @@ def bootstrap_arguments(config: dict[str, Any], item: dict[str, Any]) -> list[st
         "--train_module.scheduler=",
         "--train_module.scheduler={_CLASS_: olmo_core.optim.scheduler.ConstantWithWarmup, warmup: 96}",
     )
+    # The Pool-1B bootstrap is a new trajectory.  The shared Pool-3B producer
+    # arguments require exact loading for continuations, but there is no source
+    # checkpoint at this stage.
+    arguments = producer.common.upsert(
+        arguments,
+        "--force_exact_trainer_load_path=",
+        "--force_exact_trainer_load_path=false",
+    )
     return [
         *arguments,
         f"--save-folder={BOOTSTRAP_OUTPUT}",
