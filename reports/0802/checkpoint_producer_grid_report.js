@@ -31,9 +31,10 @@
     ["failed", "failed_validation", "canceled", "cancelled", "error"].includes(status);
 
   const integratedRuns = current.dclm333mIntegratedRuns || [];
+  const pool3bLearningRateProbes = current.pool3bLearningRateProbes || [];
   const integratedPool3bRuns = (current.producers || []).filter((producer) =>
     producer.role === "integrated_checkpoint_producer_and_evaluator",
-  );
+  ).concat(pool3bLearningRateProbes);
   const wdProbeRuns = current.weightDecayProbes474m?.coordinates || [];
   const pool111Runs = (pool111.trajectories || []).map((run) => ({
     ...run,
@@ -46,6 +47,7 @@
   }));
   const producers = [
     ...(current.producers || []),
+    ...pool3bLearningRateProbes,
     ...pool111Runs,
     ...integratedRuns,
     ...wdProbeRuns,

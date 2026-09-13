@@ -86,6 +86,15 @@ for (const run of current.dclm333mIntegratedRuns || []) {
     expected.set(key, Math.min(expected.get(key) ?? Infinity, value));
   }
 }
+for (const run of current.pool3bLearningRateProbes || []) {
+  for (const [epochText, result] of Object.entries(run.postDecayResults || {})) {
+    if (result?.status !== "complete") continue;
+    const value = Number(result.validationExact ?? result.validation);
+    if (!Number.isFinite(value)) continue;
+    const key = `${run.model}:dclm3b:${run.batchSequences}:${epochText}`;
+    expected.set(key, Math.min(expected.get(key) ?? Infinity, value));
+  }
+}
 
 const columnIndex = new Map([
   ["1b:dclm111m:32", 0],
@@ -227,6 +236,21 @@ for (const run of pool111.trajectories || []) {
     : (queued ? "producer queued" : "producer running");
   if (!row || !row.includes(`WD ${run.weightDecay})`) || !row.includes(expectedState)) {
     throw new Error(`coordinate grid omits active Pool-111M state for ${run.id}`);
+  }
+}
+for (const run of current.pool3bLearningRateProbes || []) {
+  if (!["submitted", "queued", "scheduled", "running"].includes(run.status)) continue;
+  const label = "153M · Pool-3B · BS256";
+  const rowPattern = new RegExp(
+    `<tr><td>E${run.currentEpoch}<\\/td><td>${label}<\\/td>(.*?)<\\/tr>`,
+  );
+  const row = grid.match(rowPattern)?.[1];
+  const queued = ["submitted", "queued", "scheduled"].includes(run.status);
+  const expectedState = run.currentPhase === "post"
+    ? (queued ? "POST queued" : "POST running")
+    : (queued ? "producer queued" : "producer running");
+  if (!row || !row.includes(`WD ${run.weightDecay})`) || !row.includes(expectedState)) {
+    throw new Error(`coordinate grid omits active Pool-3B LR probe ${run.id}`);
   }
 }
 
