@@ -1,15 +1,15 @@
 {
   "policy": "dense_dclm111m_integrated_producer_eval_v1",
-  "updatedAt": "2026-09-13T02:56:15.000000+00:00",
+  "updatedAt": "2026-09-13T04:00:07.330602+00:00",
   "datasetManifest": "src/olmo_core/data/subsets/0802/dclm_0802_repeated_train_111m.json",
   "scheduling": "allocated",
   "minRuntimeOmitted": false,
   "trajectoryCount": 15,
-  "lastPolledAt": "2026-09-13T02:56:15.000000Z",
+  "lastPolledAt": "2026-09-13T04:00:15.000000Z",
   "liveSummary": {
-    "queued": 0,
+    "queued": 1,
     "running": 0,
-    "terminal": 15,
+    "terminal": 14,
     "telemetryAvailable": true,
     "warning": "1B BS32 LR5e-4 WD1.0 exhausted all eight retries with reproducible NaN loss at exact step 403"
   },
@@ -63,7 +63,9 @@
       }
     ]
   },
-  "jobAllowlist": [],
+  "jobAllowlist": [
+    "01M2CER8CV4C68KDATR5Z3VWX1"
+  ],
   "retainedCheckpointEvaluation": {
     "id": "dense-153m-dclm111m-bs64-lr2e-3-wd0.3-retained-post-e40-e48-e56-v1",
     "role": "evaluation_only_retained_checkpoint_wsd_and_heldout",
@@ -1287,16 +1289,16 @@
         32
       ],
       "stopOnAdjacentPostNonImprovement": true,
-      "status": "complete",
-      "experiment": "01M2C4JGE3T55KDTTFTCZNJBNT",
-      "job": "01M2C4JGHSMB170B4CBH7DG0JT",
+      "status": "submitted",
+      "experiment": "01M2CER896M9TQZ4V8S7KTZ1WJ",
+      "job": "01M2CER8CV4C68KDATR5Z3VWX1",
       "jobs": [
-        "01M2C4JGHSMB170B4CBH7DG0JT"
+        "01M2CER8CV4C68KDATR5Z3VWX1"
       ],
-      "beakerStatus": "succeeded",
-      "revision": "3f7e2e3819fc0d8c14578e768b72bf770d666217",
+      "beakerStatus": "created",
+      "revision": "eb3799b9d87ed905f62103d98d73286643775345",
       "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm111m/bs64_dr_wt_embwd_lr4e-3_wd0.3",
-      "minRuntimeSeconds": 5400,
+      "minRuntimeSeconds": 14400,
       "resolvedCheckpointEpochs": [
         8,
         16,
@@ -1323,21 +1325,48 @@
           "wandb": "8u9tilzl"
         }
       },
-      "currentEpoch": 32,
-      "currentPhase": "terminal",
-      "terminalReason": "completed authorized E32 boundary after E32 POST improved over E16",
-      "completedAt": "2026-09-13T02:15:44.457013Z",
+      "currentEpoch": 40,
+      "currentPhase": "producer",
       "startedAt": "2026-09-13T01:14:15.000000Z",
-      "wandbHealth": {
-        "status": "healthy",
-        "checkedAt": "2026-09-13T02:15:44.457013Z",
-        "beakerState": "complete",
-        "latestStep": 13550,
-        "totalSteps": 13550,
-        "run": "8u9tilzl",
-        "epoch": 32,
-        "criticalSignals": []
-      }
+      "experimentHistory": [
+        {
+          "experiment": "01M2C4JGE3T55KDTTFTCZNJBNT",
+          "job": "01M2C4JGHSMB170B4CBH7DG0JT",
+          "revision": "3f7e2e3819fc0d8c14578e768b72bf770d666217",
+          "status": "complete",
+          "terminalReason": "completed authorized E32 boundary after E32 POST improved over E16",
+          "maxValidatedEpoch": 32,
+          "output": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm111m/bs64_dr_wt_embwd_lr4e-3_wd0.3"
+        }
+      ],
+      "continuationSourceEpoch": 32,
+      "continuationSourceCheckpoint": "/weka/oe-training-default/sewonm/icsl/models/dense_153m_dclm111m/bs64_dr_wt_embwd_lr4e-3_wd0.3/step12194",
+      "continuationTargetEpoch": 128,
+      "continuationCheckpointEpochs": [
+        40,
+        48,
+        56,
+        64,
+        72,
+        80,
+        88,
+        96,
+        104,
+        112,
+        120,
+        128
+      ],
+      "continuationEvaluationEpochs": [
+        48,
+        64,
+        80,
+        96,
+        112,
+        128
+      ],
+      "continuationHardStopEpoch": 128,
+      "submittedAt": "2026-09-13T04:00:07.327982+00:00",
+      "minRuntime": "4h"
     }
   ]
 }
