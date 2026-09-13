@@ -92,6 +92,7 @@ BS64_153M_CONTINUATION_EVALUATION_EPOCHS = (32, 64, 96, 128, 160, 192)
 CONTINUATIONS_IGNORING_PRIOR_SATURATION: tuple[tuple[str, int], ...] = ()
 BS64_474M_LR1E3_WD03_PROBE = "dense-474m-dclm333m-bs64-lr1e-3-wd0.3"
 BS64_474M_LR1E3_WD10_SATURATION = "dense-474m-dclm333m-bs64-lr1e-3-wd1.0"
+BS64_153M_LR4E3_WD03_PROBE = ""
 ALL_CONTINUATION_TARGETS = tuple(
     sorted(set(BS64_474M_CONTINUATION_TARGETS + BS64_153M_WD03_CONTINUATION_TARGETS))
 )
@@ -231,7 +232,13 @@ def validate_coordinate(item: dict[str, Any]) -> None:
     coordinate_id = str(item.get("id"))
     is_bs64_lr_probe = coordinate_id == BS64_474M_LR1E3_WD03_PROBE
     is_bs64_lr_wd10_saturation = coordinate_id == BS64_474M_LR1E3_WD10_SATURATION
-    if is_bs64_lr_probe or is_bs64_lr_wd10_saturation:
+    is_bs64_153m_lr4e3_probe = coordinate_id == BS64_153M_LR4E3_WD03_PROBE
+    if is_bs64_153m_lr4e3_probe:
+        if model != "153m" or batch != 64:
+            raise ValueError("153M LR4e-3 probe must use BS64")
+        if Decimal(lr) != Decimal("4e-3") or wd != "0.3":
+            raise ValueError("153M BS64 LR probe must use LR4e-3/WD0.3")
+    elif is_bs64_lr_probe or is_bs64_lr_wd10_saturation:
         if model != "474m" or batch != 64:
             raise ValueError("474M LR probe must use BS64")
         expected_wd = "1.0" if is_bs64_lr_wd10_saturation else "0.3"
@@ -255,7 +262,10 @@ def validate_coordinate(item: dict[str, Any]) -> None:
     evaluations = [int(epoch) for epoch in item["evaluationEpochs"]]
     max_epoch = int(item["maxEpoch"])
     continuation_targets = authorized_continuation_targets(item)
-    if is_bs64_lr_probe:
+    if is_bs64_153m_lr4e3_probe:
+        expected_retained = [8, 16, 24, 32]
+        expected_evaluations = [16, 32]
+    elif is_bs64_lr_probe:
         expected_retained = [8, 16, 32]
         expected_evaluations = [8, 16, 32]
     elif is_bs64_lr_wd10_saturation:
@@ -297,7 +307,7 @@ def validate_coordinate(item: dict[str, Any]) -> None:
     if max_epoch != retained[-1]:
         raise ValueError(f"{model} max epoch must match the retained-checkpoint frontier")
     if (
-        not (is_bs64_lr_probe or is_bs64_lr_wd10_saturation)
+        not (is_bs64_lr_probe or is_bs64_lr_wd10_saturation or is_bs64_153m_lr4e3_probe)
         and max_epoch != int(policy["max_epoch"])
         and max_epoch not in continuation_targets
     ):

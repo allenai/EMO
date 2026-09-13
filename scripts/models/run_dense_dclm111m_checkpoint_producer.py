@@ -78,8 +78,8 @@ def configure_base() -> None:
     base.EXPECTED_MATERIALIZED_PATH = EXPECTED_MATERIALIZED_PATH
     base.EXPECTED_BASE_TOKENS = EXPECTED_BASE_TOKENS
     base.EXPECTED_BASE_MANIFEST = EXPECTED_BASE_MANIFEST
-    base.EXPECTED_COORDINATE_COUNT = 14
-    base.EXPECTED_MODEL_COORDINATE_COUNTS = {"1b": 4, "474m": 5, "153m": 5}
+    base.EXPECTED_COORDINATE_COUNT = 15
+    base.EXPECTED_MODEL_COORDINATE_COUNTS = {"1b": 4, "474m": 5, "153m": 6}
     base.MODEL_POLICIES = MODEL_POLICIES
     base.BS32_POLICIES = BS32_POLICIES
     base.BS64_474M_CONTINUATION_TARGETS = (96,)
@@ -95,6 +95,9 @@ def configure_base() -> None:
         ("dense-153m-dclm111m-bs64-lr2e-3-wd0.3", 48),
     )
     base.BS64_474M_LR1E3_WD03_PROBE = "unused-dclm111m-coordinate"
+    base.BS64_153M_LR4E3_WD03_PROBE = (
+        "dense-153m-dclm111m-bs64-lr4e-3-wd0.3"
+    )
     base.ALL_CONTINUATION_TARGETS = (48, 96)
 
 
