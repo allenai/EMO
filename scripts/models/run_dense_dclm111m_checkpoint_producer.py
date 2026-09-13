@@ -78,8 +78,8 @@ def configure_base() -> None:
     base.EXPECTED_MATERIALIZED_PATH = EXPECTED_MATERIALIZED_PATH
     base.EXPECTED_BASE_TOKENS = EXPECTED_BASE_TOKENS
     base.EXPECTED_BASE_MANIFEST = EXPECTED_BASE_MANIFEST
-    base.EXPECTED_COORDINATE_COUNT = 16
-    base.EXPECTED_MODEL_COORDINATE_COUNTS = {"1b": 4, "474m": 6, "153m": 6}
+    base.EXPECTED_COORDINATE_COUNT = 17
+    base.EXPECTED_MODEL_COORDINATE_COUNTS = {"1b": 4, "474m": 7, "153m": 6}
     base.MODEL_POLICIES = MODEL_POLICIES
     base.BS32_POLICIES = BS32_POLICIES
     base.BS64_474M_CONTINUATION_TARGETS = (96,)
@@ -99,6 +99,13 @@ def configure_base() -> None:
         "dense-153m-dclm111m-bs64-lr4e-3-wd0.3"
     )
     base.BS64_474M_EXTRA_SATURATION_POLICIES = {
+        "dense-474m-dclm111m-bs64-lr4e-3-wd0.3": {
+            "learningRate": "4e-3",
+            "weightDecay": "0.3",
+            "retainedCheckpointEpochs": tuple(range(4, 65, 4)),
+            "evaluationEpochs": tuple(range(8, 65, 8)),
+            "maxEpoch": 64,
+        },
         "dense-474m-dclm111m-bs64-lr4e-3-wd1.0": {
             "learningRate": "4e-3",
             "weightDecay": "1.0",
