@@ -229,13 +229,20 @@ FIXED_STEPS = [int(x) for x in os.environ.get("OLMOE3_FIXED_STEPS", "").split(",
 WARMUP_STEPS = int(os.environ.get("OLMOE3_WARMUP", "2000"))
 
 
-def _parse_pool_dist(spec: str) -> Optional[float]:
-    """Return the Beta(alpha, 1) alpha for 'beta:<alpha>', or None for 'uniform'."""
+def _parse_pool_dist(spec: str):
+    """'uniform' -> None; 'beta:<alpha>' -> alpha (float); 'choice:<a>,<b>,...' -> list of pool sizes drawn
+    uniformly at random per document (e.g. choice:64,512)."""
     if spec == "uniform":
         return None
+    m = re.fullmatch(r"choice:([0-9,]+)", spec)
+    if m:
+        sizes = [int(x) for x in m.group(1).split(",") if x]
+        if len(sizes) < 2 or any(x < TOP_K for x in sizes):
+            raise ValueError(f"choice pool sizes must be >= 2 values >= top_k, got {spec!r}")
+        return sizes
     m = re.fullmatch(r"beta:([0-9.]+)", spec)
     if not m or float(m.group(1)) <= 0:
-        raise ValueError(f"OLMOE3_EMO_POOL_DIST must be 'uniform' or 'beta:<alpha>' (alpha > 0), got {spec!r}")
+        raise ValueError(f"OLMOE3_EMO_POOL_DIST must be 'uniform', 'beta:<alpha>' (alpha > 0) or 'choice:<sizes>', got {spec!r}")
     return float(m.group(1))
 
 
@@ -250,8 +257,9 @@ def beta_pool_sizes(alpha: float, min_pool: int, max_pool: int, shape, device=No
     return d.round().long().clamp_(min_pool, max_pool)
 
 
-def install_pool_dist_patch(alpha: Optional[float]) -> None:
-    """Replace EmoRouterV2._pool_sizes (training branch only) with the Beta(alpha, 1) sampler."""
+def install_pool_dist_patch(alpha) -> None:
+    """Replace EmoRouterV2._pool_sizes (training branch only) with the Beta(alpha, 1) sampler, or with a
+    uniform random choice among fixed pool sizes when `alpha` is a list."""
     if alpha is None:
         return
     from olmo_core.nn.moe.v2.emo_router import EmoRouterV2
@@ -259,13 +267,18 @@ def install_pool_dist_patch(alpha: Optional[float]) -> None:
     def _pool_sizes(self, segment_ids: torch.Tensor) -> torch.Tensor:
         if not self.training:
             return torch.full_like(segment_ids, self.emo.eval_pool_size())
-        per_document = beta_pool_sizes(
-            alpha,
-            self.emo.min_document_expert_pool,
-            self.emo.max_document_expert_pool,
-            segment_ids.shape,
-            device=segment_ids.device,
-        )
+        if isinstance(alpha, list):
+            choices = torch.tensor(alpha, device=segment_ids.device, dtype=torch.long)
+            idx = torch.randint(0, len(alpha), segment_ids.shape, device=segment_ids.device)
+            per_document = choices[idx].clamp_(self.emo.min_document_expert_pool, self.emo.max_document_expert_pool)
+        else:
+            per_document = beta_pool_sizes(
+                alpha,
+                self.emo.min_document_expert_pool,
+                self.emo.max_document_expert_pool,
+                segment_ids.shape,
+                device=segment_ids.device,
+            )
         return per_document.gather(1, segment_ids)
 
     EmoRouterV2._pool_sizes = _pool_sizes  # type: ignore[method-assign]
@@ -769,7 +782,7 @@ def build_trainer_config(common: CommonComponents, cluster: str) -> TrainerConfi
                 enabled=True,
                 tags=["pretraining", EXPERIMENT_TAG, "olmoe3_275m", f"{NUM_ROUTED_EXPERTS}e", *([f"group{SQUARES_GROUP}"] if SQUARES_GROUP is not None else []),
                       "emo" if EMO_ENABLED else "noemo",
-                      *([f"pool_{EMO_POOL_DIST.replace(':', '')}"] if EMO_ENABLED and EMO_POOL_ALPHA is not None else []),
+                      *([f"pool_{EMO_POOL_DIST.replace(':', '').replace(',', 'or')}"] if EMO_ENABLED and EMO_POOL_ALPHA is not None else []),
                       cluster.rsplit("/", 1)[-1], *EXTRA_WANDB_TAGS],
             ),
         )
