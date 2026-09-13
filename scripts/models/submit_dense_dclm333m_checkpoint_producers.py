@@ -357,7 +357,10 @@ def register_new_runs(
                 "status": "running",
                 "wd0.1Authorized": False,
             }
-        elif coordinate_id == runner.BS64_474M_LR1E3_WD10_SATURATION:
+        elif (
+            coordinate_id == runner.BS64_474M_LR1E3_WD10_SATURATION
+            or coordinate_id in runner.BS64_474M_EXTRA_SATURATION_POLICIES
+        ):
             record["saturationGate"] = {
                 "evaluationEpochs": list(item["evaluationEpochs"]),
                 "criterion": "first_adjacent_post_validationExact_non_improvement",
@@ -389,7 +392,7 @@ def main() -> None:
     parser.add_argument("--revision")
     parser.add_argument("--priority", default="urgent")
     parser.add_argument("--coordinate", action="append", default=[])
-    parser.add_argument("--omit-min-runtime", action="store_true", default=True)
+    parser.add_argument("--allocated", action="store_true")
     parser.add_argument("--print-plan", action="store_true")
     parser.add_argument("--print-specs", action="store_true")
     parser.add_argument("--submit-if-ready", action="store_true")
@@ -417,7 +420,7 @@ def main() -> None:
                         item,
                         args.revision,
                         args.priority,
-                        omit_min_runtime=args.omit_min_runtime,
+                        omit_min_runtime=not args.allocated,
                     ),
                     indent=2,
                 )
@@ -427,7 +430,7 @@ def main() -> None:
                 item,
                 args.revision,
                 args.priority,
-                omit_min_runtime=args.omit_min_runtime,
+                omit_min_runtime=not args.allocated,
             )
             created.append((item, experiment))
             print(f"{item['id']}: {experiment}")

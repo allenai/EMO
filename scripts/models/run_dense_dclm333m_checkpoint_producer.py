@@ -43,8 +43,8 @@ EXPECTED_BASE_TOKENS = 1_000_000_000
 EXPECTED_BASE_MANIFEST = Path(
     "src/olmo_core/data/subsets/0802/dclm_0802_repeated_train_1b.json"
 )
-EXPECTED_COORDINATE_COUNT = 17
-EXPECTED_MODEL_COORDINATE_COUNTS = {"1b": 3, "474m": 8, "153m": 6}
+EXPECTED_COORDINATE_COUNT = 18
+EXPECTED_MODEL_COORDINATE_COUNTS = {"1b": 3, "474m": 9, "153m": 6}
 
 MODEL_POLICIES: dict[str, dict[str, Any]] = {
     "1b": {
@@ -93,6 +93,15 @@ CONTINUATIONS_IGNORING_PRIOR_SATURATION: tuple[tuple[str, int], ...] = ()
 BS64_474M_LR1E3_WD03_PROBE = "dense-474m-dclm333m-bs64-lr1e-3-wd0.3"
 BS64_474M_LR1E3_WD10_SATURATION = "dense-474m-dclm333m-bs64-lr1e-3-wd1.0"
 BS64_153M_LR4E3_WD03_PROBE = ""
+BS64_474M_EXTRA_SATURATION_POLICIES: dict[str, dict[str, Any]] = {
+    "dense-474m-dclm333m-bs64-lr4e-3-wd0.3": {
+        "learningRate": "4e-3",
+        "weightDecay": "0.3",
+        "retainedCheckpointEpochs": tuple(range(8, 65, 8)),
+        "evaluationEpochs": tuple(range(8, 65, 8)),
+        "maxEpoch": 64,
+    }
+}
 ALL_CONTINUATION_TARGETS = tuple(
     sorted(set(BS64_474M_CONTINUATION_TARGETS + BS64_153M_WD03_CONTINUATION_TARGETS))
 )
@@ -233,7 +242,16 @@ def validate_coordinate(item: dict[str, Any]) -> None:
     is_bs64_lr_probe = coordinate_id == BS64_474M_LR1E3_WD03_PROBE
     is_bs64_lr_wd10_saturation = coordinate_id == BS64_474M_LR1E3_WD10_SATURATION
     is_bs64_153m_lr4e3_probe = coordinate_id == BS64_153M_LR4E3_WD03_PROBE
-    if is_bs64_153m_lr4e3_probe:
+    extra_474m_saturation = BS64_474M_EXTRA_SATURATION_POLICIES.get(coordinate_id)
+    if extra_474m_saturation:
+        if model != "474m" or batch != 64:
+            raise ValueError("extra 474M saturation probes must use BS64")
+        if (
+            Decimal(lr) != Decimal(str(extra_474m_saturation["learningRate"]))
+            or wd != str(extra_474m_saturation["weightDecay"])
+        ):
+            raise ValueError("extra 474M saturation probe has the wrong LR/WD")
+    elif is_bs64_153m_lr4e3_probe:
         if model != "153m" or batch != 64:
             raise ValueError("153M LR4e-3 probe must use BS64")
         if Decimal(lr) != Decimal("4e-3") or wd != "0.3":
@@ -262,7 +280,10 @@ def validate_coordinate(item: dict[str, Any]) -> None:
     evaluations = [int(epoch) for epoch in item["evaluationEpochs"]]
     max_epoch = int(item["maxEpoch"])
     continuation_targets = authorized_continuation_targets(item)
-    if is_bs64_153m_lr4e3_probe and max_epoch in continuation_targets:
+    if extra_474m_saturation:
+        expected_retained = list(extra_474m_saturation["retainedCheckpointEpochs"])
+        expected_evaluations = list(extra_474m_saturation["evaluationEpochs"])
+    elif is_bs64_153m_lr4e3_probe and max_epoch in continuation_targets:
         expected_retained = list(
             range(BS64_153M_CONTINUATION_RETAIN_INTERVAL, max_epoch + 1,
                   BS64_153M_CONTINUATION_RETAIN_INTERVAL)
@@ -316,7 +337,12 @@ def validate_coordinate(item: dict[str, Any]) -> None:
     if max_epoch != retained[-1]:
         raise ValueError(f"{model} max epoch must match the retained-checkpoint frontier")
     if (
-        not (is_bs64_lr_probe or is_bs64_lr_wd10_saturation or is_bs64_153m_lr4e3_probe)
+        not (
+            is_bs64_lr_probe
+            or is_bs64_lr_wd10_saturation
+            or is_bs64_153m_lr4e3_probe
+            or extra_474m_saturation
+        )
         and max_epoch != int(policy["max_epoch"])
         and max_epoch not in continuation_targets
     ):
