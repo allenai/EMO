@@ -372,6 +372,7 @@
         if (producerQueued) states.push("producer queued");
         if (producerFailed) states.push("producer failed");
         if (postFailed) states.push("POST failed");
+        if (states.length === 1 && states[0] === "PD retained") return null;
         if (!states.length) return null;
         const classes = ["tuple"];
         if (producerActive || producerQueued || postRunning || postQueued) classes.push("active");

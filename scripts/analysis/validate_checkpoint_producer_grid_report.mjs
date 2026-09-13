@@ -132,6 +132,9 @@ const grid = rendered.get("coordinate-grid");
 if (grid.includes("planned")) {
   throw new Error("coordinate grid must not render planned placeholders");
 }
+if (grid.includes("· PD retained</span>")) {
+  throw new Error("coordinate grid must not render checkpoints without POST state");
+}
 for (const producer of current.producers || []) {
   if (!["submitted", "scheduled", "running"].includes(producer.status)) continue;
   const label = `${producer.model === "1b" ? "1B" : producer.model === "474m" ? "474M" : "153M"} · ${producer.pool === "dclm3b" ? "Pool-3B" : producer.pool} · BS${producer.batchSequences}`;
