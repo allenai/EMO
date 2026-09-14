@@ -43,15 +43,15 @@ def summarise(run):
     sk = [r["optim/step skipped"] for r in ce if r.get("optim/step skipped") is not None]
     out["skipped_steps"] = int(sum(sk)) if sk else 0
     # eval
-    ev = _hist(run, ["eval/v3-small-ppl/CE loss", "eval/v3-small-ppl/PPL"]) if any(
-        k.startswith("eval/") for k in run.summary.keys()) else []
     ev_keys = [k for k in run.summary.keys() if k.startswith("eval/") and k.endswith("CE loss")]
     out["eval_keys"] = ev_keys
     out["eval_ce"] = {}
     if ev_keys:
         rows = sorted(_hist(run, ev_keys), key=lambda r: r["_step"])
         for r in rows:
-            out["eval_ce"][r["_step"]] = {k.split("/")[1]: r[k] for k in ev_keys if r.get(k) is not None}
+            vals = {k.split("/")[-2]: r[k] for k in ev_keys if r.get(k) is not None and r[k] == r[k]}
+            if vals:
+                out["eval_ce"][r["_step"]] = vals
     # learned-d metrics (last logged value per layer)
     dkeys = [f"train/block {l:02d}/emo d soft mean" for l in MOE_LAYERS]
     fkeys = [f"train/block {l:02d}/emo d frac<=64" for l in MOE_LAYERS]
@@ -82,7 +82,7 @@ def main():
     for r in sorted(runs, key=lambda r: r.name):
         s = summarise(r)
         table.append(s)
-        ev = " ".join(f"eval@{k}={v.get('v3-small-ppl', list(v.values())[0] if v else float('nan')):.4f}" for k, v in sorted(s["eval_ce"].items()))
+        ev = " ".join(f"eval@{k}={sum(v.values()) / len(v):.4f}" for k, v in sorted(s["eval_ce"].items()))  # mean over the v3-small sets
         dm = s.get("d_soft_mean") or {}
         dstr = " ".join(f"L{l}:{dm[l]:.0f}" for l in MOE_LAYERS if dm.get(l) is not None)
         print(f"{s['run'][len(args.prefix):]:28s} {s['state']:9s} step={s['last_step']} trainCE(last100)={s['train_ce_last100'] and round(s['train_ce_last100'], 4)} "
