@@ -580,10 +580,10 @@ def build_q4():
             dtxt = ("16 in every layer" if ds and max(ds) < 16.5 and (d1 or 0) < 16.5 else f"{min(ds):.0f}&ndash;{max(ds):.0f} (L1 {d1:.0f})") if ds else "&mdash;"
             f5 = fr.get("5"); ev = r.get("eval_ce", {}).get("2000"); e2 = sum(ev.values()) / len(ev) if ev else None
             if h is None:
-                hp = ["uniform EMO (control)", "&mdash;", "&mdash;", "&mdash;", "&mdash;", "&mdash;"]
+                hp = ["uniform EMO (control)", "&mdash;", "&mdash;", "&mdash;", "&mdash;", "&mdash;", "&mdash;"]
             else:
                 thr = f"{h['lambda']/(h['cov']*496):.3f}" if h["cov"] else "&mdash;"
-                hp = [h["signal"], f"{h['T']:g}", f"{h['lambda']:g}", str(h["W"]), f"&times;{h['mult']:g}", thr]
+                hp = [h["signal"], f"{h['T']:g}", f"{h['lambda']:g}", f"{h['cov']:g}" if h["cov"] else "0", thr, str(h["W"]), f"&times;{h['mult']:g}"]
             return hp + [dtxt, f"{100*f5:.0f}%" if f5 is not None else "&mdash;", f(r.get("train_ce_last100"), 3), f(e2, 3), str(r.get("skipped_steps", 0))]
         order = sorted(T, key=lambda k: (0 if k == "control_uniform" else 1 if "coverage" not in k else 2, parse(k)["lambda"] if parse(k) else 0, parse(k)["T"] if parse(k) else 0, parse(k)["W"] if parse(k) else 0, parse(k)["mult"] if parse(k) else 0))
         rows = [row(k) for k in order]
@@ -591,7 +591,7 @@ def build_q4():
             "One run per row, all from scratch on the same 2000 steps (1.05B tokens) as the first 2000 steps of the 10B arms. d = mean predicted pool at "
             "step 2000 over layers 2&ndash;9 (layer 1 in brackets); docs &le; 64 = share of documents whose layer-5 pool is at most 64 experts; eval CE = mean "
             "over the 11 v3-small validation sets at step 2000, routing with the predicted d.",
-            table(["signal", "T", "&lambda;<sub>d</sub>", "warm-up", "head LR", "mass threshold", "d at step 2000", "docs &le; 64", "train CE", "eval CE", "skipped steps"], rows),
+            table(["signal", "T", "&lambda;<sub>d</sub>", "&lambda;<sub>cov</sub>", "threshold &lambda;<sub>d</sub>/(&lambda;<sub>cov</sub>&middot;496)", "warm-up", "head LR", "d at step 2000", "docs &le; 64", "train CE", "eval CE", "skipped steps"], rows),
             "Every STE arm collapses to d = 16 in every layer within a few hundred steps, whatever the temperature, penalty (even 0), warm-up or head "
             "LR: the STE gradient only sees the selected experts, and a bigger pool just flattens their weights, so the LM loss always asks for a smaller d. "
             "That costs +0.05 eval CE. The coverage signal gives a tunable pool size: at threshold 0.002 the pools average 110&ndash;130 experts, two thirds "
