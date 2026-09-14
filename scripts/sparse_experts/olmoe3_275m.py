@@ -202,6 +202,19 @@ EMO_MIN_POOL = int(os.environ.get("OLMOE3_EMO_MIN_POOL", str(TOP_K)))
 EMO_MAX_POOL = int(os.environ.get("OLMOE3_EMO_MAX_POOL", str(NUM_ROUTED_EXPERTS)))
 EMO_EVAL_POOL = int(os.environ.get("OLMOE3_EMO_EVAL_POOL", str(NUM_ROUTED_EXPERTS)))
 EMO_POOL_DIST = os.environ.get("OLMOE3_EMO_POOL_DIST", "uniform").strip().lower()
+# Learned per-document pool size (scripts/sparse_experts/emo_learned_d.py): d_head predicts each document's
+# pool in [min_pool, max_pool]; STE mask; size penalty lambda_d; optional warm-up that phases the restriction in.
+LEARNED_D = _env_bool("OLMOE3_EMO_LEARNED_D", False)
+LD_TEMP = float(os.environ.get("OLMOE3_LD_TEMP", "2.0"))
+LD_LAMBDA = float(os.environ.get("OLMOE3_LD_LAMBDA", "0.01"))
+LD_WARMUP = int(os.environ.get("OLMOE3_LD_WARMUP", "0"))
+LD_FLOOR_WARMUP = _env_bool("OLMOE3_LD_FLOOR_WARMUP", True)
+LD_LAMBDA_WARMUP = _env_bool("OLMOE3_LD_LAMBDA_WARMUP", True)
+LD_INIT = float(os.environ["OLMOE3_LD_INIT"]) if os.environ.get("OLMOE3_LD_INIT") else None
+LD_EVAL = os.environ.get("OLMOE3_LD_EVAL", "predicted")
+LD_DETACH = _env_bool("OLMOE3_LD_DETACH", True)
+if LEARNED_D and not EMO_ENABLED:
+    raise ValueError("OLMOE3_EMO_LEARNED_D=1 requires OLMOE3_EMO=1")
 EXPERIMENT_TAG = os.environ.get("OLMOE3_EXPERIMENT", "sparse_experts")
 # olmoe3_squares sub-model knobs: a block-group partition (groups.json from olmoe3_squares/partition.py)
 # + group index -> per-layer routed-expert counts; a custom token stream; init from a sliced
@@ -333,6 +346,33 @@ def _shared_expert(hidden_size: int = EXPERT_HIDDEN_SIZE) -> SharedExpertsConfig
     )
 
 
+def _router_config_cls():
+    if LEARNED_D:
+        from emo_learned_d import LearnedDRouterConfigV2
+
+        return LearnedDRouterConfigV2
+    return MoERouterConfigV2
+
+
+def _learned_d_kwargs() -> dict:
+    if not LEARNED_D:
+        return {}
+    from emo_learned_d import LearnedDConfig
+
+    return {
+        "learned_d": LearnedDConfig(
+            temperature=LD_TEMP,
+            lambda_d=LD_LAMBDA,
+            warmup_steps=LD_WARMUP,
+            floor_warmup=LD_FLOOR_WARMUP,
+            lambda_warmup=LD_LAMBDA_WARMUP,
+            init_pool=LD_INIT,
+            detach_doc_embedding=LD_DETACH,
+            eval_mode=LD_EVAL,
+        )
+    }
+
+
 def _moe_block(layer_norm: LayerNormConfig, sequence_mixer, num_experts: Optional[int] = None) -> OLMoDDPTransformerBlockConfig:
     if num_experts is not None and num_experts != NUM_ROUTED_EXPERTS:
         b = _moe_block(layer_norm, sequence_mixer)
@@ -357,7 +397,7 @@ def _moe_block(layer_norm: LayerNormConfig, sequence_mixer, num_experts: Optiona
             rowwise_fp8=MoERowwiseFP8Config(enabled=False),
         ),
         # Routing sees the full-width token; only the routed payload is projected.
-        routed_experts_router=MoERouterConfigV2(
+        routed_experts_router=_router_config_cls()(
             d_model=D_MODEL,
             num_experts=NUM_ROUTED_EXPERTS,
             top_k=TOP_K,
@@ -387,6 +427,7 @@ def _moe_block(layer_norm: LayerNormConfig, sequence_mixer, num_experts: Optiona
                 if EMO_ENABLED
                 else None
             ),
+            **_learned_d_kwargs(),
         ),
         latent_moe=LatentMoEConfig(latent_dim=LATENT_DIM, up_proj_input_norm_enabled=False),
         use_peri_norm=True,
@@ -454,6 +495,8 @@ def build_model_config(common: CommonComponents) -> OLMoDDPModelConfig:
     if vocab_size == VOCAB_SIZE and NUM_ROUTED_EXPERTS in EXPECTED_PARAMS and not SQUARES_LAYER_EXPERTS:
         actual = (model.num_active_params, model.num_active_non_embedding_params, model.num_params)
         expected = EXPECTED_PARAMS[NUM_ROUTED_EXPERTS]
+        if LEARNED_D:  # one d_head (d_model + 1) per MoE layer
+            expected = tuple(v + (N_LAYERS - 1) * (D_MODEL + 1) for v in expected)
         if actual != expected:
             raise ValueError(f"parameter-count drift: expected {expected}, found {actual}")
     return model
@@ -507,6 +550,8 @@ FORWARDED_ENV = (
     "OLMOE3_SAVE_ROOT", "OLMOE3_WORK_DIR", "OLMOE3_WANDB_TAGS", "OLMOE3_IMAGE", "OLMOE3_SAVE_INTERVAL",
     "OLMOE3_EMO", "OLMOE3_EMO_MIN_POOL", "OLMOE3_EMO_MAX_POOL", "OLMOE3_EMO_EVAL_POOL", "OLMOE3_NUM_EXPERTS",
     "OLMOE3_EMO_POOL_DIST", "OLMOE3_EXPERIMENT", "OLMOE3_PPL_EVAL_INTERVAL",
+    "OLMOE3_EMO_LEARNED_D", "OLMOE3_LD_TEMP", "OLMOE3_LD_LAMBDA", "OLMOE3_LD_WARMUP", "OLMOE3_LD_FLOOR_WARMUP",
+    "OLMOE3_LD_LAMBDA_WARMUP", "OLMOE3_LD_INIT", "OLMOE3_LD_EVAL", "OLMOE3_LD_DETACH",
     "OLMOE3_GROUPS", "OLMOE3_GROUP", "OLMOE3_DATA_PATHS", "OLMOE3_INIT_FROM", "OLMOE3_FIXED_STEPS", "OLMOE3_WARMUP",
 )
 
@@ -678,7 +723,8 @@ def build_train_module_config(common: CommonComponents) -> OLMoDDPTrainModuleCon
         + (f" (warmup {WSD_WARMUP_STEPS}, decay from step {_wsd_decay_start_step(TOKENS):,})" if SCHEDULER == "wsd_decay" else "")
         + " "
         f"nodes={NUM_NODES} gpus/node={NUM_GPUS} rank_mb={RANK_MICROBATCH_SEQUENCES} ep={EP_SIZE}/{EP_PATH} attn={ATTN_BACKEND} "
-        f"cute_kda={KDA_USE_CUTE_KERNEL} ppl_eval_interval={PPL_EVAL_INTERVAL} emo={EMO_ENABLED}"
+        f"cute_kda={KDA_USE_CUTE_KERNEL} ppl_eval_interval={PPL_EVAL_INTERVAL} emo={EMO_ENABLED} "
+        f"learned_d={LEARNED_D}" + (f" (T={LD_TEMP:g} lambda={LD_LAMBDA:g} warmup={LD_WARMUP} floor_warmup={LD_FLOOR_WARMUP} lambda_warmup={LD_LAMBDA_WARMUP} init={LD_INIT} eval={LD_EVAL} detach={LD_DETACH})" if LEARNED_D else "")
         + (f" pool=[{EMO_MIN_POOL},{EMO_MAX_POOL}] pool_dist={EMO_POOL_DIST} eval_pool={EMO_EVAL_POOL}" if EMO_ENABLED else "")
     )
     return OLMoDDPTrainModuleConfig(
@@ -734,6 +780,12 @@ def _ppl_eval_callback(common: CommonComponents) -> LMEvaluatorCallbackConfig:
     )
 
 
+def _learned_d_callback():
+    from emo_learned_d import LearnedDScheduleCallback
+
+    return LearnedDScheduleCallback()
+
+
 def build_trainer_config(common: CommonComponents, cluster: str) -> TrainerConfig:
     assert TOKENS is not None, "set OLMOE3_TOKENS"
     cancel_check_interval = 1000
@@ -754,6 +806,8 @@ def build_trainer_config(common: CommonComponents, cluster: str) -> TrainerConfi
     )
     if PPL_EVAL_INTERVAL > 0:
         trainer = trainer.with_callback("lm_evaluator", _ppl_eval_callback(common))
+    if LEARNED_D:
+        trainer = trainer.with_callback("learned_d_schedule", _learned_d_callback())
     return (
         trainer.with_callback(
             "checkpointer",
@@ -783,6 +837,7 @@ def build_trainer_config(common: CommonComponents, cluster: str) -> TrainerConfi
                 tags=["pretraining", EXPERIMENT_TAG, "olmoe3_275m", f"{NUM_ROUTED_EXPERTS}e", *([f"group{SQUARES_GROUP}"] if SQUARES_GROUP is not None else []),
                       "emo" if EMO_ENABLED else "noemo",
                       *([f"pool_{EMO_POOL_DIST.replace(':', '').replace(',', 'or')}"] if EMO_ENABLED and EMO_POOL_ALPHA is not None else []),
+                      *(["learned_d", f"ld_T{LD_TEMP:g}_l{LD_LAMBDA:g}_w{LD_WARMUP}"] if LEARNED_D else []),
                       cluster.rsplit("/", 1)[-1], *EXTRA_WANDB_TAGS],
             ),
         )
