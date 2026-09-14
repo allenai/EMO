@@ -9,7 +9,7 @@
 #     LR 8e-4, 10B tokens, 5000-step checkpoints); one node.
 #     Hyper-parameters (defaults = the sweep winner, see the olmoe3_routing report):
 #       OLMOE3_LD_TEMP (STE temperature, ranks), OLMOE3_LD_LAMBDA (penalty weight), OLMOE3_LD_WARMUP (steps),
-#       OLMOE3_LD_INIT (initial d), OLMOE3_LD_EVAL (predicted|fixed at eval time).
+#       OLMOE3_LD_LR_MULT (d_head LR multiplier), OLMOE3_LD_INIT (initial d), OLMOE3_LD_EVAL (predicted|fixed).
 #
 #   bash scripts/sparse_experts/model_scripts/olmoe3_275m_emo_learnedd_10b.sh [dry_run]
 ##############################################################
@@ -20,6 +20,7 @@ export OLMOE3_LD_TEMP="${OLMOE3_LD_TEMP:-2.0}"
 export OLMOE3_LD_LAMBDA="${OLMOE3_LD_LAMBDA:-0.01}"
 export OLMOE3_LD_WARMUP="${OLMOE3_LD_WARMUP:-0}"
 export OLMOE3_LD_EVAL="${OLMOE3_LD_EVAL:-predicted}"
+export OLMOE3_LD_LR_MULT="${OLMOE3_LD_LR_MULT:-10}"
 export OLMOE3_NUM_NODES="${OLMOE3_NUM_NODES:-1}"
 export OLMOE3_PPL_EVAL_INTERVAL="${OLMOE3_PPL_EVAL_INTERVAL:-5000}"
 export OLMOE3_RUNNAME="${OLMOE3_RUNNAME:-olmoe3_275m_emo_learnedd_10b}"

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Launch the learned-d hyper-parameter sweep (2000 steps each, 1 allocated node per config, fire-and-forget).
-# One-at-a-time variations around the default (T=2, lambda=0.01, warmup=500) + the uniform-pool EMO control.
+# One-at-a-time variations around the default (T=2, lambda=0.01, warmup=500, d_head LR x10) + the uniform-pool EMO control.
 #   bash scripts/sparse_experts/learnedd/launch_sweep.sh [config ...]     (default: all)
 # Experiment ids are appended to sparse_experts/learnedd_sweep/experiments.tsv
 set -u
@@ -14,9 +14,11 @@ declare -A CFG=(
   [l0.03]="OLMOE3_LD_TEMP=2.0 OLMOE3_LD_LAMBDA=0.03 OLMOE3_LD_WARMUP=500"
   [w0]="OLMOE3_LD_TEMP=2.0 OLMOE3_LD_LAMBDA=0.01 OLMOE3_LD_WARMUP=0"
   [w1000]="OLMOE3_LD_TEMP=2.0 OLMOE3_LD_LAMBDA=0.01 OLMOE3_LD_WARMUP=1000"
+  [m1]="OLMOE3_LD_TEMP=2.0 OLMOE3_LD_LAMBDA=0.01 OLMOE3_LD_WARMUP=500 OLMOE3_LD_LR_MULT=1"
+  [m30]="OLMOE3_LD_TEMP=2.0 OLMOE3_LD_LAMBDA=0.01 OLMOE3_LD_WARMUP=500 OLMOE3_LD_LR_MULT=30"
   [control]="OLMOE3_LD_CONTROL=1"
 )
-ORDER=(base T1 T4 l0.003 l0.03 w0 w1000 control)
+ORDER=(base T1 T4 l0.003 l0.03 w0 w1000 m1 m30 control)
 sel=("$@"); [ ${#sel[@]} -eq 0 ] && sel=("${ORDER[@]}")
 for name in "${sel[@]}"; do
   spec="${CFG[$name]:?unknown config $name}"
