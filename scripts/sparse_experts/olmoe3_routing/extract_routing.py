@@ -197,6 +197,8 @@ def build_model(checkpoint: Path, device, attn_backend: Optional[str], use_cute_
     from olmo_core.nn.transformer import OLMoDDPModelConfig
 
     mcfg = json.load(open(checkpoint / "config.json"))["model"]
+    # learned-d checkpoints reference the repo-side router config class (emo_learned_d.LearnedDRouterConfigV2)
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
     for blk in [mcfg["block"], *mcfg.get("block_overrides", {}).values()]:
         sm = blk.get("sequence_mixer") or {}
         if attn_backend and "backend" in sm:
@@ -369,7 +371,12 @@ def run(args):
         e2g = e2g.to(device); g_pl = torch.tensor([MOE_LAYERS.index(l) for l in g_part], device=device)
     else:
         kinds = apply_restriction(routers, layers, pool, E)
+    ld_layers = [l for l, r in routers.items() if hasattr(r, "learned_d")]
+    for l in ld_layers:
+        routers[l].learned_d.eval_mode = args.ld_eval
+        kinds[l] = f"learned_d({args.ld_eval})" + (f"/{kinds[l]}" if args.ld_eval == "fixed" else "")
     log("routers: " + ", ".join(f"L{l}:{kinds[l]}" for l in MOE_LAYERS))
+    pred_pool_sum = {l: 0.0 for l in ld_layers}; pred_pool_n = {l: 0 for l in ld_layers}
     for l, r in routers.items():  # read-back check of the effective per-layer pool
         if group_cfg: break
         eff = r.emo.eval_pool_size() if hasattr(r, "emo") and r.emo is not None else (r.pool or r.num_experts)
@@ -383,6 +390,8 @@ def run(args):
             with torch.no_grad():
                 scores = mod.get_expert_logits(x.float()).float().softmax(-1)
             captured[l] = (out[1], scores)
+            if l in pred_pool_sum and args.ld_eval == "predicted":
+                pred_pool_sum[l] += float(mod._last_pool.sum()); pred_pool_n[l] += mod._last_pool.numel()
         return hook
     hooks = [routers[l].register_forward_hook(make_hook(l)) for l in MOE_LAYERS]
 
@@ -448,6 +457,8 @@ def run(args):
                "kinds": kinds, "n_instances": int(N), "n_tokens": int(N * S), "n_docs": n_doc,
                "mean_ce": float(acc.doc_ce.sum() / acc.doc_ce_len.sum()), "E": E, "top_k": k,
                "rank": args.rank, "world": args.world, "raw_instances": raw_n,
+               "ld_eval": args.ld_eval if ld_layers else None,
+               "pred_pool_mean": {l: pred_pool_sum[l] / max(1, pred_pool_n[l]) for l in ld_layers} if ld_layers else None,
                "elapsed_s": time.time() - t0}, open(args.out_dir / "meta.json", "w"), indent=1)
     (args.out_dir / "DONE").touch()
     log(f"done: mean CE {acc.doc_ce.sum()/acc.doc_ce_len.sum():.4f}; saved to {args.out_dir}")
@@ -537,6 +548,8 @@ def main():
     ap.add_argument("--log-every", type=int, default=10)
     ap.add_argument("--max-first-ce", type=float, default=4.0, help="guard against mis-loaded weights")
     ap.add_argument("--selftest", action="store_true")
+    ap.add_argument("--ld-eval", default="predicted", choices=["predicted", "fixed"],
+                    help="learned-d checkpoints: route with the head's predicted pool, or with the fixed eval pool (--restrict)")
     args = ap.parse_args()
     if args.selftest:
         return selftest()

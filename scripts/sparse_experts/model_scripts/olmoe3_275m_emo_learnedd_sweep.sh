@@ -16,6 +16,8 @@ export OLMOE3_LD_WARMUP="${OLMOE3_LD_WARMUP:-500}"
 export OLMOE3_PPL_EVAL_INTERVAL=1000
 export OLMOE3_FIXED_STEPS=2000
 tag="T${OLMOE3_LD_TEMP}_l${OLMOE3_LD_LAMBDA}_w${OLMOE3_LD_WARMUP}${OLMOE3_LD_INIT:+_i${OLMOE3_LD_INIT}}${OLMOE3_LD_SUFFIX:-}"
+# OLMOE3_LD_CONTROL=1: the plain uniform-pool EMO router under the identical 2000-step recipe (reference)
+if [[ "${OLMOE3_LD_CONTROL:-0}" == "1" ]]; then export OLMOE3_EMO_LEARNED_D=0; tag="control_uniform"; fi
 export OLMOE3_RUNNAME="olmoe3_275m_emo_learnedd_sweep_${tag}"
 export OLMOE3_WANDB_TAGS="learnedd_sweep"
 export OLMOE3_SAVE_ROOT=/weka/oe-training-default/ryanwang/EMO/sparse_experts/learnedd_sweep

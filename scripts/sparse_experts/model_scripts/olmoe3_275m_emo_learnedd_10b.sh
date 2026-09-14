@@ -15,7 +15,7 @@
 ##############################################################
 export OLMOE3_NUM_EXPERTS=512
 export OLMOE3_EMO=1
-export OLMOE3_EMO_LEARNED_D=1
+export OLMOE3_EMO_LEARNED_D="${OLMOE3_EMO_LEARNED_D:-1}"
 export OLMOE3_LD_TEMP="${OLMOE3_LD_TEMP:-2.0}"
 export OLMOE3_LD_LAMBDA="${OLMOE3_LD_LAMBDA:-0.01}"
 export OLMOE3_LD_WARMUP="${OLMOE3_LD_WARMUP:-0}"
