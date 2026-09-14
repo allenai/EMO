@@ -24,7 +24,7 @@ _ml = importlib.util.module_from_spec(_spec); _spec.loader.exec_module(_ml)
 card, table, img_tag, fig_row, CSS, JS = _ml.card, _ml.table, _ml.img_tag, _ml.fig_row, _ml.CSS, _ml.JS
 
 LAYERS = [str(l) for l in range(1, 10)]
-MODEL_LABEL = {"std": "standard MoE (512e)", "emo": "EMO (512e)", "std1000": "standard MoE (1000e)", "emo1000": "EMO (1000e)", "std128": "standard MoE (128e)", "emo128": "EMO (128e)", "emo2000": "EMO (2000e)", "std2000": "standard MoE (2000e)"}
+MODEL_LABEL = {"std": "standard MoE (512e)", "emo": "EMO (512e)", "std1000": "standard MoE (1000e)", "emo1000": "EMO (1000e)", "std128": "standard MoE (128e)", "emo128": "EMO (128e)", "emo2000": "EMO (2000e)", "std2000": "standard MoE (2000e)", "emo_pool64or512": "EMO (512e, pools {64, 512})"}
 
 
 def cond_sort(c):
@@ -77,7 +77,7 @@ def section(title, what, result, takeaway):
 KS = OUT / "ksweep"
 
 
-KS_MODELS = (("emo2000_full", "emo2000"), ("emo1000_full", "emo1000"), ("emo512_full", "emo"), ("emo128_full", "emo128"), ("std2000_full", "std2000"), ("std1000_full", "std1000"))
+KS_MODELS = (("emo2000_full", "emo2000"), ("emo1000_full", "emo1000"), ("emo512_full", "emo"), ("emo_pool64or512_full", "emo_pool64or512"), ("emo128_full", "emo128"), ("std2000_full", "std2000"), ("std1000_full", "std1000"))
 KS_LAYERS = (1, 5, 9)
 
 
@@ -90,6 +90,7 @@ def purity_grid():
     for k in (4, 8, 16, 32, 64):
         html_.append(f'<div class="pg{" on" if k == 4 else ""}" data-k="{k}"><table><tr><th></th>' + "".join(f"<th>layer {l}</th>" for l in KS_LAYERS) + "</tr>")
         for tag, m in KS_MODELS:
+            if not all((KS / f"{tag}_L{l}_k{k}_docpartition.png").exists() for l in KS_LAYERS): continue
             html_.append(f'<tr><td class="h">{MODEL_LABEL[m]}</td>' + "".join(f"<td>{img_tag(KS / f'{tag}_L{l}_k{k}_docpartition.png', '')}</td>" for l in KS_LAYERS) + "</tr>")
         html_.append("</table></div>")
     html_.append("</div><script>document.querySelectorAll('.pgrid input[name=pgk]').forEach(r=>r.addEventListener('change',e=>{document.querySelectorAll('.pgrid .pg').forEach(d=>d.classList.toggle('on',d.dataset.k===e.target.value));}));</script>")
@@ -144,7 +145,7 @@ def build_q6():
     return body
 
 
-GRID_MODELS = (("emo2000_full", "EMO (2000e)"), ("emo1000_full", "EMO (1000e)"), ("emo512_full", "EMO (512e)"), ("emo128_full", "EMO (128e)"), ("std2000_full", "standard MoE (2000e)"), ("std1000_full", "standard MoE (1000e)"))
+GRID_MODELS = (("emo2000_full", "EMO (2000e)"), ("emo1000_full", "EMO (1000e)"), ("emo512_full", "EMO (512e)"), ("emo_pool64or512_full", "EMO (512e, pools {64, 512})"), ("emo128_full", "EMO (128e)"), ("std2000_full", "standard MoE (2000e)"), ("std1000_full", "standard MoE (1000e)"))
 GRID_JS = r"""
 (function(){
   const Blues = v => { const t=Math.max(0,Math.min(1,v)); const r=Math.round(247-200*t), g=Math.round(251-170*t), b=Math.round(255-100*t); return `rgb(${r},${g},${b})`; };
