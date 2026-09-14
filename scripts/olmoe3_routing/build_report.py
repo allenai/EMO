@@ -221,6 +221,31 @@ def interactive_grid():
 SQ = ROOT / "sparse_experts/olmoe3_squares"; SQO = OUT / "squares"
 
 
+VARIANT_CSS = ("<style>.variant{margin:34px 0 10px;padding:0 0 4px 16px;border-left:6px solid var(--vc)}.variant>h2{margin:0 0 4px;font-size:20px;color:var(--vc)}"
+               ".variant>h2 .vb{display:inline-block;width:28px;height:28px;line-height:28px;border-radius:6px;background:var(--vc);color:#fff;text-align:center;margin-right:10px;font-size:15px}"
+               ".variant>p.lead{margin:0 0 12px;color:#475569}.q3index li{margin:3px 0}</style>")
+VARIANTS = [("A", "EMO 512e, 4 sub-models", "#2563eb", "the main experiment"),
+            ("B", "Standard MoE 512e, 4 sub-models", "#dc2626", "same pipeline on the standard-routing model, as a second baseline"),
+            ("C", "EMO 512e, 4 sub-models trained without the EMO loss", "#7c3aed", "same partition and start checkpoints as A; the sub-models use plain top-16 routing"),
+            ("D", "EMO 512e, 8 sub-models", "#059669", "same as A with k = 8 blocks per layer")]
+
+
+def variant(letter, inner):
+    _, title, color, blurb = next(v for v in VARIANTS if v[0] == letter)
+    return (f'<div class="variant" id="q3-{letter}" style="--vc:{color}"><h2><span class="vb">{letter}</span>{title}</h2>'
+            f'<p class="lead">{blurb}.</p>{inner}</div>')
+
+
+def _assign_table(st, k):
+    return table(["group", "documents", "tokens", "token share", "mean in-group share", "full-model CE"],
+                 [[f"group {g}", f"{st['docs_per_group'][g]:,}", f"{st['tokens_per_group'][g]/1e9:.2f}B", f"{100*st['token_share'][g]:.1f}%", f(st['in_group_share_by_group'][str(g)], 2), f(st['ce_by_group'][str(g)], 3)] for g in range(k)])
+
+
+def _groups_table(G, k):
+    return table(["layer", *[f"group {g}" for g in range(k)], "agreement with layer 9"],
+                 [[f"layer {l}", *[str(x) for x in G["sizes"][str(l)]], f(G["layer9_agreement"].get(str(l)), 2) if str(l) in G["layer9_agreement"] else "&mdash; (whole)"] for l in range(1, 10)])
+
+
 def build_q3():
     body = question_card("q3")
     G = json.load(open(SQ / "groups.json")) if (SQ / "groups.json").exists() else None
@@ -236,71 +261,80 @@ def build_q3():
         "<li><b>Baseline.</b> The original model, continuously trained on all the documents together, without splitting into sub-models. "
         "Both routes see the same 10B tokens; the merged model is compared with the baseline at matching points of that training.</li>"
         "</ol>")
+    present = ["A"] + (["B"] if (SQ.parent / "olmoe3_squares_std" / "groups.json").exists() else []) \
+              + (["C"] if (ROOT / "sparse_experts/olmoe3_routing/runs_heldout20b_noemo").exists() else []) \
+              + (["D"] if (ROOT / "sparse_experts/olmoe3_routing/runs_heldout20b_k8").exists() else [])
+    body += VARIANT_CSS + card("info", "Four runs of this plan",
+        '<ul class="q3index">' + "".join(f'<li><a href="#q3-{L}"><b>{L}</b> &middot; {t}</a> &mdash; {bl}</li>' for L, t, _, bl in VARIANTS if L in present)
+        + "</ul><p>Each run has the same three blocks: the block-groups (stage 0), the document assignment (stage 1), and the merged squares "
+        "against the continued baseline (stages 2&ndash;4) with the piecewise diagnostic.</p>")
+    # ---- A: EMO 512e, k = 4 ----
+    inner = ""
     if G:
-        rows = [[f"layer {l}", *[str(s) for s in G["sizes"][str(l)]], f(G["layer9_agreement"].get(str(l)), 2) if str(l) in G["layer9_agreement"] else "&mdash; (whole)"] for l in range(1, 10)]
-        pv = G["preview"]
-        body += section("Stage 0: the four block-groups",
+        inner += section("Stage 0: the four block-groups",
             "Number of experts per group in each layer. The last column is how often a document's block in that layer agrees with its "
             "layer-9 block (the Q2 alignment used to match blocks across layers).",
-            table(["layer", "group 0", "group 1", "group 2", "group 3", "agreement with layer 9"], rows),
+            _groups_table(G, 4),
             "Groups are uneven (97&ndash;162 experts per layer), so the four sub-models differ in size; layer 1 keeps all 512 experts in every group.")
     if stats:
-        body += section("Stage 1: assigning the next 10B tokens",
+        inner += section("Stage 1: assigning the next 10B tokens",
             "Every document of the 10B&ndash;20B training window routed through the full model; in-group share = the fraction of its top-16 selections "
             "(layers 2&ndash;9) that fall on its group's experts.",
-            table(["group", "documents", "tokens", "token share", "mean in-group share", "full-model CE"],
-                  [[f"group {g}", f"{stats['docs_per_group'][g]:,}", f"{stats['tokens_per_group'][g]/1e9:.2f}B", f"{100*stats['token_share'][g]:.1f}%", f(stats['in_group_share_by_group'][str(g)], 2), f(stats['ce_by_group'][str(g)], 3)] for g in range(4)])
-            + "<p>In-group share by layer: " + ", ".join(f"L{l} {v:.2f}" for l, v in stats["in_group_share_by_layer"].items()) + "</p>",
+            _assign_table(stats, 4) + "<p>In-group share by layer: " + ", ".join(f"L{l} {v:.2f}" for l, v in stats["in_group_share_by_layer"].items()) + "</p>",
             f"{stats['n_docs']:,} documents, {stats['n_tokens']/1e9:.2f}B tokens. Token-weighted, {100*stats['in_group_share_token_weighted']:.0f}% of the "
             f"selections a sub-model's documents make are inside its own expert group.")
     else:
-        body += card("warn", "Stage 1", "<p>Assignment pass running.</p>")
-    body += squares_results()
+        inner += card("warn", "Stage 1", "<p>Assignment pass running.</p>")
+    inner += squares_results()
+    body += variant("A", inner)
+    # ---- B: standard MoE, k = 4 ----
     Gs = SQ.parent / "olmoe3_squares_std" / "groups.json"; Ss = OUT / "olmoe3_squares_std" / "stats.json"
     std_stats_src = ROOT / "sparse_experts/olmoe3_squares_std/pack/stats.json"
     if std_stats_src.exists():
         (OUT / "olmoe3_squares_std").mkdir(parents=True, exist_ok=True)
         if not Ss.exists() or Ss.stat().st_mtime < std_stats_src.stat().st_mtime: Ss.write_text(std_stats_src.read_text())
     if Gs.exists():
-        G2 = json.load(open(Gs)); pv = G2["preview"]
-        rows = [[f"layer {l}", *[str(s) for s in G2["sizes"][str(l)]], f(G2["layer9_agreement"].get(str(l)), 2) if str(l) in G2["layer9_agreement"] else "&mdash; (whole)"] for l in range(1, 10)]
-        std_intro = ("<p><b>Same experiment on the standard-routing 512-expert model</b> (olmoe3_275m_10b, no EMO), as a second baseline. Its k = 4 blocks "
-                     "are token-level (Q1), so documents were assigned by routing mass <em>per expert</em> of each group (raw mass would send 99% of "
-                     "documents to the two biggest blocks); the same rule on the EMO model changes its group shares only slightly (21/35/26/18% vs "
-                     "23/40/15/22%) and its in-group share not at all (0.50 vs 0.51).</p>")
-        body += card("info", "Standard MoE: the four block-groups", std_intro + table(["layer", "group 0", "group 1", "group 2", "group 3", "agreement with layer 9"], rows)
-                     )
+        G2 = json.load(open(Gs))
+        inner = section("Stage 0: the four block-groups",
+            "Same spectral blocks and layer-9 alignment as in A, on the standard-routing model (olmoe3_275m_10b).",
+            _groups_table(G2, 4),
+            "The blocks are token-level (Q1): a document spreads its selections over the four groups almost in proportion to their size.")
         if Ss.exists():
-            st = json.load(open(Ss))
-            body += card("info", "Standard MoE: assigning the next 10B tokens",
-                         table(["group", "documents", "tokens", "token share", "mean in-group share", "full-model CE"],
-                               [[f"group {g}", f"{st['docs_per_group'][g]:,}", f"{st['tokens_per_group'][g]/1e9:.2f}B", f"{100*st['token_share'][g]:.1f}%", f(st['in_group_share_by_group'][str(g)], 2), f(st['ce_by_group'][str(g)], 3)] for g in range(4)]))
-        body += squares_results(HELD=ROOT / "sparse_experts/olmoe3_routing/runs_heldout20b_std", PPL=ROOT / "sparse_experts/olmoe3_squares_std/ppl_validation", SQO=OUT / "olmoe3_squares_std",
-                                start="std_step19074", start_ppl="olmoe3_275m_10b", base_runs=("olmoe3_275m_20b_1node",), label=" (standard MoE)", take_main=STD_TAKE, take_pw=STD_PW_TAKE)
+            inner += section("Stage 1: assigning the next 10B tokens",
+                "Documents were assigned by routing mass <em>per expert</em> of each group (selections on the group divided by its expert count). "
+                "The raw count used in A is degenerate here: it sends 99% of the documents to the two biggest blocks, because every document routes to "
+                "the groups in proportion to their size. On the EMO model the per-expert rule changes the group shares only slightly (21/35/26/18% vs "
+                "23/40/15/22%) and the in-group share not at all (0.50 vs 0.51).",
+                _assign_table(json.load(open(Ss)), 4),
+                "Even with the per-expert rule only 27% of a document's selections fall inside its own group (52% for EMO): the standard model's "
+                "documents are not tied to a block.")
+        inner += squares_results(HELD=ROOT / "sparse_experts/olmoe3_routing/runs_heldout20b_std", PPL=ROOT / "sparse_experts/olmoe3_squares_std/ppl_validation", SQO=OUT / "olmoe3_squares_std",
+                                 start="std_step19074", start_ppl="olmoe3_275m_10b", base_runs=("olmoe3_275m_20b_1node",), label="", take_main=STD_TAKE, take_pw=STD_PW_TAKE)
+        body += variant("B", inner)
+    # ---- C: EMO squares without the EMO loss ----
     if (ROOT / "sparse_experts/olmoe3_routing/runs_heldout20b_noemo").exists():
-        body += card("info", "EMO squares trained without the EMO loss",
-                     "<p>Same EMO 512e partition, document assignment and sliced start checkpoints as above, but the four sub-models and the "
-                     "post-merge 0.5B finetune train with plain top-16 routing (no per-document pool rule, instance-level load balancing). "
-                     "Compared against the same EMO baseline.</p>")
-        body += squares_results(HELD=ROOT / "sparse_experts/olmoe3_routing/runs_heldout20b_noemo", PPL=ROOT / "sparse_experts/olmoe3_squares_noemo/ppl_validation", SQO=OUT / "olmoe3_squares_noemo",
-                                start="emo_step19074", start_ppl="olmoe3_275m_emo_10b", base_runs=("olmoe3_275m_emo_20b_1node",), label=" (EMO squares, no EMO loss)",
-                                take_main="", take_pw="")
+        inner = card("info", "Setup", "<p>Same EMO 512e partition, document assignment and sliced start checkpoints as A (stages 0 and 1 are identical), but the four "
+                     "sub-models and the post-merge 0.5B finetune train with plain top-16 routing (no per-document pool rule, instance-level load "
+                     "balancing). Compared against the same EMO baseline as A.</p>")
+        inner += squares_results(HELD=ROOT / "sparse_experts/olmoe3_routing/runs_heldout20b_noemo", PPL=ROOT / "sparse_experts/olmoe3_squares_noemo/ppl_validation", SQO=OUT / "olmoe3_squares_noemo",
+                                 start="emo_step19074", start_ppl="olmoe3_275m_emo_10b", base_runs=("olmoe3_275m_emo_20b_1node",), label="", take_main="", take_pw="")
+        body += variant("C", inner)
+    # ---- D: EMO, k = 8 ----
     if (ROOT / "sparse_experts/olmoe3_routing/runs_heldout20b_k8").exists():
         G8 = json.load(open(ROOT / "sparse_experts/olmoe3_squares_k8/groups.json")) if (ROOT / "sparse_experts/olmoe3_squares_k8/groups.json").exists() else None
-        body += card("info", "EMO squares with 8 sub-models (k = 8)",
-                     "<p>Same stages as the 4-square run on the EMO 512e model, with each layer's experts split into 8 spectral blocks instead of 4 "
-                     "(layer 1 kept whole), so each sub-model owns about an eighth of the experts and trains on about an eighth of the tokens. "
-                     "Compared against the same EMO baseline.</p>"
-                     + (table(["layer", *[f"group {g}" for g in range(8)], "agreement with layer 9"],
-                              [[f"layer {l}", *[str(s) for s in G8["sizes"][str(l)]], f(G8["layer9_agreement"].get(str(l)), 2) if str(l) in G8["layer9_agreement"] else "&mdash; (whole)"] for l in range(1, 10)]) if G8 else ""))
+        inner = section("Stage 0: the eight block-groups",
+            "Same stages as A on the EMO 512e model, with each layer's experts split into 8 spectral blocks instead of 4 (layer 1 kept whole), so each "
+            "sub-model owns about an eighth of the experts and trains on about an eighth of the tokens. Compared against the same EMO baseline as A.",
+            _groups_table(G8, 8) if G8 else "",
+            "Blocks of 46&ndash;84 experts per layer; the agreement with layer 9 is lower than at k = 4.")
         k8_stats = ROOT / "sparse_experts/olmoe3_squares_k8/pack/stats.json"
         if k8_stats.exists():
             st = json.load(open(k8_stats))
-            body += card("info", "k = 8: assigning the next 10B tokens",
-                         table(["group", "documents", "tokens", "token share", "mean in-group share", "full-model CE"],
-                               [[f"group {g}", f"{st['docs_per_group'][g]:,}", f"{st['tokens_per_group'][g]/1e9:.2f}B", f"{100*st['token_share'][g]:.1f}%", f(st['in_group_share_by_group'][str(g)], 2), f(st['ce_by_group'][str(g)], 3)] for g in range(8)]))
-        body += squares_results(HELD=ROOT / "sparse_experts/olmoe3_routing/runs_heldout20b_k8", PPL=ROOT / "sparse_experts/olmoe3_squares_k8/ppl_validation", SQO=OUT / "olmoe3_squares_k8",
-                                start="emo_step19074", start_ppl="olmoe3_275m_emo_10b", base_runs=("olmoe3_275m_emo_20b_1node",), label=" (EMO, 8 squares)", take_main="", take_pw="")
+            inner += section("Stage 1: assigning the next 10B tokens", "Raw-count assignment as in A.", _assign_table(st, 8),
+                             f"Token-weighted, {100*st['in_group_share_token_weighted']:.0f}% of the selections a sub-model's documents make are inside its own expert group.")
+        inner += squares_results(HELD=ROOT / "sparse_experts/olmoe3_routing/runs_heldout20b_k8", PPL=ROOT / "sparse_experts/olmoe3_squares_k8/ppl_validation", SQO=OUT / "olmoe3_squares_k8",
+                                 start="emo_step19074", start_ppl="olmoe3_275m_emo_10b", base_runs=("olmoe3_275m_emo_20b_1node",), label="", take_main="", take_pw="")
+        body += variant("D", inner)
     return body
 
 
