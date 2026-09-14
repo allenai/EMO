@@ -47,6 +47,8 @@ QUESTIONS = [
      "Do documents that sit cleanly in one layer-8 expert block also sit together in a single layer-9 block, i.e. are the document-level blocks the same groups of documents from layer to layer?"),
     ("q3", "Q3 · Train the squares separately, then merge",
      "Can EMO 512e be split into four block-group sub-models (k = 4, layers 2&ndash;9), each trained on its own documents for the next 10B tokens, and merged back into a model that matches simply continuing the full model?"),
+    ("q4", "Q4 · Learn the pool size per document",
+     "Instead of sampling each document's expert-pool size d at random, can the model learn d per document and layer, so that documents get small pools where a small pool is enough, without losing accuracy?"),
 ]
 
 
@@ -414,6 +416,72 @@ def squares_results(HELD=HELD, PPL=PPL, SQO=SQO, start="emo_step19074", start_pp
     return out
 
 
+LD = ROOT / "sparse_experts/learnedd_sweep"
+
+
+def build_q4():
+    body = question_card("q4")
+    body += card("info", "Method",
+        "<ul>"
+        "<li><b>Predict d.</b> Per MoE layer, a linear head on the document's mean hidden state (detached) gives a continuous pool size "
+        "d in [16, 512] (16 = top-k). The forward pass uses the hard pool round(d): experts are ranked per document by their summed router "
+        "scores as in EMO, only the top round(d) are routable, and the token top-16 is unchanged.</li>"
+        "<li><b>Size penalty.</b> &lambda;<sub>d</sub> &middot; mean over documents of (d &minus; 16)/(512 &minus; 16) pushes the pools small.</li>"
+        "<li><b>What pushes d up.</b> Two variants. <b>STE</b>: a straight-through mask over expert ranks, soft = sigmoid((d &minus; r + 0.5)/T), "
+        "multiplies the routing scores, so the LM loss reaches d through the selected experts near the pool boundary. "
+        "<b>Coverage</b>: &lambda;<sub>cov</sub> &middot; the document's router probability mass that falls outside the soft pool; d grows while the "
+        "expert at rank d still carries more than &lambda;<sub>d</sub>/(&lambda;<sub>cov</sub> &middot; 496) of the document's mass.</li>"
+        "<li><b>Warm-up.</b> Training starts with no restriction: the hard pool is floored at 512 and the floor falls linearly to 16 over the "
+        "first W steps while &lambda;<sub>d</sub> ramps from 0. The head gets 10&times; the base learning rate.</li>"
+        "<li><b>Eval.</b> Configurable: route with the predicted d (used everywhere below) or with a fixed pool.</li>"
+        "</ul>")
+    tab = LD / "sweep_table.json"
+    if tab.exists():
+        T = {r["run"].split("sweep_", 1)[1]: r for r in json.load(open(tab))}
+        def row(label, key):
+            r = T.get(key)
+            if not r: return None
+            dm = r.get("d_soft_mean") or {}; fr = r.get("d_frac_le64") or {}
+            ds = [dm.get(str(l)) or dm.get(l) for l in range(2, 10)]; ds = [d for d in ds if d is not None]
+            d1 = dm.get("1") or dm.get(1)
+            dtxt = ("16 in every layer" if ds and max(ds) < 16.5 and (d1 or 0) < 16.5 else f"{min(ds):.0f}&ndash;{max(ds):.0f} (L1 {d1:.0f})") if ds else "&mdash;"
+            f5 = fr.get("5") or fr.get(5)
+            ev = r.get("eval_ce", {}); e2 = ev.get("2000") or ev.get(2000)
+            e2 = sum(e2.values()) / len(e2) if e2 else None
+            return [label, dtxt, f"{100*f5:.0f}%" if f5 is not None else "&mdash;", f(r.get("train_ce_last100"), 3), f(e2, 3), str(r.get("skipped_steps", 0))]
+        rows = [row("uniform EMO (control, pools sampled from [16, 512])", "control_uniform"),
+                row("STE, &lambda;<sub>d</sub> = 0.01, T = 2, W = 500", "T2.0_l0.01_w500_m10"),
+                row("STE, &lambda;<sub>d</sub> = 0 (no penalty)", "T2.0_l0_w500_m10"),
+                row("STE, other T / &lambda;<sub>d</sub> / W / head LR (8 arms)", None),
+                row("coverage, mass threshold 0.001", "T2.0_l0.5_w500_m10_coveragec1"),
+                row("coverage, mass threshold 0.002", "T2.0_l1.0_w500_m10_coveragec1"),
+                row("coverage, mass threshold 0.005", "T2.0_l2.5_w500_m10_coveragec1")]
+        others = [T[k] for k in T if k.startswith("T") and "coverage" not in k and k not in ("T2.0_l0.01_w500_m10", "T2.0_l0_w500_m10")]
+        if others:
+            e2s = [sum(v.values()) / len(v) for r in others for kk, v in r["eval_ce"].items() if str(kk) == "2000"]
+            rows[3] = ["STE, other T / &lambda;<sub>d</sub> / W / head LR (8 arms)", "16 in every layer", "100%",
+                       f"{min(r['train_ce_last100'] for r in others):.3f}&ndash;{max(r['train_ce_last100'] for r in others):.3f}",
+                       f"{min(e2s):.3f}&ndash;{max(e2s):.3f}" if e2s else "&mdash;", f"{min(r['skipped_steps'] for r in others)}&ndash;{max(r['skipped_steps'] for r in others)}"]
+        rows = [r for r in rows if r]
+        body += section("2000-step sweep (1.05B tokens, one config per run)",
+            "Every arm trains the EMO 512e model from scratch for 2000 steps with the same data order (the 10B arms' first 2000 steps, inside the "
+            "LR warm-up). d = mean predicted pool at step 2000 over layers 2&ndash;9 (layer 1 in brackets); docs &le; 64 = share of documents whose "
+            "layer-5 pool is at most 64 experts; eval CE = mean over the 11 v3-small validation sets at step 2000, routing with the predicted d.",
+            table(["arm", "d at step 2000", "docs &le; 64", "train CE", "eval CE", "skipped steps"], rows),
+            "With the STE signal, d collapses to 16 in every layer within a few hundred steps in all 11 arms, including &lambda;<sub>d</sub> = 0: "
+            "the straight-through gradient only sees the selected experts, and raising d mostly flattens their weights, so the LM loss always "
+            "asks for a smaller d. The cost is +0.05 eval CE. The coverage signal gives a tunable equilibrium: at threshold 0.002 the pools "
+            "average 110&ndash;130 experts, two thirds of the documents use at most 64, and the eval CE matches the uniform-pool control.")
+    else:
+        body += card("warn", "Sweep", "<p>Sweep results not collected yet.</p>")
+    body += card("info", "10B run",
+        "<p>EMO 512e trained from scratch for 10B tokens with the coverage signal at threshold 0.002 (T = 2, warm-up 500 steps, head LR &times;10), "
+        "the same recipe as the other 10B arms; launched 2026-09-14 13:20 UTC. The threshold is on router mass and the router sharpens over "
+        "training, so the learned pools are expected to shrink during the run. When it finishes: held-out CE on the same 65.5M-token sample "
+        "routing with the predicted d and with the full pool, and the learned d per layer and document type.</p>")
+    return body
+
+
 def build_next():
     return card("info", "Next steps", "<ul><li>Add the 2000-expert arms (EP=2) to the partition and block-agreement grids once their 10B runs finish.</li>"
                 "<li>Use the persistent document-level blocks as the expert subsets for selective-expert finetuning, as in the sparse_experts plan.</li></ul>")
@@ -425,6 +493,7 @@ def main():
         ("q1", QUESTIONS[0][1], build_q5()),
         ("q2", QUESTIONS[1][1], build_q6()),
         ("q3", QUESTIONS[2][1], build_q3()),
+        ("q4", QUESTIONS[3][1], build_q4()),
         ("next", "Next steps", build_next()),
     ]
     nav = "".join(f'<button data-target="{tid}">{name}</button>' for tid, name, _ in tabs)
