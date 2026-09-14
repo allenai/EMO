@@ -422,23 +422,30 @@ def squares_results(HELD=HELD, PPL=PPL, SQO=SQO, start="emo_step19074", start_pp
     ppl_ft = {}
     for r in PPL.glob("*_ft"):
         if (r / "step39502.json").exists(): ppl_ft["merged_ft" if "merged" in r.name else "baseline_ft"] = _ppl(r / "step39502.json")
+    # second finetuning stage (+1B total): steps 39502 -> 40456
+    ft2 = {tag: _ce(HELD / f"{tag}2/none") for tag in ("baseline_ft", "merged_ft")}
+    for r in PPL.glob("*_ft2"):
+        if (r / "step40456.json").exists(): ppl_ft["merged_ft2" if "merged" in r.name else "baseline_ft2"] = _ppl(r / "step40456.json")
     has_ft = any(v is not None for v in ft.values()) or bool(ppl_ft)
-    xs_all = xs + ([125] if has_ft else []); labels = [f"{v}%" for v in xs] + (["+0.5B ft"] if has_ft else [])
-    shade = (125, "finetuned 0.5B") if has_ft else None
-    def ext(y, v): return y + ([v] if has_ft else [])
+    has_ft2 = any(v is not None for v in ft2.values()) or any(k.endswith("_ft2") for k in ppl_ft)
+    extra_x = ([125] if has_ft else []) + ([150] if has_ft2 else []); extra_lab = (["+0.5B ft"] if has_ft else []) + (["+1B ft"] if has_ft2 else [])
+    xs_all = xs + extra_x; labels = [f"{v}%" for v in xs] + extra_lab
+    shade = (125, "finetuned on 0.5B / 1B more tokens" if has_ft2 else "finetuned 0.5B") if has_ft else None
+    def ext(y, v1, v2): return y + ([v1] if has_ft else []) + ([v2] if has_ft2 else [])
     charts = ""
     if have:
-        charts = CHART_CSS + line_chart(xs_all, [{"name": "baseline (full model, continued)", "y": ext(b_h, ft["baseline_ft"])}, {"name": "merged squares", "y": ext(m_h, ft["merged_ft"])},
+        charts = CHART_CSS + line_chart(xs_all, [{"name": "baseline (full model, continued)", "y": ext(b_h, ft["baseline_ft"], ft2["baseline_ft"])}, {"name": "merged squares", "y": ext(m_h, ft["merged_ft"], ft2["merged_ft"])},
                                                 {"name": "start model (step 19,074)", "y": [ref_none] * len(xs_all), "const": True, "dashed": True, "color": "#64748b"}],
                                        title="Held-out CE (20B window, 65M tokens)", xlabels=labels, shade=shade)
         if any(v is not None for v in b_p + m_p):
-            charts += line_chart(xs_all, [{"name": "baseline (full model, continued)", "y": ext(b_p, ppl_ft.get("baseline_ft"))}, {"name": "merged squares", "y": ext(m_p, ppl_ft.get("merged_ft"))},
+            charts += line_chart(xs_all, [{"name": "baseline (full model, continued)", "y": ext(b_p, ppl_ft.get("baseline_ft"), ppl_ft.get("baseline_ft2"))}, {"name": "merged squares", "y": ext(m_p, ppl_ft.get("merged_ft"), ppl_ft.get("merged_ft2"))},
                                           {"name": "start model (step 19,074)", "y": [ref_ppl] * len(xs_all), "const": True, "dashed": True, "color": "#64748b"}],
                                  title="v3-small ppl sets, mean CE", xlabels=labels, shade=shade)
     ft_html = ""
     if has_ft:
-        ft_html = ("<p><b>+0.5B ft</b> (shaded): the 100% merged model (Adam moments merged like the weights) and the baseline each trained for "
-                   "0.5B more tokens (steps 38,548&ndash;39,502, past the held-out window) at the same constant LR.</p>")
+        ft_html = ("<p><b>Finetuning</b> (shaded): the 100% merged model (Adam moments merged like the weights) and the baseline each trained on the same "
+                   "0.5B more tokens (steps 38,548&ndash;39,502) at the same constant LR" + (", then on a further 0.5B (steps 39,502&ndash;40,456; 1B in total)" if has_ft2 else "")
+                   + ". The held-out sample is steps 38,148&ndash;38,547 of the stream, so no finetuning token is in it.</p>")
     intro = ("<b>Held-out CE</b>: mean token cross-entropy of 7,991 unseen instances (65.5M tokens) from the 20B&ndash;30B window of the training "
              "stream, which neither the baseline nor the sub-models see. <b>v3-small ppl sets</b>: OLMo-core's 11 validation sets, mean CE over sets. "
              "Baseline = the full model continued from step 19,074 on the same 10B tokens; merged = the four sub-models at the same fraction of "
