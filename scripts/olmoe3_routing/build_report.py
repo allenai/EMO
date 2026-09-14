@@ -577,7 +577,10 @@ def learnedd_10b():
             table(["routing", "held-out CE", "mean pool per layer (tokens)"], rows),
             "On the held-out sample the learned pools do better than opening every expert (2.460 vs 2.474): the model was trained with its "
             "pools and prefers them. Against the other arms it matches the uniform-pool EMO model (2.463) and stays 0.016 behind the standard "
-            "model (2.444); the token-weighted mean pool is 320&ndash;360 experts because long documents get the large pools.")
+            "model (2.444); the token-weighted mean pool is 320&ndash;360 experts because long documents get the large pools. "
+            "Its document-level structure is stronger than the uniform-pool model's (Q1 purity at k = 4, layers 1/5/9: 0.52/0.60/0.55 vs "
+            "0.34/0.51/0.54) but less aligned across layers (Q2 block agreement with layer 9, NMI 0.65&ndash;0.94 vs 0.85&ndash;1.00); both "
+            "rows are in the Q1 and Q2 grids.")
     else:
         out += card("info", "Held-out CE", "<p>Routing passes on the held-out sample (predicted d and full pool) running.</p>")
     return out
