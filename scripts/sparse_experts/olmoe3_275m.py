@@ -495,8 +495,8 @@ def build_model_config(common: CommonComponents) -> OLMoDDPModelConfig:
     if vocab_size == VOCAB_SIZE and NUM_ROUTED_EXPERTS in EXPECTED_PARAMS and not SQUARES_LAYER_EXPERTS:
         actual = (model.num_active_params, model.num_active_non_embedding_params, model.num_params)
         expected = EXPECTED_PARAMS[NUM_ROUTED_EXPERTS]
-        if LEARNED_D:  # one d_head (d_model weights + 4-entry padded bias) per MoE layer
-            expected = tuple(v + (N_LAYERS - 1) * (D_MODEL + 4) for v in expected)
+        if LEARNED_D:  # one d_head (d_model weights + 64-entry padded bias) per MoE layer
+            expected = tuple(v + (N_LAYERS - 1) * (D_MODEL + 64) for v in expected)
         if actual != expected:
             raise ValueError(f"parameter-count drift: expected {expected}, found {actual}")
     return model

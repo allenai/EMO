@@ -75,7 +75,7 @@ class LearnedDRouterConfigV2(MoERouterConfigV2):
     learned_d: Optional[LearnedDConfig] = None
 
     def num_params(self) -> int:
-        return super().num_params() + (self.d_model + 4 if self.learned_d is not None else 0)
+        return super().num_params() + (self.d_model + 64 if self.learned_d is not None else 0)
 
     def build(self, init_device: str = "cpu"):
         if self.learned_d is None or self.emo is None:
@@ -96,10 +96,11 @@ class LearnedDEmoRouterV2(EmoRouterV2):
             raise OLMoConfigurationError("learned_d.temperature must be > 0")
         self.learned_d = learned_d
         self.d_weight = nn.Parameter(torch.empty(self.d_model, device=init_device, dtype=self.weight.dtype))
-        # 4 fp32 entries (16 bytes; only [0] is used): OLMoDDP packs parameters back-to-back in one flat
-        # buffer and inductor requires 16-byte-aligned inputs, so a 1-element parameter would misalign
-        # every parameter that follows it.
-        self.d_bias = nn.Parameter(torch.empty(4, device=init_device, dtype=self.weight.dtype))
+        # 64 entries, only [0] is used: the MoE optimizer packs the (bf16) parameters back-to-back in one
+        # flat buffer with no padding and inductor requires 16-byte-aligned inputs, so a 1-element
+        # parameter would misalign every parameter that follows it (64 keeps the numel divisible by any
+        # DP world size as well).
+        self.d_bias = nn.Parameter(torch.empty(64, device=init_device, dtype=self.weight.dtype))
         self._d_sched = hide_from_torch(torch.zeros(2, device=self.device))
         self._d_stats = hide_from_torch(torch.zeros(7, device=self.device))
         self._reset_learned_d()
