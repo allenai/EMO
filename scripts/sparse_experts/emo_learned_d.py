@@ -75,7 +75,7 @@ class LearnedDRouterConfigV2(MoERouterConfigV2):
     learned_d: Optional[LearnedDConfig] = None
 
     def num_params(self) -> int:
-        return super().num_params() + (self.d_model + 1 if self.learned_d is not None else 0)
+        return super().num_params() + (self.d_model + 4 if self.learned_d is not None else 0)
 
     def build(self, init_device: str = "cpu"):
         if self.learned_d is None or self.emo is None:
@@ -96,7 +96,10 @@ class LearnedDEmoRouterV2(EmoRouterV2):
             raise OLMoConfigurationError("learned_d.temperature must be > 0")
         self.learned_d = learned_d
         self.d_weight = nn.Parameter(torch.empty(self.d_model, device=init_device, dtype=self.weight.dtype))
-        self.d_bias = nn.Parameter(torch.empty(1, device=init_device, dtype=self.weight.dtype))
+        # 4 fp32 entries (16 bytes; only [0] is used): OLMoDDP packs parameters back-to-back in one flat
+        # buffer and inductor requires 16-byte-aligned inputs, so a 1-element parameter would misalign
+        # every parameter that follows it.
+        self.d_bias = nn.Parameter(torch.empty(4, device=init_device, dtype=self.weight.dtype))
         self._d_sched = hide_from_torch(torch.zeros(2, device=self.device))
         self._d_stats = hide_from_torch(torch.zeros(7, device=self.device))
         self._reset_learned_d()
@@ -151,7 +154,7 @@ class LearnedDEmoRouterV2(EmoRouterV2):
         doc_cnt = torch.zeros(B, S, dtype=h.dtype, device=h.device).scatter_add_(1, segment_ids, torch.ones_like(segment_ids, dtype=h.dtype))
         valid = doc_cnt > 0
         doc_mean = doc_sum / doc_cnt.clamp(min=1.0).unsqueeze(-1)
-        s = doc_mean @ self.d_weight.float() + self.d_bias.float()  # (B, S) one logit per document slot
+        s = doc_mean @ self.d_weight.float() + self.d_bias[0].float()  # (B, S) one logit per document slot
         d_soft_doc = self.d_min + (self.d_max - self.d_min) * torch.sigmoid(s)
         d_soft_tok = d_soft_doc.gather(1, segment_ids)
         return d_soft_tok, d_soft_doc, valid

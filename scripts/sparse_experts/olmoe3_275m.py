@@ -495,8 +495,8 @@ def build_model_config(common: CommonComponents) -> OLMoDDPModelConfig:
     if vocab_size == VOCAB_SIZE and NUM_ROUTED_EXPERTS in EXPECTED_PARAMS and not SQUARES_LAYER_EXPERTS:
         actual = (model.num_active_params, model.num_active_non_embedding_params, model.num_params)
         expected = EXPECTED_PARAMS[NUM_ROUTED_EXPERTS]
-        if LEARNED_D:  # one d_head (d_model + 1) per MoE layer
-            expected = tuple(v + (N_LAYERS - 1) * (D_MODEL + 1) for v in expected)
+        if LEARNED_D:  # one d_head (d_model weights + 4-entry padded bias) per MoE layer
+            expected = tuple(v + (N_LAYERS - 1) * (D_MODEL + 4) for v in expected)
         if actual != expected:
             raise ValueError(f"parameter-count drift: expected {expected}, found {actual}")
     return model
@@ -737,6 +737,8 @@ def build_train_module_config(common: CommonComponents) -> OLMoDDPTrainModuleCon
             group_overrides=[
                 # Dense mainline: only token embeddings are exempt from weight decay.
                 OptimGroupOverride(params=["embeddings.weight"], opts={"weight_decay": 0.0}),
+                # learned-d pool-size head bias: no decay (decay would pull every pool toward mid-range)
+                *([OptimGroupOverride(params=["*routed_experts_router.d_bias"], opts={"weight_decay": 0.0})] if LEARNED_D else []),
                 # Routed experts get their own group for OLMoDDP's distributed expert handling
                 # but inherit the optimizer-level LR.
                 OptimGroupOverride(params=["*routed_experts.w_up_gate", "*routed_experts.w_down"], opts={}),
