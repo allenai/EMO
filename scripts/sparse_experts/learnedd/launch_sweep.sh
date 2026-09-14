@@ -18,9 +18,13 @@ declare -A CFG=(
   [m30]="OLMOE3_LD_TEMP=2.0 OLMOE3_LD_LAMBDA=0.01 OLMOE3_LD_WARMUP=500 OLMOE3_LD_LR_MULT=30"
   [l0.001]="OLMOE3_LD_TEMP=2.0 OLMOE3_LD_LAMBDA=0.001 OLMOE3_LD_WARMUP=500"
   [l0]="OLMOE3_LD_TEMP=2.0 OLMOE3_LD_LAMBDA=0 OLMOE3_LD_WARMUP=500"
+  # coverage signal: the pool grows while the rank-d expert carries > lambda_d/(lambda_cov*(E-k)) of the doc's router mass
+  [cov_t0.001]="OLMOE3_LD_SIGNAL=coverage OLMOE3_LD_LAMBDA_COV=1 OLMOE3_LD_TEMP=2.0 OLMOE3_LD_LAMBDA=0.5 OLMOE3_LD_WARMUP=500"
+  [cov_t0.002]="OLMOE3_LD_SIGNAL=coverage OLMOE3_LD_LAMBDA_COV=1 OLMOE3_LD_TEMP=2.0 OLMOE3_LD_LAMBDA=1.0 OLMOE3_LD_WARMUP=500"
+  [cov_t0.005]="OLMOE3_LD_SIGNAL=coverage OLMOE3_LD_LAMBDA_COV=1 OLMOE3_LD_TEMP=2.0 OLMOE3_LD_LAMBDA=2.5 OLMOE3_LD_WARMUP=500"
   [control]="OLMOE3_LD_CONTROL=1"
 )
-ORDER=(base T1 T4 l0.003 l0.03 w0 w1000 m1 m30 l0.001 l0 control)
+ORDER=(base T1 T4 l0.003 l0.03 w0 w1000 m1 m30 l0.001 l0 cov_t0.001 cov_t0.002 cov_t0.005 control)
 sel=("$@"); [ ${#sel[@]} -eq 0 ] && sel=("${ORDER[@]}")
 for name in "${sel[@]}"; do
   spec="${CFG[$name]:?unknown config $name}"

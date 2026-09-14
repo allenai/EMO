@@ -216,6 +216,8 @@ LD_DETACH = _env_bool("OLMOE3_LD_DETACH", True)
 # d_head LR multiplier: Adam moves the (scalar) bias by ~LR per step whatever the gradient, so at the base LR the
 # pool size crawls (< 1 logit over the 2000-step LR warm-up); a multiplier only changes the speed, not the balance.
 LD_LR_MULT = float(os.environ.get("OLMOE3_LD_LR_MULT", "10"))
+LD_SIGNAL = os.environ.get("OLMOE3_LD_SIGNAL", "ste")  # ste | coverage | both (what pushes d up; see emo_learned_d.py)
+LD_LAMBDA_COV = float(os.environ.get("OLMOE3_LD_LAMBDA_COV", "1.0"))
 if LEARNED_D and not EMO_ENABLED:
     raise ValueError("OLMOE3_EMO_LEARNED_D=1 requires OLMOE3_EMO=1")
 EXPERIMENT_TAG = os.environ.get("OLMOE3_EXPERIMENT", "sparse_experts")
@@ -372,6 +374,8 @@ def _learned_d_kwargs() -> dict:
             init_pool=LD_INIT,
             detach_doc_embedding=LD_DETACH,
             eval_mode=LD_EVAL,
+            signal=LD_SIGNAL,
+            lambda_cov=LD_LAMBDA_COV,
         )
     }
 
@@ -555,6 +559,7 @@ FORWARDED_ENV = (
     "OLMOE3_EMO_POOL_DIST", "OLMOE3_EXPERIMENT", "OLMOE3_PPL_EVAL_INTERVAL",
     "OLMOE3_EMO_LEARNED_D", "OLMOE3_LD_TEMP", "OLMOE3_LD_LAMBDA", "OLMOE3_LD_WARMUP", "OLMOE3_LD_FLOOR_WARMUP",
     "OLMOE3_LD_LAMBDA_WARMUP", "OLMOE3_LD_INIT", "OLMOE3_LD_EVAL", "OLMOE3_LD_DETACH", "OLMOE3_LD_LR_MULT",
+    "OLMOE3_LD_SIGNAL", "OLMOE3_LD_LAMBDA_COV",
     "OLMOE3_GROUPS", "OLMOE3_GROUP", "OLMOE3_DATA_PATHS", "OLMOE3_INIT_FROM", "OLMOE3_FIXED_STEPS", "OLMOE3_WARMUP",
 )
 
@@ -727,7 +732,7 @@ def build_train_module_config(common: CommonComponents) -> OLMoDDPTrainModuleCon
         + " "
         f"nodes={NUM_NODES} gpus/node={NUM_GPUS} rank_mb={RANK_MICROBATCH_SEQUENCES} ep={EP_SIZE}/{EP_PATH} attn={ATTN_BACKEND} "
         f"cute_kda={KDA_USE_CUTE_KERNEL} ppl_eval_interval={PPL_EVAL_INTERVAL} emo={EMO_ENABLED} "
-        f"learned_d={LEARNED_D}" + (f" (T={LD_TEMP:g} lambda={LD_LAMBDA:g} warmup={LD_WARMUP} floor_warmup={LD_FLOOR_WARMUP} lambda_warmup={LD_LAMBDA_WARMUP} init={LD_INIT} eval={LD_EVAL} detach={LD_DETACH} lr_mult={LD_LR_MULT:g})" if LEARNED_D else "")
+        f"learned_d={LEARNED_D}" + (f" (T={LD_TEMP:g} lambda={LD_LAMBDA:g} warmup={LD_WARMUP} floor_warmup={LD_FLOOR_WARMUP} lambda_warmup={LD_LAMBDA_WARMUP} init={LD_INIT} eval={LD_EVAL} detach={LD_DETACH} lr_mult={LD_LR_MULT:g} signal={LD_SIGNAL} lambda_cov={LD_LAMBDA_COV:g})" if LEARNED_D else "")
         + (f" pool=[{EMO_MIN_POOL},{EMO_MAX_POOL}] pool_dist={EMO_POOL_DIST} eval_pool={EMO_EVAL_POOL}" if EMO_ENABLED else "")
     )
     return OLMoDDPTrainModuleConfig(
@@ -843,7 +848,7 @@ def build_trainer_config(common: CommonComponents, cluster: str) -> TrainerConfi
                 tags=["pretraining", EXPERIMENT_TAG, "olmoe3_275m", f"{NUM_ROUTED_EXPERTS}e", *([f"group{SQUARES_GROUP}"] if SQUARES_GROUP is not None else []),
                       "emo" if EMO_ENABLED else "noemo",
                       *([f"pool_{EMO_POOL_DIST.replace(':', '').replace(',', 'or')}"] if EMO_ENABLED and EMO_POOL_ALPHA is not None else []),
-                      *(["learned_d", f"ld_T{LD_TEMP:g}_l{LD_LAMBDA:g}_w{LD_WARMUP}_m{LD_LR_MULT:g}"] if LEARNED_D else []),
+                      *(["learned_d", f"ld_T{LD_TEMP:g}_l{LD_LAMBDA:g}_w{LD_WARMUP}_m{LD_LR_MULT:g}", f"ld_signal_{LD_SIGNAL}"] if LEARNED_D else []),
                       cluster.rsplit("/", 1)[-1], *EXTRA_WANDB_TAGS],
             ),
         )

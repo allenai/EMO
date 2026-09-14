@@ -68,6 +68,15 @@ class LearnedDConfig(Config):
     """Detach the mean-pooled hidden state before d_head (no gradient into the trunk from d)."""
     eval_mode: str = "predicted"
     """'predicted' (round(d_soft) from the head) or 'fixed' (EmoRouterConfig.eval_pool_size())."""
+    signal: str = "ste"
+    """What pushes d UP against the size penalty: 'ste' = the LM loss through the straight-through mask on the
+    selected experts' weights (systematically negative in practice: it only sees a flattening of the top-k
+    weights, never the excluded experts); 'coverage' = the router-mass coverage term below (no STE gradient);
+    'both'."""
+    lambda_cov: float = 1.0
+    """Weight of the coverage loss mean_tokens(1 - sum_e p_doc[e] * soft_mask[e]) (p_doc = the document's mean
+    softmax router distribution, detached): the pool grows while the marginal expert at rank d carries more
+    than lambda_d / (lambda_cov * (d_max - d_min)) of the document's router mass."""
 
 
 @dataclass
@@ -94,6 +103,8 @@ class LearnedDEmoRouterV2(EmoRouterV2):
             raise OLMoConfigurationError(f"learned_d.eval_mode must be 'predicted' or 'fixed', got {learned_d.eval_mode!r}")
         if learned_d.temperature <= 0:
             raise OLMoConfigurationError("learned_d.temperature must be > 0")
+        if learned_d.signal not in ("ste", "coverage", "both"):
+            raise OLMoConfigurationError(f"learned_d.signal must be 'ste', 'coverage' or 'both', got {learned_d.signal!r}")
         self.learned_d = learned_d
         self.d_weight = nn.Parameter(torch.empty(self.d_model, device=init_device, dtype=self.weight.dtype))
         # 64 entries, only [0] is used: the MoE optimizer packs the (bf16) parameters back-to-back in one
@@ -102,7 +113,7 @@ class LearnedDEmoRouterV2(EmoRouterV2):
         # DP world size as well).
         self.d_bias = nn.Parameter(torch.empty(64, device=init_device, dtype=self.weight.dtype))
         self._d_sched = hide_from_torch(torch.zeros(2, device=self.device))
-        self._d_stats = hide_from_torch(torch.zeros(7, device=self.device))
+        self._d_stats = hide_from_torch(torch.zeros(9, device=self.device))
         self._reset_learned_d()
 
     # -- pool range -------------------------------------------------------------------------
@@ -124,7 +135,7 @@ class LearnedDEmoRouterV2(EmoRouterV2):
         # schedule state: [lambda scale, hard-pool floor]; no warm-up -> fully restricted
         self._d_sched = hide_from_torch(torch.tensor([1.0, float(self.d_min)], device=self.device))
         self.set_schedule(step=None)
-        self._d_stats = hide_from_torch(torch.zeros(7, device=self.device))
+        self._d_stats = hide_from_torch(torch.zeros(9, device=self.device))
 
     def reset_parameters(self):
         super().reset_parameters()
@@ -206,8 +217,17 @@ class LearnedDEmoRouterV2(EmoRouterV2):
             if self.training and torch.is_grad_enabled():
                 soft = torch.sigmoid((d_soft_tok.unsqueeze(-1) - ranks.to(scores.dtype) - 0.5) / self.learned_d.temperature)
                 hard = keep.to(scores.dtype)
-                mask = soft + (hard - soft).detach()
-                d_info = (d_soft_doc, valid, d_hard)
+                if self.learned_d.signal in ("ste", "both"):
+                    mask = soft + (hard - soft).detach()
+                else:
+                    mask = hard
+                cov = None
+                if self.learned_d.signal in ("coverage", "both"):
+                    # router mass of the document captured by the (soft) pool; per token, identical within a document
+                    doc_cnt = ops.doc_sum_scatter(torch.ones_like(scores[..., :1]), segment_ids)
+                    p_doc = (document_scores / doc_cnt).detach()
+                    cov = (p_doc * soft).sum(dim=-1)  # (B, S) in [0, 1]
+                d_info = (d_soft_doc, valid, d_hard, cov)
             else:
                 mask = keep.to(scores.dtype)
 
@@ -256,7 +276,7 @@ class LearnedDEmoRouterV2(EmoRouterV2):
         )
         if d_info is None or not (self.training and torch.is_grad_enabled()):
             return aux_loss
-        d_soft_doc, valid, d_hard = d_info
+        d_soft_doc, valid, d_hard, cov = d_info
         n_docs = valid.sum().clamp(min=1).to(d_soft_doc.dtype)
         norm = ((d_soft_doc - self.d_min) / (self.d_max - self.d_min)) * valid.to(d_soft_doc.dtype)
         d_mean_norm = norm.sum() / n_docs  # mean over the documents of this micro-batch
@@ -267,6 +287,11 @@ class LearnedDEmoRouterV2(EmoRouterV2):
         d_loss = d_mean_norm * (n_tok / loss_div_factor)
         sched = unhide_from_torch(self._d_sched)
         scaled = self.learned_d.lambda_d * sched[0] * d_loss
+        cov_mean = None
+        if cov is not None:
+            cov_mean = cov.mean()
+            cov_loss = (1.0 - cov_mean) * (n_tok / loss_div_factor)
+            scaled = scaled + self.learned_d.lambda_cov * cov_loss
         if accumulate_metrics:
             stats = self.d_stats
             with torch.no_grad():
@@ -278,6 +303,9 @@ class LearnedDEmoRouterV2(EmoRouterV2):
                 stats[4] += get_local_tensor(d_loss.detach())
                 stats[5] += ((d_soft_doc <= 64) & valid).sum().to(stats.dtype)
                 stats[6] += n_tok
+                if cov_mean is not None:
+                    stats[7] += get_local_tensor(cov_mean.detach())
+                    stats[8] += 1.0
         return scaled if aux_loss is None else aux_loss + scaled
 
     @property
@@ -300,6 +328,8 @@ class LearnedDEmoRouterV2(EmoRouterV2):
         out["emo d loss unscaled"] = (stats[4].clone(), ReduceType.mean)
         out["emo d lambda scale"] = (sched[0].clone(), ReduceType.mean)
         out["emo d floor"] = (sched[1].clone(), ReduceType.mean)
+        if self.learned_d.signal in ("coverage", "both"):
+            out["emo d coverage"] = (stats[7] / stats[8].clamp(min=1.0), ReduceType.mean)
         if reset:
             self.reset_metrics()
         return out
@@ -311,7 +341,7 @@ class LearnedDEmoRouterV2(EmoRouterV2):
     def extra_repr(self) -> str:
         ld = self.learned_d
         return (f"{super().extra_repr()}, learned_d(T={ld.temperature}, lambda={ld.lambda_d}, warmup={ld.warmup_steps}, "
-                f"init={ld.init_pool}, eval={ld.eval_mode})")
+                f"init={ld.init_pool}, eval={ld.eval_mode}, signal={ld.signal}, lambda_cov={ld.lambda_cov})")
 
 
 @dataclass
