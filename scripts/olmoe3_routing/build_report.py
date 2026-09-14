@@ -341,9 +341,10 @@ CHART_CSS = "<style>.lc{position:relative;display:inline-block;vertical-align:to
 _LC_COLORS = ["#2563eb", "#dc2626", "#059669", "#7c3aed", "#d97706", "#0891b2"]
 
 
-def line_chart(xs, series, *, title="", y_label="CE", x_label="progress through the 10B tokens", xfmt=lambda v: f"{v:.0f}%", W=480, H=280):
+def line_chart(xs, series, *, title="", y_label="CE", x_label="progress through the 10B tokens", xfmt=lambda v: f"{v:.0f}%", W=480, H=280, xlabels=None, shade=None):
     """Interactive line chart (inline SVG; hovering shows every series' value at the nearest x).
-    xs: x values; series: dicts(name, y=list with None for missing, dashed=False, const=False (horizontal reference line), color)."""
+    xs: x values; series: dicts(name, y=list with None for missing, dashed=False, const=False (horizontal reference line), color);
+    xlabels: explicit tick labels; shade=(x_from, label): tint the plot area from x_from rightwards (e.g. a finetuning stage)."""
     import math
     x0, y0, pw, ph = 46, 14, W - 60, H - 52
     ys = [v for s_ in series for v in s_["y"] if v is not None]
@@ -353,19 +354,24 @@ def line_chart(xs, series, *, title="", y_label="CE", x_label="progress through 
     if xmax == xmin: xmax = xmin + 1
     X = lambda v: x0 + (v - xmin) / (xmax - xmin) * pw
     Y = lambda v: y0 + (ymax - v) / (ymax - ymin) * ph
+    labels = xlabels or [xfmt(v) for v in xs]
     g = [f'<svg viewBox="0 0 {W} {H}" width="{W}" height="{H}">']
+    if shade:
+        xa = (X(shade[0]) + X(max(v for v in xs if v < shade[0]))) / 2 if any(v < shade[0] for v in xs) else X(shade[0])
+        g.append(f'<rect x="{xa:.1f}" y="{y0}" width="{x0+pw-xa:.1f}" height="{ph}" fill="#f1f5f9"/>'
+                 f'<text x="{(xa+x0+pw)/2:.1f}" y="{y0+11}" font-size="10" text-anchor="middle" fill="#64748b">{shade[1]}</text>')
     step = (ymax - ymin) / 4
     mag = 10 ** math.floor(math.log10(step)); step = math.ceil(step / mag) * mag
     t = math.ceil(ymin / step) * step
     while t <= ymax:
         g.append(f'<line x1="{x0}" x2="{x0+pw}" y1="{Y(t):.1f}" y2="{Y(t):.1f}" stroke="#e5e7eb"/><text x="{x0-6}" y="{Y(t)+4:.1f}" font-size="11" text-anchor="end" fill="#475569">{t:.2f}</text>')
         t += step
-    for v in xs:
-        g.append(f'<text x="{X(v):.1f}" y="{y0+ph+16}" font-size="11" text-anchor="middle" fill="#475569">{xfmt(v)}</text>')
+    for v, lab in zip(xs, labels):
+        g.append(f'<text x="{X(v):.1f}" y="{y0+ph+16}" font-size="11" text-anchor="middle" fill="#475569">{lab}</text>')
     g.append(f'<line x1="{x0}" x2="{x0+pw}" y1="{y0+ph}" y2="{y0+ph}" stroke="#94a3b8"/><line x1="{x0}" x2="{x0}" y1="{y0}" y2="{y0+ph}" stroke="#94a3b8"/>')
     g.append(f'<text x="{x0+pw/2:.0f}" y="{H-4}" font-size="11" text-anchor="middle" fill="#475569">{x_label}</text>')
     g.append(f'<text transform="translate(12,{y0+ph/2:.0f}) rotate(-90)" font-size="11" text-anchor="middle" fill="#475569">{y_label}</text>')
-    data = {"W": W, "x0": x0, "pw": pw, "xmin": xmin, "xmax": xmax, "xs": xs, "xlab": [xfmt(v) for v in xs], "series": []}
+    data = {"W": W, "x0": x0, "pw": pw, "xmin": xmin, "xmax": xmax, "xs": xs, "xlab": labels, "series": []}
     legend = []
     for i, s_ in enumerate(series):
         c = s_.get("color") or _LC_COLORS[i % len(_LC_COLORS)]; dash = ' stroke-dasharray="5,4"' if s_.get("dashed") else ""
@@ -411,26 +417,28 @@ def squares_results(HELD=HELD, PPL=PPL, SQO=SQO, start="emo_step19074", start_pp
         b_p.append(next((_ppl(PPL / run / f"step{s}.json") for run in base_runs for s in (step, step - 1) if (PPL / run / f"step{s}.json").exists()), None))  # final ckpt is step38147
         m_p.append(_ppl(PPL / "merged" / f"{name}.json"))
     have = any(v is not None for v in b_h + m_h)
-    charts = ""
-    if have:
-        charts = CHART_CSS + line_chart(xs, [{"name": "baseline (full model, continued)", "y": b_h}, {"name": "merged squares", "y": m_h},
-                                            {"name": "start model (step 19,074)", "y": [ref_none] * len(xs), "const": True, "dashed": True, "color": "#64748b"}],
-                                       title="Held-out CE (20B window, 65M tokens)")
-        if any(v is not None for v in b_p + m_p):
-            charts += line_chart(xs, [{"name": "baseline (full model, continued)", "y": b_p}, {"name": "merged squares", "y": m_p},
-                                      {"name": "start model (step 19,074)", "y": [ref_ppl] * len(xs), "const": True, "dashed": True, "color": "#64748b"}],
-                                 title="v3-small ppl sets, mean CE")
-    # post-merge finetuning: +0.5B tokens (steps 38548-39502) for the 100% merge and, for fairness, for the baseline
+    # post-merge finetuning: +0.5B tokens (steps 38548-39502) for the 100% merge and, for fairness, for the baseline -> right-most point
     ft = {tag: (_ce(HELD / f"{tag}_rerun/none") if (HELD / f"{tag}_rerun/none/meta.json").exists() else _ce(HELD / f"{tag}/none")) for tag in ("baseline_ft", "merged_ft")}  # a rerun pass supersedes a pass with blown-up documents
     ppl_ft = {}
     for r in PPL.glob("*_ft"):
         if (r / "step39502.json").exists(): ppl_ft["merged_ft" if "merged" in r.name else "baseline_ft"] = _ppl(r / "step39502.json")
+    has_ft = any(v is not None for v in ft.values()) or bool(ppl_ft)
+    xs_all = xs + ([125] if has_ft else []); labels = [f"{v}%" for v in xs] + (["+0.5B ft"] if has_ft else [])
+    shade = (125, "finetuned 0.5B") if has_ft else None
+    def ext(y, v): return y + ([v] if has_ft else [])
+    charts = ""
+    if have:
+        charts = CHART_CSS + line_chart(xs_all, [{"name": "baseline (full model, continued)", "y": ext(b_h, ft["baseline_ft"])}, {"name": "merged squares", "y": ext(m_h, ft["merged_ft"])},
+                                                {"name": "start model (step 19,074)", "y": [ref_none] * len(xs_all), "const": True, "dashed": True, "color": "#64748b"}],
+                                       title="Held-out CE (20B window, 65M tokens)", xlabels=labels, shade=shade)
+        if any(v is not None for v in b_p + m_p):
+            charts += line_chart(xs_all, [{"name": "baseline (full model, continued)", "y": ext(b_p, ppl_ft.get("baseline_ft"))}, {"name": "merged squares", "y": ext(m_p, ppl_ft.get("merged_ft"))},
+                                          {"name": "start model (step 19,074)", "y": [ref_ppl] * len(xs_all), "const": True, "dashed": True, "color": "#64748b"}],
+                                 title="v3-small ppl sets, mean CE", xlabels=labels, shade=shade)
     ft_html = ""
-    if any(v is not None for v in ft.values()) or ppl_ft:
-        ft_html = ("<p><b>Post-merge finetuning</b>: the 100% merged model (Adam moments merged like the weights) and the baseline each trained for "
-                   "0.5B more tokens (steps 38,548&ndash;39,502, past the held-out window) at the same constant LR.</p>"
-                   + table(["model + 0.5B finetune", "held-out CE", "v3-small ppl sets, mean CE"],
-                           [["baseline", f(ft["baseline_ft"]), f(ppl_ft.get("baseline_ft"))], ["merged squares @ 100%", f(ft["merged_ft"]), f(ppl_ft.get("merged_ft"))]]))
+    if has_ft:
+        ft_html = ("<p><b>+0.5B ft</b> (shaded): the 100% merged model (Adam moments merged like the weights) and the baseline each trained for "
+                   "0.5B more tokens (steps 38,548&ndash;39,502, past the held-out window) at the same constant LR.</p>")
     intro = ("<b>Held-out CE</b>: mean token cross-entropy of 7,991 unseen instances (65.5M tokens) from the 20B&ndash;30B window of the training "
              "stream, which neither the baseline nor the sub-models see. <b>v3-small ppl sets</b>: OLMo-core's 11 validation sets, mean CE over sets. "
              "Baseline = the full model continued from step 19,074 on the same 10B tokens; merged = the four sub-models at the same fraction of "
