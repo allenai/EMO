@@ -441,11 +441,11 @@ def line_chart(xs, series, *, title="", y_label="CE", x_label="progress through 
 
 EMO_TAKE = ("The merged model beats the baseline only at 5% (2.424 vs 2.455) and then falls behind monotonically, ending 0.15 above it and "
             "0.09 above the start model on the held-out sample; the v3-small sets tell the same story.")
-EMO_PW_TAKE = ("At 5% the squares on their own (2.509) are still worse than the merged model (2.424): averaging is harmless while the four copies of "
-            "the shared parameters are nearly identical, and routing across groups adds a large gain. From 31% on the squares alone keep improving "
-            "(2.437 at 31%, about the baseline's 2.434) while the merged model does not: the averaged shared parameters are now what costs, "
-            "and the damage is concentrated on group 0, the code group, whose own square scores 1.50 where the merged model scores 1.77. "
-            "The partition and the sub-models are not the problem; averaging diverged shared parameters is.")
+EMO_PW_TAKE = ("The squares on their own track the baseline the whole way and end slightly below it (2.385 vs 2.398 at 100%), while the merged "
+            "model drifts up to 2.551. Only at 5% is merging a gain (2.424 vs 2.509 piecewise): the four copies of the shared parameters are still "
+            "nearly identical, so averaging is free and routing across groups adds experts. From 31% on, averaging diverged shared parameters is "
+            "what costs, and the damage is concentrated on group 0, the code group: its own square improves from 1.56 to 1.45 while the merged "
+            "model on the same documents worsens from 1.53 to 1.91. The partition and the sub-models are not the problem; averaging is.")
 STD_TAKE = ("The standard merge never beats its baseline: 2.482 vs 2.436 at 5%, then flat around 2.46 while the baseline keeps improving to 2.374, "
             "ending 0.09 behind. Unlike EMO it does not degrade with more separate training.")
 STD_PW_TAKE = ("For the standard model the squares themselves are the problem: each square is worse than the start model on its own documents even "
