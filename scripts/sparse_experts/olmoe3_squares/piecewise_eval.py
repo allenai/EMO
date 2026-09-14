@@ -41,7 +41,9 @@ def main():
         out["sub_on_group"][str(g)]["all"] = float(cs.sum() / cl.sum())
         tot_sum += cs[grp == g].sum(); tot_len += cl[grp == g].sum()
     if len(subs) == k: out["piecewise"] = float(tot_sum / tot_len)
-    for tag, d in (("start_full", f"{START}/none"), ("start_oracle", f"{START}/oracle"), (f"merged_{a.name}", f"merged_{a.name}/none"), (f"merged_{a.name}_oracle", f"merged_{a.name}/oracle")):
+    base = f"baseline_step{a.name[5:]}" if a.name.startswith("match") else None
+    for tag, d in (("start_full", f"{START}/none"), ("start_oracle", f"{START}/oracle"), (f"merged_{a.name}", f"merged_{a.name}/none"), (f"merged_{a.name}_oracle", f"merged_{a.name}/oracle"),
+                   *([("baseline", f"{base}/none")] if base else [])):
         p = H / d / "doc_stats.npz"
         if p.exists():
             cs, cl = ce_of(H / d); out[tag] = float(cs.sum() / cl.sum()); out[tag + "_by_group"] = {str(h): float(cs[grp == h].sum() / cl[grp == h].sum()) for h in range(k)}
