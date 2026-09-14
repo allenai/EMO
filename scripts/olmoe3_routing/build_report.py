@@ -329,89 +329,136 @@ def _ppl(f):
     d = json.load(open(f))["per_set"]; return sum(v["CE loss"] for v in d.values()) / len(d)
 
 
-EMO_TAKE = ("Merged beats the baseline only at 5% (2.424 vs 2.455) and then falls behind monotonically, ending 0.15 above it and 0.09 above the start model. "
-            "The oracle-routed merged model keeps improving, so the loss is not in serving a document from one group.")
-EMO_PW_TAKE = ("At 5% the squares alone (2.509) equal the merged oracle number (2.511): averaging is harmless while the four copies of the shared "
-            "parameters are still nearly identical, and free routing across groups then adds a large gain (2.424). At 31% the squares alone keep "
-            "improving (2.437, about the baseline's 2.434) but the merged model does not (2.530 under oracle routing): the averaged shared "
-            "parameters now cost ~0.09, and the damage is concentrated on group 0, the code group, whose own square scores 1.50 while the "
-            "merged model scores 1.77 on the same documents. The partition and the sub-models are not the problem; averaging diverged shared "
-            "parameters is.")
+CHART_JS = """<script>(function(){function init(w){const d=JSON.parse(w.dataset.chart);const svg=w.querySelector('svg');const tip=w.querySelector('.lc-tip');const vl=w.querySelector('.lc-vline');
+const px=i=>d.x0+(d.xs[i]-d.xmin)/(d.xmax-d.xmin)*d.pw;
+svg.addEventListener('mousemove',e=>{const r=svg.getBoundingClientRect();const mx=(e.clientX-r.left)*(d.W/r.width);let best=0,bd=1e9;d.xs.forEach((x,i)=>{const dd=Math.abs(px(i)-mx);if(dd<bd){bd=dd;best=i;}});
+vl.setAttribute('x1',px(best));vl.setAttribute('x2',px(best));vl.style.display='block';
+tip.style.display='block';tip.innerHTML='<b>'+d.xlab[best]+'</b><br>'+d.series.map(s=>{const v=s.y[best];return v==null?'':'<span style="color:'+s.c+'">&#9632;</span> '+s.n+': '+v.toFixed(3);}).filter(t=>t).join('<br>');
+const tx=(e.clientX-r.left),ty=(e.clientY-r.top);tip.style.left=(tx+14)+'px';tip.style.top=(ty-10)+'px';});
+svg.addEventListener('mouseleave',()=>{tip.style.display='none';vl.style.display='none';});}
+document.querySelectorAll('.lc').forEach(init);})();</script>"""
+CHART_CSS = "<style>.lc{position:relative;display:inline-block;vertical-align:top;margin:4px 10px 8px 0}.lc svg{max-width:100%;height:auto;font-family:inherit}.lc .lc-tip{display:none;position:absolute;background:#fff;border:1px solid #cbd5e1;border-radius:4px;padding:6px 8px;font-size:12px;pointer-events:none;box-shadow:0 2px 6px rgba(0,0,0,.12);white-space:nowrap;z-index:5}.lc .lc-title{font-size:13px;font-weight:600;margin:0 0 2px 44px}</style>"
+_LC_COLORS = ["#2563eb", "#dc2626", "#059669", "#7c3aed", "#d97706", "#0891b2"]
+
+
+def line_chart(xs, series, *, title="", y_label="CE", x_label="progress through the 10B tokens", xfmt=lambda v: f"{v:.0f}%", W=480, H=280):
+    """Interactive line chart (inline SVG; hovering shows every series' value at the nearest x).
+    xs: x values; series: dicts(name, y=list with None for missing, dashed=False, const=False (horizontal reference line), color)."""
+    import math
+    x0, y0, pw, ph = 46, 14, W - 60, H - 52
+    ys = [v for s_ in series for v in s_["y"] if v is not None]
+    if not ys: return ""
+    ymin, ymax = min(ys), max(ys); pad = max(0.02, 0.08 * (ymax - ymin)); ymin -= pad; ymax += pad
+    xmin, xmax = min(xs), max(xs)
+    if xmax == xmin: xmax = xmin + 1
+    X = lambda v: x0 + (v - xmin) / (xmax - xmin) * pw
+    Y = lambda v: y0 + (ymax - v) / (ymax - ymin) * ph
+    g = [f'<svg viewBox="0 0 {W} {H}" width="{W}" height="{H}">']
+    step = (ymax - ymin) / 4
+    mag = 10 ** math.floor(math.log10(step)); step = math.ceil(step / mag) * mag
+    t = math.ceil(ymin / step) * step
+    while t <= ymax:
+        g.append(f'<line x1="{x0}" x2="{x0+pw}" y1="{Y(t):.1f}" y2="{Y(t):.1f}" stroke="#e5e7eb"/><text x="{x0-6}" y="{Y(t)+4:.1f}" font-size="11" text-anchor="end" fill="#475569">{t:.2f}</text>')
+        t += step
+    for v in xs:
+        g.append(f'<text x="{X(v):.1f}" y="{y0+ph+16}" font-size="11" text-anchor="middle" fill="#475569">{xfmt(v)}</text>')
+    g.append(f'<line x1="{x0}" x2="{x0+pw}" y1="{y0+ph}" y2="{y0+ph}" stroke="#94a3b8"/><line x1="{x0}" x2="{x0}" y1="{y0}" y2="{y0+ph}" stroke="#94a3b8"/>')
+    g.append(f'<text x="{x0+pw/2:.0f}" y="{H-4}" font-size="11" text-anchor="middle" fill="#475569">{x_label}</text>')
+    g.append(f'<text transform="translate(12,{y0+ph/2:.0f}) rotate(-90)" font-size="11" text-anchor="middle" fill="#475569">{y_label}</text>')
+    data = {"W": W, "x0": x0, "pw": pw, "xmin": xmin, "xmax": xmax, "xs": xs, "xlab": [xfmt(v) for v in xs], "series": []}
+    legend = []
+    for i, s_ in enumerate(series):
+        c = s_.get("color") or _LC_COLORS[i % len(_LC_COLORS)]; dash = ' stroke-dasharray="5,4"' if s_.get("dashed") else ""
+        y = s_["y"]
+        if s_.get("const"):
+            v = next((v for v in y if v is not None), None)
+            if v is None: continue
+            g.append(f'<line x1="{x0}" x2="{x0+pw}" y1="{Y(v):.1f}" y2="{Y(v):.1f}" stroke="{c}" stroke-width="1.6"{dash}/>')
+            y = [v] * len(xs)
+        else:
+            pts = [(X(x), Y(v)) for x, v in zip(xs, y) if v is not None]
+            if len(pts) > 1: g.append(f'<polyline fill="none" stroke="{c}" stroke-width="2"{dash} points="' + " ".join(f"{a:.1f},{b:.1f}" for a, b in pts) + '"/>')
+            for a, b in pts: g.append(f'<circle cx="{a:.1f}" cy="{b:.1f}" r="3.2" fill="{c}"/>')
+        data["series"].append({"n": s_["name"], "y": y, "c": c})
+        legend.append(f'<span style="display:inline-block;margin-right:10px"><span style="display:inline-block;width:18px;border-top:2px {"dashed" if s_.get("dashed") else "solid"} {c};vertical-align:middle"></span> {s_["name"]}</span>')
+    g.append(f'<line class="lc-vline" x1="0" x2="0" y1="{y0}" y2="{y0+ph}" stroke="#94a3b8" stroke-dasharray="2,3" style="display:none"/></svg>')
+    payload = html.escape(json.dumps(data), quote=True)
+    return (f'<div class="lc" data-chart="{payload}"><div class="lc-title">{title}</div>' + "".join(g)
+            + f'<div style="font-size:12px;margin-left:44px">{"".join(legend)}</div><div class="lc-tip"></div></div>')
+
+
+EMO_TAKE = ("The merged model beats the baseline only at 5% (2.424 vs 2.455) and then falls behind monotonically, ending 0.15 above it and "
+            "0.09 above the start model on the held-out sample; the v3-small sets tell the same story.")
+EMO_PW_TAKE = ("At 5% the squares on their own (2.509) are still worse than the merged model (2.424): averaging is harmless while the four copies of "
+            "the shared parameters are nearly identical, and routing across groups adds a large gain. From 31% on the squares alone keep improving "
+            "(2.437 at 31%, about the baseline's 2.434) while the merged model does not: the averaged shared parameters are now what costs, "
+            "and the damage is concentrated on group 0, the code group, whose own square scores 1.50 where the merged model scores 1.77. "
+            "The partition and the sub-models are not the problem; averaging diverged shared parameters is.")
 STD_TAKE = ("The standard merge never beats its baseline: 2.482 vs 2.436 at 5%, then flat around 2.46 while the baseline keeps improving to 2.374, "
-            "ending 0.09 behind. Unlike EMO it does not degrade with more separate training, and its oracle number improves steadily, but the "
-            "restriction cost of the standard partition stays huge for the baseline (oracle 3.31 vs 2.37).")
+            "ending 0.09 behind. Unlike EMO it does not degrade with more separate training.")
 STD_PW_TAKE = ("For the standard model the squares themselves are the problem: each square is worse than the start model on its own documents even "
             "at 31% (piecewise 2.506 vs the baseline's 2.413), because a quarter of token-level experts cannot serve the group's documents. "
-            "Averaging the shared parameters costs almost nothing here (piecewise 2.506 vs merged oracle 2.516), the reverse of the EMO case, "
-            "and free routing across groups recovers most of the rest (2.463).")
+            "Merging then recovers most of that (2.463), the reverse of the EMO case.")
 
 
 def squares_results(HELD=HELD, PPL=PPL, SQO=SQO, start="emo_step19074", start_ppl="olmoe3_275m_emo_10b", base_runs=("olmoe3_275m_emo_20b", "olmoe3_275m_emo_20b_filler", "olmoe3_275m_emo_20b_1node"), label="", take_main=EMO_TAKE, take_pw=EMO_PW_TAKE):
-    ref_none, ref_orc = _ce(HELD / f"{start}/none"), _ce(HELD / f"{start}/oracle")
+    ref_none = _ce(HELD / f"{start}/none")
     ref_ppl = _ppl(ROOT / f"claude_outputs/debug_validation/ppl_validation/{start_ppl}/step19074.json")
-    rows = [["start (step 19074, full model)", "&mdash;", f(ref_none), f(ref_orc), f(ref_ppl), "&mdash;", "&mdash;", "&mdash;"]]
-    have = False
+    xs, b_h, m_h, b_p, m_p = [], [], [], [], []
     for step, name in MATCH:
-        b_none, b_orc = _ce(HELD / f"baseline_step{step}/none"), _ce(HELD / f"baseline_step{step}/oracle")
-        b_ppl = next((_ppl(PPL / run / f"step{s}.json") for run in base_runs for s in (step, step - 1) if (PPL / run / f"step{s}.json").exists()), None)  # final ckpt is step38147
-        m_none, m_orc = _ce(HELD / f"merged_{name}/none"), _ce(HELD / f"merged_{name}/oracle")
-        m_ppl = _ppl(PPL / "merged" / f"{name}.json")
-        if any(x is not None for x in (b_none, m_none, b_ppl, m_ppl)): have = True
-        frac = (step - 19074) / 19074
-        rows.append([f"baseline step {step:,} ({100*frac:.0f}% of the 10B)", "baseline", f(b_none), f(b_orc), f(b_ppl), "", "", ""])
-        rows.append([f"merged squares @ {100*frac:.0f}%", "merged", f(m_none), f(m_orc), f(m_ppl),
-                     f"{m_none-b_none:+.3f}" if (m_none is not None and b_none is not None) else "&mdash;",
-                     f"{m_orc-b_orc:+.3f}" if (m_orc is not None and b_orc is not None) else "&mdash;",
-                     f"{m_ppl-b_ppl:+.3f}" if (m_ppl is not None and b_ppl is not None) else "&mdash;"])
+        frac = 100 * (step - 19074) / 19074; xs.append(round(frac))
+        b_h.append(_ce(HELD / f"baseline_step{step}/none")); m_h.append(_ce(HELD / f"merged_{name}/none"))
+        b_p.append(next((_ppl(PPL / run / f"step{s}.json") for run in base_runs for s in (step, step - 1) if (PPL / run / f"step{s}.json").exists()), None))  # final ckpt is step38147
+        m_p.append(_ppl(PPL / "merged" / f"{name}.json"))
+    have = any(v is not None for v in b_h + m_h)
+    charts = ""
+    if have:
+        charts = CHART_CSS + line_chart(xs, [{"name": "baseline (full model, continued)", "y": b_h}, {"name": "merged squares", "y": m_h},
+                                            {"name": "start model (step 19,074)", "y": [ref_none] * len(xs), "const": True, "dashed": True, "color": "#64748b"}],
+                                       title="Held-out CE (20B window, 65M tokens)")
+        if any(v is not None for v in b_p + m_p):
+            charts += line_chart(xs, [{"name": "baseline (full model, continued)", "y": b_p}, {"name": "merged squares", "y": m_p},
+                                      {"name": "start model (step 19,074)", "y": [ref_ppl] * len(xs), "const": True, "dashed": True, "color": "#64748b"}],
+                                 title="v3-small ppl sets, mean CE")
     # post-merge finetuning: +0.5B tokens (steps 38548-39502) for the 100% merge and, for fairness, for the baseline
-    ft = {tag: (_ce(HELD / f"{tag}_rerun/none") if (HELD / f"{tag}_rerun/none/meta.json").exists() else _ce(HELD / f"{tag}/none"), _ce(HELD / f"{tag}/oracle")) for tag in ("baseline_ft", "merged_ft")}  # a rerun pass supersedes a pass with blown-up documents
+    ft = {tag: (_ce(HELD / f"{tag}_rerun/none") if (HELD / f"{tag}_rerun/none/meta.json").exists() else _ce(HELD / f"{tag}/none")) for tag in ("baseline_ft", "merged_ft")}  # a rerun pass supersedes a pass with blown-up documents
     ppl_ft = {}
     for r in PPL.glob("*_ft"):
         if (r / "step39502.json").exists(): ppl_ft["merged_ft" if "merged" in r.name else "baseline_ft"] = _ppl(r / "step39502.json")
-    b_ft, m_ft = ft["baseline_ft"], ft["merged_ft"]
-    if any(x is not None for x in b_ft[:2] + m_ft[:2]) or ppl_ft:
-        rows.append(["baseline + 0.5B finetune (steps 38548&ndash;39502)", "baseline", f(b_ft[0]), f(b_ft[1]), f(ppl_ft.get("baseline_ft")), "", "", ""])
-        rows.append(["merged @ 100% + 0.5B finetune (Adam state merged, same tokens)", "merged", f(m_ft[0]), f(m_ft[1]), f(ppl_ft.get("merged_ft")),
-                     f"{m_ft[0]-b_ft[0]:+.3f}" if (m_ft[0] is not None and b_ft[0] is not None) else "&mdash;",
-                     f"{m_ft[1]-b_ft[1]:+.3f}" if (m_ft[1] is not None and b_ft[1] is not None) else "&mdash;",
-                     f"{ppl_ft['merged_ft']-ppl_ft['baseline_ft']:+.3f}" if ("merged_ft" in ppl_ft and "baseline_ft" in ppl_ft) else "&mdash;"])
-    tbl = table(["checkpoint", "model", "held-out CE (20B window, 65M tok)", "held-out CE, oracle group routing", "v3-small ppl sets, mean CE", "&Delta; CE vs baseline", "&Delta; oracle", "&Delta; ppl"], rows)
-    intro = ("<b>Post-merge finetuning</b> rows (when present): the 100% merged model, with the four squares' Adam moments merged the same way as the weights, "
-             "trained for 0.5B more tokens (steps 38,548&ndash;39,502 of the training stream, past the held-out window) at the same constant LR; the baseline "
-             "is continued on exactly the same tokens so the comparison stays at equal data. "
-             "<b>Held-out CE</b>: mean token cross-entropy of 7,991 unseen instances (65.5M tokens) sampled from the 20B&ndash;30B window of the "
-             "training stream, which neither the baseline nor the sub-models see. <b>Oracle group routing</b>: the same pass, but every document is "
-             "restricted in layers 2&ndash;9 to the experts of the one group that receives most of its own unrestricted routing (the sub-model that "
-             "would have served it); on the start model this measures the cost of the partition alone. <b>v3-small ppl sets</b>: OLMo-core's 11 "
-             "validation sets (c4, dolma books / common-crawl / pes2o / reddit / stack / wiki, ice, m2d2, pile, wikitext), mean CE over sets. "
+    ft_html = ""
+    if any(v is not None for v in ft.values()) or ppl_ft:
+        ft_html = ("<p><b>Post-merge finetuning</b>: the 100% merged model (Adam moments merged like the weights) and the baseline each trained for "
+                   "0.5B more tokens (steps 38,548&ndash;39,502, past the held-out window) at the same constant LR.</p>"
+                   + table(["model + 0.5B finetune", "held-out CE", "v3-small ppl sets, mean CE"],
+                           [["baseline", f(ft["baseline_ft"]), f(ppl_ft.get("baseline_ft"))], ["merged squares @ 100%", f(ft["merged_ft"]), f(ppl_ft.get("merged_ft"))]]))
+    intro = ("<b>Held-out CE</b>: mean token cross-entropy of 7,991 unseen instances (65.5M tokens) from the 20B&ndash;30B window of the training "
+             "stream, which neither the baseline nor the sub-models see. <b>v3-small ppl sets</b>: OLMo-core's 11 validation sets, mean CE over sets. "
              "Baseline = the full model continued from step 19,074 on the same 10B tokens; merged = the four sub-models at the same fraction of "
-             "progress, experts concatenated and shared parameters averaged with token-share weights.")
-    take = (f"Restricting the start model to one group per document costs {ref_orc-ref_none:+.3f} CE before any training ({f(ref_none)} &rarr; {f(ref_orc)}): "
-            "that is the routing the squares give up." if (ref_none and ref_orc) else "Reference passes pending.")
-    if not have: take += " Baseline and merged evaluations are pending."
-    else: take += " " + take_main
+             "progress, experts concatenated and shared parameters averaged with token-share weights. Hover over a plot for the values.")
+    take = take_main if have else "Baseline and merged evaluations are pending."
     if ROBUST_NOTE: take += " <b>Caveat:</b> " + "; ".join(ROBUST_NOTE) + "."; ROBUST_NOTE.clear()
-    out = section(f"Stages 2&ndash;4: merged squares vs continued baseline{label}", intro, tbl, take)
+    out = section(f"Stages 2&ndash;4: merged squares vs continued baseline{label}", intro, charts + ft_html, take)
     # piecewise diagnostic: each held-out document scored by its own square, no merge
     pw = {name: json.load(open(SQO / f"piecewise_{name}.json")) for _, name in MATCH if (SQO / f"piecewise_{name}.json").exists() and json.load(open(SQO / f"piecewise_{name}.json")).get("piecewise")}
     if pw:
-        rows = []
-        for name, d in pw.items():
-            step = int(name[5:]); frac = (step - 19074) / 19074
-            b_none = _ce(HELD / f"baseline_step{step}/none")
-            rows.append([f"{100*frac:.0f}%", f(d["piecewise"]), f(d[f"merged_{name}_oracle"]), f(d[f"merged_{name}"]), f(b_none)])
-        grp_rows = []
-        for name, d in pw.items():
-            step = int(name[5:]); frac = (step - 19074) / 19074
-            for g in range(4):
-                grp_rows.append([f"{100*frac:.0f}%", f"group {g}", f"{d['docs_per_group'][g]:,}", f(d["start_full_by_group"][str(g)]), f(d["sub_on_group"][str(g)][str(g)]), f(d[f"merged_{name}_oracle_by_group"][str(g)]), f(d[f"merged_{name}_by_group"][str(g)])])
+        pxs = [round(100 * (int(n[5:]) - 19074) / 19074) for n in pw]
+        D = list(pw.values()); K = len(D[0]["docs_per_group"])
+        avg = line_chart(pxs, [{"name": "piecewise (own square, no merge)", "y": [d["piecewise"] for d in D]},
+                               {"name": "merged, free routing", "y": [d[f"merged_{d['name']}"] for d in D]},
+                               {"name": "baseline", "y": [d.get("baseline") for d in D], "dashed": True, "color": "#059669"},
+                               {"name": "start model", "y": [D[0]["start_full"]] * len(D), "const": True, "dashed": True, "color": "#64748b"}],
+                         title="All held-out documents")
+        grp = ""
+        for g in range(K):
+            grp += line_chart(pxs, [{"name": "own square", "y": [d["sub_on_group"][str(g)][str(g)] for d in D]},
+                                    {"name": "merged, free routing", "y": [d[f"merged_{d['name']}_by_group"][str(g)] for d in D]},
+                                    {"name": "baseline", "y": [(d.get("baseline_by_group") or {}).get(str(g)) for d in D], "dashed": True, "color": "#059669"},
+                                    {"name": "start model", "y": [D[0]["start_full_by_group"][str(g)]] * len(D), "const": True, "dashed": True, "color": "#64748b"}],
+                              title=f"Group {g} documents ({D[0]['docs_per_group'][g]:,} held-out docs)", W=400, H=250)
         out += section(f"Where the merge loses: each square alone vs the merged model{label}",
-            "<b>Piecewise CE</b>: every held-out document is scored by the sub-model of its own group (group = the start model's routing), with "
-            "no merging at all. Compared with the merged model under oracle routing (same documents, same expert groups, but shared parameters "
-            "averaged) it isolates the cost of averaging; compared with the merged model's free routing it shows what cross-group experts add.",
-            table(["progress", "piecewise CE (own square, no merge)", "merged, oracle routing", "merged, free routing", "baseline"], rows)
-            + "<p><b>By document group</b> (held-out documents of each group; sub-model g on its own group vs the merged model on the same documents):</p>"
-            + table(["progress", "group", "docs", "start model", "own square", "merged, oracle", "merged, free"], grp_rows),
+            "<b>Piecewise CE</b>: every held-out document is scored by the sub-model of its own group (group = the start model's routing), with no "
+            "merging at all; the merged model is scored on the same documents. Points where the squares' passes are still running are missing.",
+            CHART_CSS + avg + "<p><b>By document group</b> (each group's held-out documents: its own square vs the merged model on the same documents):</p>" + grp,
             take_pw)
     return out
 
@@ -528,7 +575,9 @@ def learnedd_10b():
             "The same 65.5M unseen training-stream tokens as the rest of the report, through the final checkpoint routing with the predicted "
             "d per document and, separately, with every expert available (the fixed eval pool); mean token CE.",
             table(["routing", "held-out CE", "mean pool per layer (tokens)"], rows),
-            "HELDOUT_TAKEAWAY")
+            "On the held-out sample the learned pools do better than opening every expert (2.460 vs 2.474): the model was trained with its "
+            "pools and prefers them. Against the other arms it matches the uniform-pool EMO model (2.463) and stays 0.016 behind the standard "
+            "model (2.444); the token-weighted mean pool is 320&ndash;360 experts because long documents get the large pools.")
     else:
         out += card("info", "Held-out CE", "<p>Routing passes on the held-out sample (predicted d and full pool) running.</p>")
     return out
@@ -559,7 +608,7 @@ def main():
 <p>olmoe3_routing &mdash; document-level expert blocks in the 275M-active OLMoE3-ladder models trained here (standard MoE vs EMO; 128 / 512 / 1000 experts),
 from routing statistics on 65.5M unseen training-stream tokens &middot;
 generated by scripts/olmoe3_routing/build_report.py on {stamp}</p></header>
-<div class="topbar"><nav>{nav}</nav><div id="subnav"></div></div><main>{sections}</main><script>{JS}</script></body></html>"""
+<div class="topbar"><nav>{nav}</nav><div id="subnav"></div></div><main>{sections}</main><script>{JS}</script>{CHART_JS}</body></html>"""
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / "report.html").write_text(page)
     print(f"Wrote {OUT/'report.html'} ({(OUT/'report.html').stat().st_size/1e6:.1f} MB)")
