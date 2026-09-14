@@ -48,7 +48,7 @@ QUESTIONS = [
     ("q3", "Q3 · Train the squares separately, then merge",
      "Can EMO 512e be split into four block-group sub-models (k = 4, layers 2&ndash;9), each trained on its own documents for the next 10B tokens, and merged back into a model that matches simply continuing the full model?"),
     ("q4", "Q4 · Learn the pool size per document",
-     "Instead of sampling each document's expert-pool size d at random, can the model learn d per document and layer, so that documents get small pools where a small pool is enough, without losing accuracy?"),
+     "Instead of sampling each document's expert-pool size d at random, can the model learn d?"),
 ]
 
 
@@ -531,18 +531,24 @@ LD = ROOT / "sparse_experts/learnedd_sweep"
 def build_q4():
     body = question_card("q4")
     body += card("info", "Method",
-        "<p>Each MoE layer gets a small head that reads a document's mean hidden state and outputs that document's pool size d (between 16 = top-k "
-        "and 512 = all experts). Routing then works exactly as in EMO with that pool: the document's top-d experts by summed router score are the "
-        "only routable ones, token top-16 inside them. Two forces set d:</p>"
+        "<ol>"
+        "<li><b>Predict d.</b> In each MoE layer a small linear head reads the document's mean hidden state and outputs its pool size d, "
+        "between 16 (the top-k) and 512 (all experts). Routing then works exactly as in EMO with that pool size.</li>"
+        "<li><b>Keep pools small.</b> A penalty on d pushes every pool smaller; <b>&lambda;<sub>d</sub></b> sets how hard.</li>"
+        "<li><b>Let pools grow where needed.</b> Something has to push back, or every pool shrinks to 16. Two choices of signal:"
         "<ul>"
-        "<li><b>Size penalty</b> pushes every pool smaller. <b>&lambda;<sub>d</sub></b> = how hard.</li>"
-        "<li><b>Signal</b> pushes pools bigger where the document needs more experts. <b>STE</b>: the LM loss, passed through a soft edge of the pool "
-        "(a straight-through mask on the experts near rank d). <b>Coverage</b>: the router's own probability mass; the pool grows until the expert at "
-        "rank d carries less than a threshold of the document's mass (threshold = &lambda;<sub>d</sub> / (&lambda;<sub>cov</sub> &middot; 496)).</li>"
-        "</ul>"
-        "<p>Knobs: <b>T</b> = width of the soft edge, in expert ranks. <b>Warm-up</b> = number of steps over which the restriction is phased in "
-        "(training starts with all 512 experts and the penalty at 0). <b>Head LR</b> = learning-rate multiplier of the head, i.e. how fast d can move. "
-        "Eval routes with the predicted d (or, if asked, with a fixed pool).</p>")
+        "<li><b>STE</b> uses the language-model loss. The edge of the pool is made soft over <b>T</b> expert ranks, so the loss can say whether "
+        "the experts just inside the edge are helping.</li>"
+        "<li><b>Coverage</b> uses the router itself. The pool grows while the expert at its edge still receives more than a threshold of the "
+        "document's router mass; the threshold is &lambda;<sub>d</sub> / (<b>&lambda;<sub>cov</sub></b> &middot; 496), so a larger "
+        "&lambda;<sub>d</sub> shrinks pools and a larger &lambda;<sub>cov</sub> grows them.</li>"
+        "</ul></li>"
+        "<li><b>Start gently.</b> Training begins with all 512 experts and no penalty; over the first <b>W</b> steps (<b>warm-up</b>) the "
+        "allowed pool shrinks to 16 and the penalty ramps up to &lambda;<sub>d</sub>.</li>"
+        "<li><b>Let d move.</b> The head trains with a learning-rate multiplier (<b>head LR</b>); at the base rate d barely moves, because Adam "
+        "steps a scalar by about one learning rate per step.</li>"
+        "<li><b>Evaluate.</b> Route each document with its predicted d (default), or with a fixed pool for comparison.</li>"
+        "</ol>")
     tab = LD / "sweep_table.json"
     if tab.exists():
         import re as _re
