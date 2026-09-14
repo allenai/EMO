@@ -528,85 +528,100 @@ def squares_results(HELD=HELD, PPL=PPL, SQO=SQO, start="emo_step19074", start_pp
 LD = ROOT / "sparse_experts/learnedd_sweep"
 
 
+def _q4_sweep_rows(T, keys, parse, with_cov):
+    rows = []
+    for key in keys:
+        r = T[key]; h = parse(key)
+        dm = r.get("d_soft_mean") or {}; fr = r.get("d_frac_le64") or {}
+        ds = [dm.get(str(l)) for l in range(2, 10)]; ds = [d for d in ds if d is not None]; d1 = dm.get("1")
+        dtxt = ("16 in every layer" if ds and max(ds) < 16.5 and (d1 or 0) < 16.5 else f"{min(ds):.0f}&ndash;{max(ds):.0f} (L1 {d1:.0f})") if ds else "&mdash;"
+        f5 = fr.get("5"); ev = r.get("eval_ce", {}).get("2000"); e2 = sum(ev.values()) / len(ev) if ev else None
+        res = [dtxt, f"{100*f5:.0f}%" if f5 is not None else "&mdash;", f(r.get("train_ce_last100"), 3), f(e2, 3), str(r.get("skipped_steps", 0))]
+        if h is None:
+            hp = ["uniform EMO (control)"] + ["&mdash;"] * (5 if with_cov else 4)
+        elif with_cov:
+            hp = [f"{h['lambda']:g}", f"{h['cov']:g}", f"{h['lambda']/(h['cov']*496):.3f}", str(h["W"]), f"&times;{h['mult']:g}", f"{h['T']:g}"]
+        else:
+            hp = [f"{h['lambda']:g}", f"{h['T']:g}", str(h["W"]), f"&times;{h['mult']:g}"]
+        rows.append(hp + res)
+    return rows
+
+
 def build_q4():
     body = question_card("q4")
-    body += card("info", "Method",
-        "<ol>"
-        "<li><b>Predict d.</b> In each MoE layer a small linear head reads the document's mean hidden state and outputs its pool size d, "
-        "between 16 (the top-k) and 512 (all experts). Routing then works exactly as in EMO with that pool size.</li>"
-        "<li><b>Keep pools small.</b> A penalty on d pushes every pool smaller; <b>&lambda;<sub>d</sub></b> sets how hard.</li>"
-        "<li><b>Let pools grow where needed.</b> Something has to push back, or every pool shrinks to 16. Two signals were tried: "
-        "<b>STE</b> lets the language-model loss decide, raising d when the last experts admitted to the pool still help the loss and "
-        "lowering it when they do not; <b>coverage</b> raises d while the experts just outside the pool still receive a noticeable share of "
-        "the document's routing (the loss card below gives both exactly).</li>"
-        "<li><b>Start gently.</b> Training begins with all 512 experts and no penalty; over the first <b>W</b> steps (<b>warm-up</b>) the "
-        "allowed pool shrinks to 16 and the penalty ramps up to &lambda;<sub>d</sub>.</li>"
-        "<li><b>Let d move.</b> The head trains with a learning-rate multiplier (<b>head LR</b>); at the base rate d barely moves, because Adam "
-        "steps a scalar by about one learning rate per step.</li>"
-        "<li><b>Evaluate.</b> Route each document with its predicted d (default), or with a fixed pool for comparison.</li>"
-        "</ol>")
-    body += card("info", "The loss",
-        "<p><b>What the extra terms are for.</b> The size term wants every document to use as few experts as possible. On its own it would "
-        "shrink every pool to 16, so a second term has to say when a pool is too small: for STE that is the language-model loss itself "
-        "(a pool is too small if the model predicts worse with it), for coverage it is the router (a pool is too small if it leaves out experts "
-        "the document routes to). The ideal outcome is that each document ends up with the smallest pool that costs it nothing: small for "
-        "documents whose routing concentrates on a few experts, larger for documents that spread it.</p>"
-        "<p><b>L = L<sub>LM</sub> + EMO's usual auxiliary losses + &lambda;<sub>d</sub> &middot; size + &lambda;<sub>cov</sub> &middot; coverage</b>, "
-        "summed over the MoE layers; &lambda;<sub>d</sub> ramps up from 0 over the warm-up.</p>"
+    body += card("info", "Setup shared by everything below",
         "<ul>"
-        "<li><b>size</b> = mean over documents of (d &minus; 16) / 496: the predicted pool size scaled to [0, 1].</li>"
-        "<li><b>coverage</b> = mean over documents of the share of the document's routing that falls outside its pool "
-        "(routing share of expert e = the document's average router probability on e). Used only by the coverage method; the STE method has "
-        "&lambda;<sub>cov</sub> = 0.</li>"
-        "</ul>"
-        "<p><b>How d gets a gradient.</b> The pool used in the forward pass is hard (an expert is in or out), so nothing above depends on d "
-        "smoothly. Wherever a gradient is needed, the hard membership is replaced by a soft one, "
-        "m<sub>e</sub> = sigmoid((d &minus; rank<sub>e</sub> + 0.5) / T), which is 1 deep inside the pool, 0 far outside, and slides between "
-        "them over about T ranks around d. <b>STE</b>: inside the language-model loss, each selected expert's weight is multiplied by "
-        "m<sub>e</sub> + (hard<sub>e</sub> &minus; m<sub>e</sub>).detach(). Its value is the hard membership, always 1 for a selected expert, so the "
-        "forward pass is unchanged; its derivative is that of m<sub>e</sub>, so the loss gradient reaches d through the 16 selected experts' "
-        "weights, mostly through those ranked closest to d. Raising d raises all their m<sub>e</sub>, the low-ranked ones most, which after "
-        "re-normalising the weights shifts weight from the document's top experts to its marginal ones; the LM loss almost always prefers the "
-        "opposite, which is why every STE arm shrinks d. <b>Coverage</b>: the share outside the pool is "
-        "computed as &Sigma;<sub>e</sub> share<sub>e</sub> &middot; (1 &minus; m<sub>e</sub>), which depends on d smoothly; the language-model loss is "
-        "left untouched. Growing the pool by one expert then lowers coverage by that expert's share and raises size by 1/496, so the loss is "
-        "lowest when the pool holds exactly the experts whose share exceeds &lambda;<sub>d</sub> / (&lambda;<sub>cov</sub> &middot; 496).</p>"
-        "<p>Settings: T = 2, warm-up 500 steps, head LR &times;10. STE arms: &lambda;<sub>d</sub> &isin; {0, 0.001, 0.003, 0.01, 0.03}. Coverage arms: "
-        "&lambda;<sub>cov</sub> = 1 and &lambda;<sub>d</sub> &isin; {0.5, 1, 2.5} (thresholds 0.001 / 0.002 / 0.005); the 10B run uses &lambda;<sub>d</sub> = 1.</p>")
+        "<li><b>Predict d.</b> In each MoE layer a small linear head reads the document's mean hidden state and outputs its pool size d, "
+        "between 16 (the top-k) and 512 (all experts). Routing then works exactly as in EMO with that pool size: the document's d "
+        "highest-scoring experts are the pool, tokens pick their top-16 inside it.</li>"
+        "<li><b>Size penalty.</b> The loss gets an extra term &lambda;<sub>d</sub> &middot; (d &minus; 16)/496, averaged over documents, so "
+        "every pool is pushed to shrink. Something must push back, otherwise every pool ends at 16; the two sections below are two ways to do that.</li>"
+        "<li><b>Warm-up.</b> Training starts with all 512 experts and no penalty; over the first W steps the allowed pool shrinks to 16 and the "
+        "penalty ramps up to &lambda;<sub>d</sub>.</li>"
+        "<li><b>Head LR.</b> The head trains with a learning-rate multiplier, because at the base rate d barely moves (Adam steps a scalar by "
+        "about one learning rate per step).</li>"
+        "<li><b>Eval.</b> Route each document with its predicted d.</li>"
+        "</ul>")
     tab = LD / "sweep_table.json"
-    if tab.exists():
-        import re as _re
-        T = {r["run"].split("sweep_", 1)[1]: r for r in json.load(open(tab))}
-        def parse(key):
-            if key == "control_uniform": return None
-            m = _re.match(r"T([\d.]+)_l([\d.]+)_w(\d+)_m([\d.]+)(?:_coveragec([\d.]+))?", key)
-            T_, l, w, mult, cov = m.groups()
-            return {"signal": "coverage" if cov else "STE", "T": float(T_), "lambda": float(l), "W": int(w), "mult": float(mult), "cov": float(cov) if cov else None}
-        def row(key):
-            r = T[key]; h = parse(key)
-            dm = r.get("d_soft_mean") or {}; fr = r.get("d_frac_le64") or {}
-            ds = [dm.get(str(l)) for l in range(2, 10)]; ds = [d for d in ds if d is not None]; d1 = dm.get("1")
-            dtxt = ("16 in every layer" if ds and max(ds) < 16.5 and (d1 or 0) < 16.5 else f"{min(ds):.0f}&ndash;{max(ds):.0f} (L1 {d1:.0f})") if ds else "&mdash;"
-            f5 = fr.get("5"); ev = r.get("eval_ce", {}).get("2000"); e2 = sum(ev.values()) / len(ev) if ev else None
-            if h is None:
-                hp = ["uniform EMO (control)", "&mdash;", "&mdash;", "&mdash;", "&mdash;", "&mdash;", "&mdash;"]
-            else:
-                thr = f"{h['lambda']/(h['cov']*496):.3f}" if h["cov"] else "&mdash;"
-                hp = [h["signal"], f"{h['T']:g}", f"{h['lambda']:g}", f"{h['cov']:g}" if h["cov"] else "0", thr, str(h["W"]), f"&times;{h['mult']:g}"]
-            return hp + [dtxt, f"{100*f5:.0f}%" if f5 is not None else "&mdash;", f(r.get("train_ce_last100"), 3), f(e2, 3), str(r.get("skipped_steps", 0))]
-        order = sorted(T, key=lambda k: (0 if k == "control_uniform" else 1 if "coverage" not in k else 2, parse(k)["lambda"] if parse(k) else 0, parse(k)["T"] if parse(k) else 0, parse(k)["W"] if parse(k) else 0, parse(k)["mult"] if parse(k) else 0))
-        rows = [row(k) for k in order]
-        body += section("2000-step sweep",
-            "One run per row, all from scratch on the same 2000 steps (1.05B tokens) as the first 2000 steps of the 10B arms. d = mean predicted pool at "
-            "step 2000 over layers 2&ndash;9 (layer 1 in brackets); docs &le; 64 = share of documents whose layer-5 pool is at most 64 experts; eval CE = mean "
-            "over the 11 v3-small validation sets at step 2000, routing with the predicted d.",
-            table(["signal", "T", "&lambda;<sub>d</sub>", "&lambda;<sub>cov</sub>", "threshold &lambda;<sub>d</sub>/(&lambda;<sub>cov</sub>&middot;496)", "warm-up", "head LR", "d at step 2000", "docs &le; 64", "train CE", "eval CE", "skipped steps"], rows),
-            "Every STE arm collapses to d = 16 in every layer within a few hundred steps, whatever the temperature, penalty (even 0), warm-up or head "
-            "LR: the STE gradient only sees the selected experts, and a bigger pool just flattens their weights, so the LM loss always asks for a smaller d. "
-            "That costs +0.05 eval CE. The coverage signal gives a tunable pool size: at threshold 0.002 the pools average 110&ndash;130 experts, two thirds "
-            "of the documents use at most 64, and the eval CE matches the uniform-pool control.")
-    else:
-        body += card("warn", "Sweep", "<p>Sweep results not collected yet.</p>")
+    T = {r["run"].split("sweep_", 1)[1]: r for r in json.load(open(tab))} if tab.exists() else {}
+    import re as _re
+    def parse(key):
+        if key == "control_uniform": return None
+        m = _re.match(r"T([\d.]+)_l([\d.]+)_w(\d+)_m([\d.]+)(?:_coveragec([\d.]+))?", key)
+        T_, l, w, mult, cov = m.groups()
+        return {"T": float(T_), "lambda": float(l), "W": int(w), "mult": float(mult), "cov": float(cov) if cov else None}
+    sweep_what = ("One run per row, all from scratch on the same 2000 steps (1.05B tokens) as the first 2000 steps of the 10B arms. "
+                  "d = mean predicted pool at step 2000 over layers 2&ndash;9 (layer 1 in brackets); docs &le; 64 = share of documents whose layer-5 "
+                  "pool is at most 64 experts; eval CE = mean over the 11 v3-small validation sets at step 2000, routing with the predicted d.")
+    # ---- STE ----
+    ste_text = (
+        "<p><b>Idea.</b> Let the language-model loss itself decide the pool size: if the model predicts better with a few more experts, grow "
+        "the pool; if the last experts admitted do nothing, let the penalty shrink it.</p>"
+        "<p><b>The obstacle.</b> Membership in the pool is a hard yes/no (rank &le; d or not), and round(d) has no gradient, so the loss cannot "
+        "tell d anything directly.</p>"
+        "<p><b>The trick (straight-through estimator).</b> Give each expert a soft membership m<sub>e</sub> = sigmoid((d &minus; rank<sub>e</sub> + "
+        "0.5) / T): about 1 deep inside the pool, about 0 far outside, sliding between the two over roughly T ranks around d. Multiply each "
+        "selected expert's routing weight by m<sub>e</sub> + (hard<sub>e</sub> &minus; m<sub>e</sub>).detach(). In the forward pass this is the hard "
+        "membership, always 1 for a selected expert, so predictions are exactly those of the hard pool. In the backward pass its derivative is "
+        "that of m<sub>e</sub>, so the loss gradient flows into d through the 16 selected experts' weights, mostly through the ones ranked "
+        "closest to d. That gradient is the only thing pushing against the size penalty.</p>"
+        "<p><b>Loss</b>: L = L<sub>LM</sub> + EMO's usual auxiliary losses + &lambda;<sub>d</sub> &middot; size, with size = mean over documents of "
+        "(d &minus; 16)/496. Knobs: &lambda;<sub>d</sub>, T, warm-up W, head LR. Default T = 2, W = 500, head LR &times;10.</p>")
+    body += card("info", "Method 1: STE, let the language-model loss set d", ste_text)
+    if T:
+        keys = sorted([k for k in T if "coverage" not in k], key=lambda k: (0 if k == "control_uniform" else 1, (parse(k) or {}).get("lambda", 0), (parse(k) or {}).get("T", 0), (parse(k) or {}).get("W", 0), (parse(k) or {}).get("mult", 0)))
+        body += section("STE sweep (2000 steps)", sweep_what,
+            table(["&lambda;<sub>d</sub>", "T", "warm-up", "head LR", "d at step 2000", "docs &le; 64", "train CE", "eval CE", "skipped steps"], _q4_sweep_rows(T, keys, parse, False)),
+            "Every arm collapses to d = 16 in every layer within a few hundred steps, whatever the penalty (even &lambda;<sub>d</sub> = 0), the "
+            "temperature, the warm-up or the head LR, at a cost of +0.05 eval CE against the uniform-pool control. The gradient is the problem, not "
+            "the tuning: raising d raises the soft membership of all 16 selected experts, the low-ranked ones most, and after the weights are "
+            "re-normalised that shifts weight from the document's best experts to its marginal ones. The LM loss almost always prefers the "
+            "opposite, so it asks for a smaller d no matter what. The excluded experts, the ones a larger pool would actually add, never enter the "
+            "gradient at all.")
+    # ---- coverage ----
+    cov_text = (
+        "<p><b>Why a second signal.</b> The STE gradient only ever sees the experts already in the pool, so it cannot know whether the experts "
+        "just outside would help; it can only reshuffle weight among the selected ones, and that reshuffle happens to favour smaller pools. "
+        "The counter-force therefore has to come from something that does see the excluded experts.</p>"
+        "<p><b>Idea.</b> Use the router's own opinion. Averaging the router's softmax over a document's tokens gives each expert's share of that "
+        "document's routing (3% for one expert, 0.5% for another; shares sum to 100%). A pool is too small if it leaves out experts that still "
+        "carry a real share, so the loss charges the share left outside the pool: coverage = mean over documents of "
+        "&Sigma;<sub>e</sub> share<sub>e</sub> &middot; (1 &minus; m<sub>e</sub>), with the same soft membership m<sub>e</sub> as before (this makes "
+        "it differentiable in d; the shares are treated as constants). The language-model loss is left untouched: the hard pool is used with "
+        "no straight-through term.</p>"
+        "<p><b>Loss</b>: L = L<sub>LM</sub> + EMO's usual auxiliary losses + &lambda;<sub>d</sub> &middot; size + &lambda;<sub>cov</sub> &middot; "
+        "coverage. Growing a pool by one expert lowers coverage by that expert's share and raises size by 1/496, so the loss is lowest when the "
+        "pool holds exactly the experts whose share exceeds &lambda;<sub>d</sub> / (&lambda;<sub>cov</sub> &middot; 496): a per-document rule "
+        "\"keep every expert with at least this much of my routing\". Focused documents get small pools, diffuse ones large pools. The sweep varies "
+        "that threshold with &lambda;<sub>cov</sub> = 1 and the other knobs at their defaults.</p>")
+    body += card("info", "Method 2: coverage, let the router set d", cov_text)
+    if T:
+        keys = sorted([k for k in T if "coverage" in k or k == "control_uniform"], key=lambda k: (0 if k == "control_uniform" else 1, (parse(k) or {}).get("lambda", 0)))
+        body += section("Coverage sweep (2000 steps)", sweep_what,
+            table(["&lambda;<sub>d</sub>", "&lambda;<sub>cov</sub>", "threshold", "warm-up", "head LR", "T", "d at step 2000", "docs &le; 64", "train CE", "eval CE", "skipped steps"], _q4_sweep_rows(T, keys, parse, True)),
+            "The threshold sets the pool size as intended: 0.001 gives pools of 215&ndash;256 experts, 0.002 gives 110&ndash;130 with two thirds of "
+            "the documents at 64 or fewer, 0.005 gives 23&ndash;50. At 0.002 the eval CE matches the uniform-pool control (3.710 vs 3.705) with "
+            "pools a quarter of the size, so that setting is used for the 10B run below.")
     body += learnedd_10b()
     return body
 
