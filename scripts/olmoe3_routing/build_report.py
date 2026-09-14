@@ -556,6 +556,27 @@ def build_q4():
         "steps a scalar by about one learning rate per step.</li>"
         "<li><b>Evaluate.</b> Route each document with its predicted d (default), or with a fixed pool for comparison.</li>"
         "</ol>")
+    body += card("info", "The loss, exactly",
+        "<p>Per MoE layer and per document D (tokens t &isin; D), with s<sub>t</sub> = softmax(router logits<sub>t</sub>) over the 512 experts:</p>"
+        "<ul>"
+        "<li><b>Ranking</b> (as in EMO): S<sub>D</sub> = &Sigma;<sub>t&isin;D</sub> s<sub>t</sub>; expert e gets rank r<sub>e</sub> by S<sub>D</sub> (rank 1 = highest).</li>"
+        "<li><b>Predicted size</b>: d<sub>soft</sub> = 16 + 496 &middot; sigmoid(w &middot; h&#772;<sub>D</sub> + b), with h&#772;<sub>D</sub> the document's mean hidden state (detached).</li>"
+        "<li><b>Hard pool</b> (forward pass): keep<sub>e</sub> = 1 if r<sub>e</sub> &le; round(d<sub>soft</sub>), else 0; token top-16 inside the kept experts. "
+        "During warm-up the pool is also forced to be at least a floor that falls from 512 to 16 over W steps.</li>"
+        "<li><b>Soft pool</b>: soft<sub>e</sub> = sigmoid((d<sub>soft</sub> &minus; r<sub>e</sub> + 0.5) / T), about 1 well inside the pool, about 0 well outside, sliding over ~T ranks around d<sub>soft</sub>.</li>"
+        "<li><b>Size penalty</b>: P<sub>D</sub> = (d<sub>soft</sub> &minus; 16) / 496.</li>"
+        "</ul>"
+        "<p><b>L = L<sub>LM</sub> + &Sigma;<sub>layers</sub> [ &lambda;<sub>lb</sub> L<sub>LB</sub> + &lambda;<sub>z</sub> L<sub>Z</sub> + ramp(step) &middot; &lambda;<sub>d</sub> &middot; mean<sub>D</sub> P<sub>D</sub> + "
+        "&lambda;<sub>cov</sub> &middot; mean<sub>D</sub> C<sub>D</sub> ]</b>, where L<sub>LB</sub>, L<sub>Z</sub> are EMO's unchanged load-balancing and z losses and ramp rises from 0 to 1 over the warm-up.</p>"
+        "<ul>"
+        "<li><b>STE</b>: &lambda;<sub>cov</sub> = 0. The pool enters L<sub>LM</sub> through the expert weights: for a selected expert, weight = s<sub>t,e</sub> &middot; mask<sub>e</sub> "
+        "(then L1-normalised over the 16 selected), with mask<sub>e</sub> = soft<sub>e</sub> + (keep<sub>e</sub> &minus; soft<sub>e</sub>).detach(). Forward uses the hard pool, "
+        "backward differentiates soft<sub>e</sub>, so &part;L<sub>LM</sub>/&part;d<sub>soft</sub> is the only counter-force to the penalty.</li>"
+        "<li><b>Coverage</b>: mask<sub>e</sub> = keep<sub>e</sub> with no gradient (L<sub>LM</sub> never touches d). Instead C<sub>D</sub> = 1 &minus; &Sigma;<sub>e</sub> p<sub>D,e</sub> &middot; soft<sub>e</sub>, "
+        "with p<sub>D</sub> = S<sub>D</sub> / |D| the document's routing share per expert (detached): the share of routing outside the soft pool.</li>"
+        "</ul>"
+        "<p>Settings: T = 2, W = 500, head LR &times;10. STE arms: &lambda;<sub>d</sub> &isin; {0, 0.001, 0.003, 0.01, 0.03}. Coverage arms: &lambda;<sub>cov</sub> = 1, "
+        "&lambda;<sub>d</sub> &isin; {0.5, 1, 2.5} (thresholds 0.001 / 0.002 / 0.005); the 10B run uses &lambda;<sub>d</sub> = 1.</p>")
     tab = LD / "sweep_table.json"
     if tab.exists():
         import re as _re
