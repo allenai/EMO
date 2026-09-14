@@ -448,9 +448,10 @@ EMO_PW_TAKE = ("The squares on their own track the baseline the whole way and en
             "model on the same documents worsens from 1.53 to 1.91. The partition and the sub-models are not the problem; averaging is.")
 STD_TAKE = ("The standard merge never beats its baseline: 2.482 vs 2.436 at 5%, then flat around 2.46 while the baseline keeps improving to 2.374, "
             "ending 0.09 behind. Unlike EMO it does not degrade with more separate training.")
-STD_PW_TAKE = ("For the standard model the squares themselves are the problem: each square is worse than the start model on its own documents even "
-            "at 31% (piecewise 2.506 vs the baseline's 2.413), because a quarter of token-level experts cannot serve the group's documents. "
-            "Merging then recovers most of that (2.463), the reverse of the EMO case.")
+STD_PW_TAKE = ("For the standard model the squares themselves are the problem: on their own they start far behind (2.614 at 5% vs the start "
+            "model's 2.441) and only get back to the start model by 100% (2.448), never near the baseline (2.374), because a quarter of "
+            "token-level experts cannot serve a group's documents. Merging costs almost nothing here (2.463 at 100% vs 2.448 piecewise), the "
+            "reverse of the EMO case, and is a gain early on while the squares are still weak.")
 
 
 def squares_results(HELD=HELD, PPL=PPL, SQO=SQO, start="emo_step19074", start_ppl="olmoe3_275m_emo_10b", base_runs=("olmoe3_275m_emo_20b", "olmoe3_275m_emo_20b_filler", "olmoe3_275m_emo_20b_1node"), label="", take_main=EMO_TAKE, take_pw=EMO_PW_TAKE):
