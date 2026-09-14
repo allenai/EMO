@@ -24,7 +24,7 @@ _ml = importlib.util.module_from_spec(_spec); _spec.loader.exec_module(_ml)
 card, table, img_tag, fig_row, CSS, JS = _ml.card, _ml.table, _ml.img_tag, _ml.fig_row, _ml.CSS, _ml.JS
 
 LAYERS = [str(l) for l in range(1, 10)]
-MODEL_LABEL = {"std": "standard MoE (512e)", "emo": "EMO (512e)", "std1000": "standard MoE (1000e)", "emo1000": "EMO (1000e)", "std128": "standard MoE (128e)", "emo128": "EMO (128e)", "emo2000": "EMO (2000e)", "std2000": "standard MoE (2000e)", "emo_pool64or512": "EMO (512e, pools {64, 512})"}
+MODEL_LABEL = {"std": "standard MoE (512e)", "emo": "EMO (512e)", "std1000": "standard MoE (1000e)", "emo1000": "EMO (1000e)", "std128": "standard MoE (128e)", "emo128": "EMO (128e)", "emo2000": "EMO (2000e)", "std2000": "standard MoE (2000e)", "emo_pool64or512": "EMO (512e, pools {64, 512})", "emo_learnedd": "EMO (512e, learned pools)"}
 
 
 def cond_sort(c):
@@ -79,7 +79,7 @@ def section(title, what, result, takeaway):
 KS = OUT / "ksweep"
 
 
-KS_MODELS = (("emo2000_full", "emo2000"), ("emo1000_full", "emo1000"), ("emo512_full", "emo"), ("emo_pool64or512_full", "emo_pool64or512"), ("emo128_full", "emo128"), ("std2000_full", "std2000"), ("std1000_full", "std1000"))
+KS_MODELS = (("emo2000_full", "emo2000"), ("emo1000_full", "emo1000"), ("emo512_full", "emo"), ("emo_pool64or512_full", "emo_pool64or512"), ("emo_learnedd_full", "emo_learnedd"), ("emo128_full", "emo128"), ("std2000_full", "std2000"), ("std1000_full", "std1000"))
 KS_LAYERS = (1, 5, 9)
 
 
@@ -147,7 +147,7 @@ def build_q6():
     return body
 
 
-GRID_MODELS = (("emo2000_full", "EMO (2000e)"), ("emo1000_full", "EMO (1000e)"), ("emo512_full", "EMO (512e)"), ("emo_pool64or512_full", "EMO (512e, pools {64, 512})"), ("emo128_full", "EMO (128e)"), ("std2000_full", "standard MoE (2000e)"), ("std1000_full", "standard MoE (1000e)"))
+GRID_MODELS = (("emo2000_full", "EMO (2000e)"), ("emo1000_full", "EMO (1000e)"), ("emo512_full", "EMO (512e)"), ("emo_pool64or512_full", "EMO (512e, pools {64, 512})"), ("emo_learnedd_full", "EMO (512e, learned pools)"), ("emo128_full", "EMO (128e)"), ("std2000_full", "standard MoE (2000e)"), ("std1000_full", "standard MoE (1000e)"))
 GRID_JS = r"""
 (function(){
   const Blues = v => { const t=Math.max(0,Math.min(1,v)); const r=Math.round(247-200*t), g=Math.round(251-170*t), b=Math.round(255-100*t); return `rgb(${r},${g},${b})`; };
@@ -474,12 +474,64 @@ def build_q4():
             "average 110&ndash;130 experts, two thirds of the documents use at most 64, and the eval CE matches the uniform-pool control.")
     else:
         body += card("warn", "Sweep", "<p>Sweep results not collected yet.</p>")
-    body += card("info", "10B run",
-        "<p>EMO 512e trained from scratch for 10B tokens with the coverage signal at threshold 0.002 (T = 2, warm-up 500 steps, head LR &times;10), "
-        "the same recipe as the other 10B arms; launched 2026-09-14 13:20 UTC. The threshold is on router mass and the router sharpens over "
-        "training, so the learned pools are expected to shrink during the run. When it finishes: held-out CE on the same 65.5M-token sample "
-        "routing with the predicted d and with the full pool, and the learned d per layer and document type.</p>")
+    body += learnedd_10b()
     return body
+
+
+def learnedd_10b():
+    intro = ("<p>EMO 512e trained from scratch for 10B tokens with the coverage signal at threshold 0.002 (T = 2, warm-up 500 steps, head LR &times;10), "
+             "otherwise the recipe of the other 10B arms (run olmoe3_275m_emo_learnedd_10b).</p>")
+    wb = LD / "learnedd_10b_wandb.json"
+    if not wb.exists():
+        return card("info", "10B run", intro + "<p>Running.</p>")
+    J = json.load(open(wb))
+    out = card("info", "10B run", intro)
+    rows = []
+    for e in J["d_traj"]:
+        if e["step"] in (1000, 5000, 10000, 15000, 19074):
+            d = e["d"]; fr = e["frac_le64"]
+            rows.append([f"{e['step']:,}", *[f"{v:.0f}" for v in d], f"{100*sum(fr[1:])/len(fr[1:]):.0f}%"])
+    out += section("Learned pool size during training",
+        "Mean predicted d per layer at the logged step (the training batch's documents), and the share of documents whose pool is at most 64 experts, "
+        "averaged over layers 2&ndash;9.",
+        table(["step", *[f"L{l}" for l in range(1, 10)], "docs &le; 64"], rows),
+        "The pools settle within the first 1000 steps and stay at roughly 110&ndash;190 experts for the rest of training, with about 60% of the "
+        "documents at 64 or fewer; they do not keep shrinking as the router sharpens. Layer 1 keeps the largest pools.")
+    ev = J.get("eval", {}); ref = J.get("ref_eval", {})
+    steps = ["5000", "10000", "15000", "19074"]
+    def m(d, st):
+        v = d.get(st) if d.get(st) is not None else d.get(int(st))
+        return sum(v.values()) / len(v) if isinstance(v, dict) else v
+    rows = [["EMO, learned pools (routing with the predicted d)", *[f(m(ev, st), 3) for st in steps]],
+            ["EMO, uniform pools [16, 512] (routing with all 512)", *[f(m(ref.get("olmoe3_275m_emo_10b", {}), st), 3) for st in steps]],
+            ["standard MoE", *[f(m(ref.get("olmoe3_275m_10b", {}), st), 3) for st in steps]]]
+    out += section("Validation CE during training",
+        "Mean CE over the 11 v3-small validation sets (one padded instance per document) at the checkpoint steps; the learned-pool model "
+        "routes each validation document with its predicted d, the uniform-pool EMO model with the full expert set.",
+        table(["model", *[f"step {int(st):,}" for st in steps]], rows),
+        "With pools of about 140 experts on average (60% of documents at 64 or fewer), the learned-pool model ends at the standard model's "
+        "validation CE and 0.028 below the uniform-pool EMO model evaluated with all 512 experts. Train CE over the last 100 steps: 2.452 vs "
+        "2.443 (uniform EMO) and 2.434 (standard).")
+    H = ROOT / "sparse_experts/olmoe3_routing/runs/emo_learnedd"
+    hp = H / "none/meta.json"; hf = H / "fixed512/meta.json"
+    if hp.exists() or hf.exists():
+        rows = []
+        if hp.exists():
+            mp = json.load(open(hp)); pp = mp.get("pred_pool_mean") or {}
+            rows.append(["predicted d", f(mp["mean_ce"], 3), ", ".join(f"L{l} {v:.0f}" for l, v in sorted(pp.items(), key=lambda kv: int(kv[0])))])
+        if hf.exists():
+            rows.append(["all 512 experts", f(json.load(open(hf))["mean_ce"], 3), "512"])
+        refs = {"EMO, uniform pools": ROOT / "sparse_experts/olmoe3_routing/runs/emo/none/meta.json", "standard MoE": ROOT / "sparse_experts/olmoe3_routing/runs/std/none/meta.json"}
+        for lab, pth in refs.items():
+            if pth.exists(): rows.append([lab, f(json.load(open(pth))["mean_ce"], 3), "512"])
+        out += section("Held-out CE, both eval modes",
+            "The same 65.5M unseen training-stream tokens as the rest of the report, through the final checkpoint routing with the predicted "
+            "d per document and, separately, with every expert available (the fixed eval pool); mean token CE.",
+            table(["routing", "held-out CE", "mean pool per layer (tokens)"], rows),
+            "HELDOUT_TAKEAWAY")
+    else:
+        out += card("info", "Held-out CE", "<p>Routing passes on the held-out sample (predicted d and full pool) running.</p>")
+    return out
 
 
 def build_next():
