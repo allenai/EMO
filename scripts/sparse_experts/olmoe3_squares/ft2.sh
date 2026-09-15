@@ -11,7 +11,10 @@ case $V in
   emo) PFX=olmoe3_275m_emo_; HR=runs_heldout20b; SQN=olmoe3_squares; EMO=1; MODELS="baseline merged";;
   std) PFX=olmoe3_275m_; HR=runs_heldout20b_std; SQN=olmoe3_squares_std; EMO=0; MODELS="baseline merged";;
   k8)  PFX=olmoe3_275m_emo_k8_; HR=runs_heldout20b_k8; SQN=olmoe3_squares_k8; EMO=1; MODELS="merged";;
-  *) echo "emo|std|k8"; exit 1;;
+  pool64or512) PFX=olmoe3_275m_pool64or512_; HR=runs_heldout20b_pool64or512; SQN=olmoe3_squares_pool64or512; EMO=1; MODELS="baseline merged"; export OLMOE3_EMO_POOL_DIST=choice:64,512;;
+  learnedd) PFX=olmoe3_275m_learnedd_; HR=runs_heldout20b_learnedd; SQN=olmoe3_squares_learnedd; EMO=1; MODELS="baseline merged"
+       export OLMOE3_EMO_LEARNED_D=1 OLMOE3_LD_SIGNAL=coverage OLMOE3_LD_LAMBDA=1.0 OLMOE3_LD_LAMBDA_COV=1.0 OLMOE3_LD_TEMP=2.0 OLMOE3_LD_WARMUP=0 OLMOE3_LD_LR_MULT=10;;
+  *) echo "emo|std|k8|pool64or512|learnedd"; exit 1;;
 esac
 S=sparse_experts; W=/weka/oe-training-default/ryanwang/EMO/sparse_experts; SP=/tmp/claude-0/-root-EMO/c7db74f2-bbe3-4a2c-9d37-93c64250d7c6/scratchpad
 START=39502; STEPS=954; END=$((START + STEPS))

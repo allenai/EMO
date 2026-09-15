@@ -30,5 +30,5 @@ launch() { local name=$1; shift; local log=/tmp/claude-0/-root-EMO/c7db74f2-bbe3
   done
   echo "$name: ${u:-LAUNCH FAILED after 4 attempts}"; }
 launch "$SQN-eval-$NAME-none" python scripts/sparse_experts/olmoe3_routing/extract_routing.py --checkpoint "$M" --instances "$W/olmoe3_routing/sample_8k_20b.npz" --out-dir "$R/none/rank0" --restrict none --batch-size 8 --log-every 100
-launch "$SQN-eval-$NAME-oracle" python scripts/sparse_experts/olmoe3_routing/extract_routing.py --checkpoint "$M" --instances "$W/olmoe3_routing/sample_8k_20b.npz" --out-dir "$R/oracle/rank0" --group-restrict "$W/$SQN/groups.json" --batch-size 8 --log-every 100
+[ "${SKIP_ORACLE:-0}" = 1 ] || launch "$SQN-eval-$NAME-oracle" python scripts/sparse_experts/olmoe3_routing/extract_routing.py --checkpoint "$M" --instances "$W/olmoe3_routing/sample_8k_20b.npz" --out-dir "$R/oracle/rank0" --group-restrict "$W/$SQN/groups.json" --batch-size 8 --log-every 100
 launch "$SQN-eval-$NAME-ppl" python scripts/debug_validation/eval_ppl_validation.py --checkpoints "$M" --out-dir "$W/$SQN/ppl_validation" --batch-size 8
