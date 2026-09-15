@@ -359,7 +359,12 @@ def build_q3():
         body += variant("D", inner)
     # ---- E: pool-{64,512} arm, k = 4 ----
     if (ROOT / "sparse_experts/olmoe3_squares_pool64or512/groups.json").exists():
-        body += variant("E", squares_block("pool64or512", "olmoe3_275m_emo_pool64or512_10b", "olmoe3_275m_emo_pool64or512_10b", "olmoe3_275m_pool64or512_20b_1node"))
+        body += variant("E", squares_block("pool64or512", "olmoe3_275m_emo_pool64or512_10b", "olmoe3_275m_emo_pool64or512_10b", "olmoe3_275m_pool64or512_20b_1node",
+            take_main="Same shape as A: the merged model beats the baseline only at 5% (2.425 vs 2.457) and then drifts up while the baseline keeps "
+                      "improving, ending 0.13 above it (2.531 vs 2.397), a slightly smaller gap than A's 0.15.",
+            take_pw="As in A, the squares on their own track and then beat the baseline (2.377 vs 2.397 at 100%), so the loss is in averaging the "
+                    "diverged shared parameters, not in the partition or the sub-models.",
+            stage1_take="46% of the selections a sub-model's documents make fall inside its own group (52% for the uniform-pool model in A)."))
     return body
 
 
