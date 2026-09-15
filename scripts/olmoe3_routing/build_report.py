@@ -658,7 +658,13 @@ def build_q4():
             '<p class="lead">the Q3 pipeline (k = 4 block-groups, documents assigned by routing, four sub-models trained on their own documents of the next 10B, merged, ' \
             'compared with the full model continued; then 0.5B and 1B of post-merge finetuning) applied to the 10B learned-pool checkpoint. The sub-models keep the ' \
             'learned-d head and the coverage signal.</p>' \
-            + squares_block("learnedd", "olmoe3_275m_emo_learnedd_10b", "olmoe3_275m_emo_learnedd_10b", "olmoe3_275m_learnedd_20b_1node") + "</div>"
+            + squares_block("learnedd", "olmoe3_275m_emo_learnedd_10b", "olmoe3_275m_emo_learnedd_10b", "olmoe3_275m_learnedd_20b_1node",
+                take_main="Same shape as the uniform-pool model in Q3 A: the merged model beats the baseline only at 5% (2.417 vs 2.453) and then "
+                          "drifts up while the baseline keeps improving, ending 0.16 above it (2.548 vs 2.389).",
+                take_pw="The squares on their own track and then beat the baseline (2.368 vs 2.389 at 100%; every group's own square keeps improving), "
+                        "so learned pools change nothing about the diagnosis: averaging the diverged shared parameters is what loses.",
+                stage1_take="49% of the selections a sub-model's documents make fall inside its own group (52% for the uniform-pool model); the "
+                            "learned pools give a partition of the same quality.") + "</div>"
     return body
 
 
