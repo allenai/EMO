@@ -32,6 +32,8 @@ for i in $POINTS; do NAME=match${BASE[$i]}
     until [ -f "$R/meta.json" ] || [ -f "$R/rank0/DONE" ]; do sleep 120; done
     [ -f "$R/meta.json" ] || python scripts/sparse_experts/olmoe3_routing/merge_routing.py "$S/olmoe3_routing/$HR/sub${g}_$NAME/none" 2>&1 | tail -1
   done
+  for d in "$S/olmoe3_routing/$HR/merged_$NAME/none" "$S/olmoe3_routing/$HR/baseline_step${BASE[$i]}/none" "$S/olmoe3_routing/$HR/$START/none"; do  # merge finished passes the piecewise summary reads
+    [ -f "$d/rank0/DONE" ] && [ ! -f "$d/meta.json" ] && python scripts/sparse_experts/olmoe3_routing/merge_routing.py "$d" 2>&1 | tail -1; done
   HELDOUT_DIR=$HR SQUARES_NAME=$SQN START_TAG=$START python scripts/sparse_experts/olmoe3_squares/piecewise_eval.py --name $NAME | head -3
   echo "$(date -u +%H:%M) piecewise $V $NAME done"
 done
