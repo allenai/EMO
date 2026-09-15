@@ -536,14 +536,14 @@ def squares_results(HELD=HELD, PPL=PPL, SQO=SQO, start="emo_step19074", start_pp
         pxs = [round(100 * (int(n[5:]) - 19074) / 19074) for n in pw]
         D = list(pw.values()); K = len(D[0]["docs_per_group"])
         avg = line_chart(pxs, [{"name": "piecewise (own square, no merge)", "y": [d["piecewise"] for d in D]},
-                               {"name": "merged, free routing", "y": [d[f"merged_{d['name']}"] for d in D]},
+                               {"name": "merged, free routing", "y": [d.get(f"merged_{d['name']}") for d in D]},
                                {"name": "baseline", "y": [d.get("baseline") for d in D], "dashed": True, "color": "#059669"},
                                {"name": "start model", "y": [D[0]["start_full"]] * len(D), "const": True, "dashed": True, "color": "#64748b"}],
                          title="All held-out documents")
         grp = ""
         for g in range(K):
             grp += line_chart(pxs, [{"name": "own square", "y": [d["sub_on_group"][str(g)][str(g)] for d in D]},
-                                    {"name": "merged, free routing", "y": [d[f"merged_{d['name']}_by_group"][str(g)] for d in D]},
+                                    {"name": "merged, free routing", "y": [(d.get(f"merged_{d['name']}_by_group") or {}).get(str(g)) for d in D]},
                                     {"name": "baseline", "y": [(d.get("baseline_by_group") or {}).get(str(g)) for d in D], "dashed": True, "color": "#059669"},
                                     {"name": "start model", "y": [D[0]["start_full_by_group"][str(g)]] * len(D), "const": True, "dashed": True, "color": "#64748b"}],
                               title=f"Group {g} documents ({D[0]['docs_per_group'][g]:,} held-out docs)", W=400, H=250)
