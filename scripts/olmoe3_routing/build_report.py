@@ -227,7 +227,8 @@ VARIANT_CSS = ("<style>.variant{margin:34px 0 10px;padding:0 0 4px 16px;border-l
 VARIANTS = [("A", "EMO 512e, 4 sub-models", "#2563eb", "the main experiment"),
             ("B", "Standard MoE 512e, 4 sub-models", "#dc2626", "same pipeline on the standard-routing model, as a second baseline"),
             ("C", "EMO 512e, 4 sub-models trained without the EMO loss", "#7c3aed", "same partition and start checkpoints as A; the sub-models use plain top-16 routing"),
-            ("D", "EMO 512e, 8 sub-models", "#059669", "same as A with k = 8 blocks per layer")]
+            ("D", "EMO 512e, 8 sub-models", "#059669", "same as A with k = 8 blocks per layer"),
+            ("E", "EMO 512e with pools {64, 512}, 4 sub-models", "#d97706", "same pipeline as A on the arm whose training pools were a random choice of 64 or 512 experts per document")]
 
 
 def variant(letter, inner):
@@ -244,6 +245,26 @@ def _assign_table(st, k):
 def _groups_table(G, k):
     return table(["layer", *[f"group {g}" for g in range(k)], "agreement with layer 9"],
                  [[f"layer {l}", *[str(x) for x in G["sizes"][str(l)]], f(G["layer9_agreement"].get(str(l)), 2) if str(l) in G["layer9_agreement"] else "&mdash; (whole)"] for l in range(1, 10)])
+
+
+def squares_block(tag, full_run, start_ppl_run, base_run, take_main="", take_pw="", stage0_take="", stage1_take=""):
+    """Stage 0/1 tables + stages 2-4 charts + piecewise for an extra k=4 run (dirs olmoe3_squares_<tag>, runs_heldout20b_<tag>)."""
+    SQd = ROOT / f"sparse_experts/olmoe3_squares_{tag}"; HRd = ROOT / f"sparse_experts/olmoe3_routing/runs_heldout20b_{tag}"
+    inner = ""
+    if (SQd / "groups.json").exists():
+        G = json.load(open(SQd / "groups.json"))
+        inner += section("Stage 0: the four block-groups", "Same spectral blocks and layer-9 alignment as in A, on this model's own routing pass.",
+                         _groups_table(G, 4), stage0_take or "Experts per group in each layer; layer 1 keeps all 512 experts in every group.")
+    if (SQd / "pack/stats.json").exists():
+        st = json.load(open(SQd / "pack/stats.json"))
+        inner += section("Stage 1: assigning the next 10B tokens", "Raw-count assignment as in A (each document goes to the group receiving most of its layer 2&ndash;9 selections).",
+                         _assign_table(st, 4), stage1_take or f"Token-weighted, {100*st['in_group_share_token_weighted']:.0f}% of the selections a sub-model's documents make are inside its own expert group.")
+    else:
+        inner += card("info", "Stage 1", "<p>Assignment pass running.</p>")
+    (OUT / f"olmoe3_squares_{tag}").mkdir(parents=True, exist_ok=True)
+    inner += squares_results(HELD=HRd, PPL=SQd / "ppl_validation", SQO=OUT / f"olmoe3_squares_{tag}", start=f"{tag}_step19074", start_ppl=start_ppl_run,
+                             base_runs=(base_run,), label="", take_main=take_main, take_pw=take_pw)
+    return inner
 
 
 def build_q3():
@@ -263,7 +284,8 @@ def build_q3():
         "</ol>")
     present = ["A"] + (["B"] if (SQ.parent / "olmoe3_squares_std" / "groups.json").exists() else []) \
               + (["C"] if (ROOT / "sparse_experts/olmoe3_routing/runs_heldout20b_noemo").exists() else []) \
-              + (["D"] if (ROOT / "sparse_experts/olmoe3_routing/runs_heldout20b_k8").exists() else [])
+              + (["D"] if (ROOT / "sparse_experts/olmoe3_routing/runs_heldout20b_k8").exists() else []) \
+              + (["E"] if (ROOT / "sparse_experts/olmoe3_squares_pool64or512/groups.json").exists() else [])
     body += VARIANT_CSS + card("info", "Four runs of this plan",
         '<ul class="q3index">' + "".join(f'<li><a href="#q3-{L}"><b>{L}</b> &middot; {t}</a> &mdash; {bl}</li>' for L, t, _, bl in VARIANTS if L in present)
         + "</ul><p>Each run has the same three blocks: the block-groups (stage 0), the document assignment (stage 1), and the merged squares "
@@ -335,6 +357,9 @@ def build_q3():
         inner += squares_results(HELD=ROOT / "sparse_experts/olmoe3_routing/runs_heldout20b_k8", PPL=ROOT / "sparse_experts/olmoe3_squares_k8/ppl_validation", SQO=OUT / "olmoe3_squares_k8",
                                  start="emo_step19074", start_ppl="olmoe3_275m_emo_10b", base_runs=("olmoe3_275m_emo_20b_1node",), label="", take_main="", take_pw="")
         body += variant("D", inner)
+    # ---- E: pool-{64,512} arm, k = 4 ----
+    if (ROOT / "sparse_experts/olmoe3_squares_pool64or512/groups.json").exists():
+        body += variant("E", squares_block("pool64or512", "olmoe3_275m_emo_pool64or512_10b", "olmoe3_275m_emo_pool64or512_10b", "olmoe3_275m_pool64or512_20b_1node"))
     return body
 
 
@@ -623,6 +648,12 @@ def build_q4():
             "the documents at 64 or fewer, 0.005 gives 23&ndash;50. At 0.002 the eval CE matches the uniform-pool control (3.710 vs 3.705) with "
             "pools a quarter of the size, so that setting is used for the 10B run below.")
     body += learnedd_10b()
+    if (ROOT / "sparse_experts/olmoe3_squares_learnedd/groups.json").exists():
+        body += VARIANT_CSS + '<div class="variant" id="q4-squares" style="--vc:#0891b2"><h2><span class="vb">S</span>Squares on the learned-pool model</h2>' \
+            '<p class="lead">the Q3 pipeline (k = 4 block-groups, documents assigned by routing, four sub-models trained on their own documents of the next 10B, merged, ' \
+            'compared with the full model continued; then 0.5B and 1B of post-merge finetuning) applied to the 10B learned-pool checkpoint. The sub-models keep the ' \
+            'learned-d head and the coverage signal.</p>' \
+            + squares_block("learnedd", "olmoe3_275m_emo_learnedd_10b", "olmoe3_275m_emo_learnedd_10b", "olmoe3_275m_learnedd_20b_1node") + "</div>"
     return body
 
 
