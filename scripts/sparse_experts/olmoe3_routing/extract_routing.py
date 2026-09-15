@@ -389,10 +389,12 @@ def run(args):
             x = inp[0]
             with torch.no_grad():
                 scores = mod.get_expert_logits(x.float()).float().softmax(-1)
-            captured[l] = (out[1], scores)
+            captured[l] = (out[1], scores, getattr(mod, "_last_pool", None))
             if l in pred_pool_sum and args.ld_eval == "predicted":
                 pred_pool_sum[l] += float(mod._last_pool.sum()); pred_pool_n[l] += mod._last_pool.numel()
         return hook
+    # learned-d: per-document mean predicted pool per MoE layer (n_doc, L), saved as doc_pool.npy
+    doc_pool_sum = torch.zeros(n_doc, L, device=device) if ld_layers else None; doc_pool_n = torch.zeros(n_doc, device=device) if ld_layers else None
     hooks = [routers[l].register_forward_hook(make_hook(l)) for l in MOE_LAYERS]
 
     acc = Accum(L, E, k, n_doc, device)
@@ -433,6 +435,11 @@ def run(args):
                         used = torch.unique(idx[0][doc[0] == d][:, li])
                         assert len(used) <= pool, f"layer {l}: doc used {len(used)} experts > pool {pool}"
             Tn = idx.shape[0] * S
+            if doc_pool_sum is not None and args.ld_eval == "predicted":
+                for li, l in enumerate(MOE_LAYERS):
+                    pt = captured[l][2]
+                    if pt is not None: doc_pool_sum[:, li].index_add_(0, doc.view(-1), pt.reshape(-1).float())
+                doc_pool_n.index_add_(0, doc.view(-1), torch.ones(Tn, device=device))
             # per-token loss at position t predicts token t+1 -> attribute to the doc of t+1
             loss_doc = torch.roll(doc, shifts=-1, dims=1)
             valid = labels != -100
@@ -453,6 +460,8 @@ def run(args):
     acc.save(args.out_dir)
     if raw is not None: raw.flush()
     np.savez(args.out_dir / "docs.npz", doc_inst=doc_inst, sel=sel, **meta)
+    if doc_pool_sum is not None and args.ld_eval == "predicted":
+        np.save(args.out_dir / "doc_pool.npy", (doc_pool_sum / doc_pool_n.clamp(min=1)[:, None]).cpu().numpy().astype(np.float32))
     json.dump({"checkpoint": str(args.checkpoint), "restrict": args.restrict, "group_restrict": str(args.group_restrict) if args.group_restrict else None, "layers": layers, "pool": pool,
                "kinds": kinds, "n_instances": int(N), "n_tokens": int(N * S), "n_docs": n_doc,
                "mean_ce": float(acc.doc_ce.sum() / acc.doc_ce_len.sum()), "E": E, "top_k": k,
