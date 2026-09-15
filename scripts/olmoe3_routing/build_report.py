@@ -782,11 +782,15 @@ def build_explorer():
         '<div class="xp" id="xp-groups"><div id="xp-model"></div><div id="xp-group"></div><div id="xp-groups-body"></div></div>')
     if D.get("buckets"):
         B = D["buckets"]
-        fam_rows = [[f, f"{v['n']:,}", f(v["mean_pool"], 0), f(v["median_pool"], 0), f"{100*v['frac_le16']:.0f}%", f"{100*v['frac_le64']:.0f}%", f(v["mean_tokens"], 0)] for f, v in B["by_family"].items()]
+        fam_rows = [[fam, f"{v['n']:,}", f(v["mean_pool"], 0), f(v["median_pool"], 0), f"{100*v['frac_le16']:.0f}%", f"{100*v['frac_le64']:.0f}%", f(v["mean_tokens"], 0)] for fam, v in B["by_family"].items()]
         len_rows = [[r, f"{v['n']:,}", f(v["mean_pool"], 0), f"{100*v['frac_le16']:.0f}%", f"{100*v['frac_le64']:.0f}%"] for r, v in B["by_length"].items()]
         body += card("info", "Learned pool size per document (EMO 512e, learned pools)",
             "<p>The learned-pool model's predicted pool size for each held-out document (one prediction per MoE layer; here the mean over "
             f"layers 2&ndash;9, {B['n_docs']:,} documents with at least 64 tokens). Mean pool per layer L1&ndash;L9: {' / '.join(str(v) for v in B['layer_mean'])}.</p>"
+            "<p>Pool size is almost entirely a function of document length, not topic: documents of 64&ndash;128 tokens get a mean pool of 17 "
+            "(72% exactly 16), 128&ndash;512 tokens 21, 512&ndash;2,048 tokens 164, and longer documents 482. That is what the coverage rule implies: "
+            "a short document's tokens touch few experts, so few experts carry more than 0.2% of its routing; a long document spreads its routing "
+            "over most of them. Within a length band the families differ little; PDFs get the largest pools because they are the longest documents.</p>"
             "<p><b>By document family</b> (mean and median pool, share of documents whose mean pool is 16 or at most 64):</p>"
             + table(["family", "documents", "mean pool", "median pool", "pool = 16", "pool &le; 64", "mean tokens"], fam_rows)
             + "<p><b>By document length</b>:</p>" + table(["tokens", "documents", "mean pool", "pool = 16", "pool &le; 64"], len_rows)
