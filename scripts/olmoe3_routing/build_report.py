@@ -731,6 +731,71 @@ def learnedd_10b():
     return out
 
 
+EXPLORER_CSS = """<style>
+.xp .btn{display:inline-block;padding:4px 10px;margin:2px 6px 2px 0;border:1px solid #cbd5e1;border-radius:6px;background:#fff;cursor:pointer;font-size:13px}
+.xp .btn.on{background:#2563eb;color:#fff;border-color:#2563eb}
+.xp .meta{font-size:12px;color:#475569;margin:6px 0 10px}
+.xp .doc{border:1px solid #e2e8f0;border-radius:6px;padding:8px 10px;margin:8px 0;background:#fff}
+.xp .doc .hd{font-size:12px;color:#334155;margin-bottom:4px}.xp .doc .hd b{color:#0f172a}
+.xp .doc .tag{display:inline-block;padding:0 6px;border-radius:4px;background:#eef2f7;margin-right:6px;font-size:11px}
+.xp .doc pre{white-space:pre-wrap;word-break:break-word;font-size:12px;line-height:1.35;margin:0;max-height:220px;overflow:hidden;font-family:ui-monospace,Menlo,Consolas,monospace;color:#1e293b}
+.xp .doc pre.open{max-height:none}.xp .doc .more{font-size:12px;color:#2563eb;cursor:pointer;margin-top:4px}
+.xp table{font-size:12px}
+</style>"""
+EXPLORER_JS = """<script>(function(){
+const D=JSON.parse(document.getElementById('explorer-data').textContent);
+const esc=t=>t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function card(d,showPools){const pools=showPools&&d.pools?'<span class="tag">pools L1..L9: '+d.pools.join(' / ')+'</span>':'';
+ return '<div class="doc"><div class="hd"><span class="tag">'+esc(d.family)+'</span><b>'+esc(d.source)+'</b> &middot; '+d.tokens+' tokens &middot; in-group share '+d.share.toFixed(2)+' '+pools+'</div>'
+ +'<pre>'+esc(d.snippet)+'</pre>'+(d.full.length>d.snippet.length?'<div class="more" data-full="'+esc(d.full).replace(/"/g,'&quot;')+'">show more</div>':'')+'</div>';}
+function wire(root){root.querySelectorAll('.more').forEach(m=>m.addEventListener('click',()=>{const pre=m.previousElementSibling;if(pre.classList.contains('open')){pre.textContent=m.dataset.snip;pre.classList.remove('open');m.textContent='show more';}else{m.dataset.snip=pre.textContent;pre.textContent=m.dataset.full;pre.classList.add('open');m.textContent='show less';}}));}
+// section 1: documents by sub-model
+const s1=document.getElementById('xp-groups'); if(s1&&D.models){const keys=Object.keys(D.models); let mk=keys[0], gi=0;
+ const mb=document.getElementById('xp-model'), gb=document.getElementById('xp-group'), body=document.getElementById('xp-groups-body');
+ function render(){mb.innerHTML=keys.map(k=>'<span class="btn'+(k===mk?' on':'')+'" data-k="'+k+'">'+esc(D.models[k].label)+'</span>').join('');
+  const M=D.models[mk]; gb.innerHTML=M.groups.map((g,i)=>'<span class="btn'+(i===gi?' on':'')+'" data-i="'+i+'">group '+g.group+' &middot; '+(100*g.token_share).toFixed(0)+'% of tokens</span>').join('');
+  const g=M.groups[gi]; const fam=Object.entries(g.families).map(([f,v])=>f+' '+(100*v).toFixed(0)+'%').join(', ');
+  body.innerHTML='<div class="meta">'+g.n_docs.toLocaleString()+' held-out documents; mean in-group share '+g.mean_share.toFixed(2)+' (assignment rule: '+(M.size_normalized?'selections per expert of the group':'raw count of selections')+'); experts per layer '+Object.entries(g.experts_per_layer).map(([l,n])=>'L'+l+':'+n).join(' ')+'<br>document families: '+fam+'<br>'+g.docs.length+' random documents (at least 64 tokens), most typical first:</div>'+g.docs.map(d=>card(d,mk==='learnedd')).join('');
+  mb.querySelectorAll('.btn').forEach(b=>b.addEventListener('click',()=>{mk=b.dataset.k;gi=0;render();})); gb.querySelectorAll('.btn').forEach(b=>b.addEventListener('click',()=>{gi=+b.dataset.i;render();})); wire(body);}
+ render();}
+// section 2: learned pool size per document
+const s2=document.getElementById('xp-pools'); if(s2&&D.buckets){const B=D.buckets; let bi=0; const bb=document.getElementById('xp-bucket'), body=document.getElementById('xp-pools-body');
+ function render(){bb.innerHTML=B.buckets.map((b,i)=>'<span class="btn'+(i===bi?' on':'')+'" data-i="'+i+'">'+b.name+' &middot; '+(100*b.frac_docs).toFixed(0)+'% of docs</span>').join('');
+  const b=B.buckets[bi]; const fam=Object.entries(b.families).map(([f,v])=>f+' '+(100*v).toFixed(0)+'%').join(', ');
+  body.innerHTML='<div class="meta">'+b.n_docs.toLocaleString()+' documents ('+(100*b.frac_docs).toFixed(1)+'% of documents, '+(100*b.frac_tokens).toFixed(1)+'% of tokens); mean length '+(b.mean_tokens||0).toFixed(0)+' tokens, median '+(b.median_tokens||0).toFixed(0)+'<br>document families: '+fam+'<br>'+b.docs.length+' random documents:</div>'+b.docs.map(d=>card(d,true)).join('');
+  bb.querySelectorAll('.btn').forEach(x=>x.addEventListener('click',()=>{bi=+x.dataset.i;render();})); wire(body);}
+ render();}
+})();</script>"""
+
+
+def build_explorer():
+    f = OUT / "explorer.json"
+    if not f.exists():
+        return card("warn", "Explorer", "<p>Explorer data not built yet.</p>")
+    D = json.load(open(f)); payload = open(f).read().replace("</", "<\\/")
+    body = card("info", "What this shows",
+        "<p>The held-out 20B-window documents (7,991 instances, 56,547 documents from training-stream steps 38,148&ndash;38,547, unseen by every "
+        "model) as the Q3 pipeline partitions them into the four sub-models, for three start models. Each document goes to the group receiving "
+        "most of its layer 2&ndash;9 top-16 selections in that model (per expert of the group for the standard model). Text is decoded with the "
+        "dolma2 tokenizer; the source label is the training mix's own label for the document's shard.</p>")
+    body += card("info", "Documents by sub-model",
+        '<div class="xp" id="xp-groups"><div id="xp-model"></div><div id="xp-group"></div><div id="xp-groups-body"></div></div>')
+    if D.get("buckets"):
+        B = D["buckets"]
+        fam_rows = [[f, f"{v['n']:,}", f(v["mean_pool"], 0), f(v["median_pool"], 0), f"{100*v['frac_le16']:.0f}%", f"{100*v['frac_le64']:.0f}%", f(v["mean_tokens"], 0)] for f, v in B["by_family"].items()]
+        len_rows = [[r, f"{v['n']:,}", f(v["mean_pool"], 0), f"{100*v['frac_le16']:.0f}%", f"{100*v['frac_le64']:.0f}%"] for r, v in B["by_length"].items()]
+        body += card("info", "Learned pool size per document (EMO 512e, learned pools)",
+            "<p>The learned-pool model's predicted pool size for each held-out document (one prediction per MoE layer; here the mean over "
+            f"layers 2&ndash;9, {B['n_docs']:,} documents with at least 64 tokens). Mean pool per layer L1&ndash;L9: {' / '.join(str(v) for v in B['layer_mean'])}.</p>"
+            "<p><b>By document family</b> (mean and median pool, share of documents whose mean pool is 16 or at most 64):</p>"
+            + table(["family", "documents", "mean pool", "median pool", "pool = 16", "pool &le; 64", "mean tokens"], fam_rows)
+            + "<p><b>By document length</b>:</p>" + table(["tokens", "documents", "mean pool", "pool = 16", "pool &le; 64"], len_rows)
+            + '<p><b>Documents by pool-size bucket</b>:</p><div class="xp" id="xp-pools"><div id="xp-bucket"></div><div id="xp-pools-body"></div></div>')
+    else:
+        body += card("info", "Learned pool size per document", "<p>Per-document pool pass running.</p>")
+    return EXPLORER_CSS + body + f'<script id="explorer-data" type="application/json">{payload}</script>' + EXPLORER_JS
+
+
 def build_next():
     return card("info", "Next steps", "<ul><li>Add the 2000-expert arms (EP=2) to the partition and block-agreement grids once their 10B runs finish.</li>"
                 "<li>Use the persistent document-level blocks as the expert subsets for selective-expert finetuning, as in the sparse_experts plan.</li></ul>")
@@ -743,6 +808,7 @@ def main():
         ("q2", QUESTIONS[1][1], build_q6()),
         ("q3", QUESTIONS[2][1], build_q3()),
         ("q4", QUESTIONS[3][1], build_q4()),
+        ("explorer", "Explorer", build_explorer()),
         ("next", "Next steps", build_next()),
     ]
     nav = "".join(f'<button data-target="{tid}">{name}</button>' for tid, name, _ in tabs)
