@@ -769,10 +769,10 @@ const s2=document.getElementById('xp-pools'); if(s2&&D.buckets){const B=D.bucket
 
 
 def build_explorer():
-    f = OUT / "explorer.json"
-    if not f.exists():
+    fp = OUT / "explorer.json"
+    if not fp.exists():
         return card("warn", "Explorer", "<p>Explorer data not built yet.</p>")
-    D = json.load(open(f)); payload = open(f).read().replace("</", "<\\/")
+    D = json.load(open(fp)); payload = open(fp).read().replace("</", "<\\/")
     body = card("info", "What this shows",
         "<p>The held-out 20B-window documents (7,991 instances, 56,547 documents from training-stream steps 38,148&ndash;38,547, unseen by every "
         "model) as the Q3 pipeline partitions them into the four sub-models, for three start models. Each document goes to the group receiving "
