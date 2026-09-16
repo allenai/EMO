@@ -528,8 +528,10 @@ LR = float(os.environ.get("OLMOE3_LR", "8e-4"))
 ROUTER_ONLY_LR = float(os.environ["OLMOE3_ROUTER_ONLY_LR"]) if os.environ.get("OLMOE3_ROUTER_ONLY_LR") else None
 # (the optimizer asserts a positive base LR, so the base LR stays and every non-router group gets an explicit lr 0)
 ROUTER_ONLY_FROZEN = {"lr": 0.0, "weight_decay": 0.0} if ROUTER_ONLY_LR is not None else {}
-NON_ROUTER_PATTERNS = ["embedding_norm.*", "lm_head.*", "blocks.*.attention.*", "blocks.*.attention_input_norm.*", "blocks.*.attention_norm.*",
-                       "blocks.*.feed_forward_input_norm.*", "blocks.*.feed_forward_norm.*", "blocks.*.latent_*", "blocks.*.shared_experts.*"]
+# NOTE: the OLMoDDP optimizer matches globs against names prefixed with "module.", so every pattern needs a leading "*"
+# (a pattern like "embeddings.weight" never matches).
+NON_ROUTER_PATTERNS = ["*embeddings.weight", "*embedding_norm.*", "*lm_head.*", "*blocks.*.attention.*", "*blocks.*.attention_input_norm.*", "*blocks.*.attention_norm.*",
+                       "*blocks.*.feed_forward_input_norm.*", "*blocks.*.feed_forward_norm.*", "*blocks.*.latent_*", "*blocks.*.shared_experts.*"]
 NUM_NODES = int(os.environ.get("OLMOE3_NUM_NODES", "4"))
 NUM_GPUS = int(os.environ.get("OLMOE3_NUM_GPUS", "8"))
 RANK_MICROBATCH_SEQUENCES = int(os.environ.get("OLMOE3_RANK_MB", "2"))
@@ -752,7 +754,7 @@ def build_train_module_config(common: CommonComponents) -> OLMoDDPTrainModuleCon
             betas=(0.9, 0.95),
             group_overrides=[
                 # Dense mainline: only token embeddings are exempt from weight decay.
-                OptimGroupOverride(params=["embeddings.weight"], opts={"weight_decay": 0.0, **ROUTER_ONLY_FROZEN}),
+                *([OptimGroupOverride(params=["embeddings.weight"], opts={"weight_decay": 0.0})] if ROUTER_ONLY_LR is None else []),  # (pattern never matches: names are "module.…"; kept for config parity with the earlier runs)
                 # learned-d pool-size head bias: no decay (decay would pull every pool toward mid-range)
                 *([OptimGroupOverride(params=["*routed_experts_router.weight"], opts={"lr": ROUTER_ONLY_LR})] if ROUTER_ONLY_LR is not None else []),
                 *([OptimGroupOverride(params=["*routed_experts_router.d_bias"], opts={"weight_decay": 0.0, "lr": LR * LD_LR_MULT}),
