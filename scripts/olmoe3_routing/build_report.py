@@ -523,7 +523,10 @@ def line_chart(xs, series, *, title="", y_label="CE", x_label="progress through 
 
 
 EMO_TAKE = ("The merged model beats the baseline only at 5% (2.424 vs 2.455) and then falls behind monotonically, ending 0.15 above it and "
-            "0.09 above the start model on the held-out sample; the v3-small sets tell the same story.")
+            "0.09 above the start model on the held-out sample; the v3-small sets tell the same story. Finetuning the merge closes most of the "
+            "gap (2.433 after 0.5B, 2.431 after 1B, vs the baseline's 2.396); the second 0.5B adds nothing. Retraining only the routers "
+            "(orange) recovers about half of it (2.475, then 2.473), so roughly half of the merge loss is router mismatch that the routers "
+            "can fix on their own, and the other half sits in the averaged non-router weights and needs the full model to train.")
 EMO_PW_TAKE = ("The squares on their own track the baseline the whole way and end slightly below it (2.385 vs 2.398 at 100%), while the merged "
             "model drifts up to 2.551. Only at 5% is merging a gain (2.424 vs 2.509 piecewise): the four copies of the shared parameters are still "
             "nearly identical, so averaging is free and routing across groups adds experts. From 31% on, averaging diverged shared parameters is "
