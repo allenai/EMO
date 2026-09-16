@@ -267,6 +267,58 @@ def squares_block(tag, full_run, start_ppl_run, base_run, take_main="", take_pw=
     return inner
 
 
+def std_window2():
+    """Block B continued to 30B tokens: separate training of the squares on the next 10B (window 2) vs the baseline continued,
+    both windows re-evaluated on one held-out sample taken 300B tokens into the stream; x-axis = tokens trained."""
+    HR = ROOT / "sparse_experts/olmoe3_routing/runs_heldout300b_std"; PPL = ROOT / "sparse_experts/olmoe3_squares_std/ppl_validation"; PW = OUT / "olmoe3_squares_std_w2"
+    if not HR.exists(): return ""
+    W1 = [20000, 25000, 30000, 35000, 38148]; W2 = [39073, 44073, 49073, 54073, 57221]; steps = W1 + W2
+    toks = [round(st * 524288 / 1e9, 1) for st in steps]  # tokens trained (B) at each matched point
+    start = _ce(HELD_ / "std_step19074/none") if (HELD_ := HR) else None
+    b_h = [_ce(HR / f"baseline_step{st}/none") for st in steps]; m_h = [_ce(HR / f"merged_match{st}/none") for st in steps]
+    def bppl(st):
+        for run in ("olmoe3_275m_20b_1node", "olmoe3_275m_30b_1node"):
+            for s_ in (st, st - 1):
+                if (PPL / run / f"step{s_}.json").exists(): return _ppl(PPL / run / f"step{s_}.json")
+        return None
+    b_p = [bppl(st) for st in steps]; m_p = [_ppl(PPL / "merged" / f"match{st}.json") for st in steps]
+    ref_ppl = _ppl(ROOT / "claude_outputs/debug_validation/ppl_validation/olmoe3_275m_10b/step19074.json")
+    if not any(v is not None for v in b_h + m_h): return card("info", "Window 2 (20B &rarr; 30B)", "<p>Evaluations on the 300B-token held-out sample running.</p>")
+    labels = [f"{t:g}B" for t in toks]
+    charts = CHART_CSS + line_chart(toks, [{"name": "baseline (full model, continued)", "y": b_h}, {"name": "merged squares", "y": m_h},
+                                          {"name": "start model (10B)", "y": [start] * len(toks), "const": True, "dashed": True, "color": "#64748b"}],
+                                   title="Held-out CE (sample from 300B tokens into the stream)", xlabels=labels, x_label="tokens trained", shade=(39073 * 524288 / 1e9, "window 2: squares continued separately"))
+    if any(v is not None for v in b_p + m_p):
+        charts += line_chart(toks, [{"name": "baseline (full model, continued)", "y": b_p}, {"name": "merged squares", "y": m_p},
+                                    {"name": "start model (10B)", "y": [ref_ppl] * len(toks), "const": True, "dashed": True, "color": "#64748b"}],
+                             title="v3-small ppl sets, mean CE", xlabels=labels, x_label="tokens trained", shade=(39073 * 524288 / 1e9, "window 2"))
+    out = section("Window 2: the squares keep training separately, 20B &rarr; 30B tokens",
+        "Each square continues from its window-1 final checkpoint on its own documents of the next 10B tokens (stream steps 38,147&ndash;57,221; "
+        "documents assigned with the same rule and the same 10B start model), with checkpoints at the same five progress fractions; the baseline "
+        "continues to 30B. <b>Held-out CE</b> here is a new sample of 7,991 instances taken 300B tokens into the stream (steps 572,205&ndash;572,605), "
+        "on which every point of both windows was re-evaluated, so the whole curve is on one unseen set. x-axis: tokens trained.",
+        charts, "WINDOW2_TAKEAWAY")
+    pw = {st: json.load(open(PW / f"piecewise_match{st}.json")) for st in steps if (PW / f"piecewise_match{st}.json").exists() and json.load(open(PW / f"piecewise_match{st}.json")).get("piecewise")}
+    if pw:
+        pxs = [round(st * 524288 / 1e9, 1) for st in pw]; D = list(pw.values())
+        avg = line_chart(pxs, [{"name": "piecewise (own square, no merge)", "y": [d["piecewise"] for d in D]},
+                               {"name": "merged, free routing", "y": [d.get(f"merged_{d['name']}") for d in D]},
+                               {"name": "baseline", "y": [d.get("baseline") for d in D], "dashed": True, "color": "#059669"},
+                               {"name": "start model", "y": [D[0]["start_full"]] * len(D), "const": True, "dashed": True, "color": "#64748b"}],
+                         title="All held-out documents (300B sample)", xlabels=[f"{t:g}B" for t in pxs], x_label="tokens trained")
+        grp = ""
+        for g in range(4):
+            grp += line_chart(pxs, [{"name": "own square", "y": [d["sub_on_group"][str(g)][str(g)] for d in D]},
+                                    {"name": "merged, free routing", "y": [(d.get(f"merged_{d['name']}_by_group") or {}).get(str(g)) for d in D]},
+                                    {"name": "baseline", "y": [(d.get("baseline_by_group") or {}).get(str(g)) for d in D], "dashed": True, "color": "#059669"},
+                                    {"name": "start model", "y": [D[0]["start_full_by_group"][str(g)]] * len(D), "const": True, "dashed": True, "color": "#64748b"}],
+                              title=f"Group {g} documents ({D[0]['docs_per_group'][g]:,} held-out docs)", W=400, H=250, xlabels=[f"{t:g}B" for t in pxs], x_label="tokens trained")
+        out += section("Where the merge loses, both windows (300B sample)",
+            "Piecewise CE (each held-out document scored by its own square) vs the merged model on the same documents, over 10B &rarr; 30B tokens.",
+            CHART_CSS + avg + "<p><b>By document group</b>:</p>" + grp, "WINDOW2_PW_TAKEAWAY")
+    return out
+
+
 def build_q3():
     body = question_card("q3")
     G = json.load(open(SQ / "groups.json")) if (SQ / "groups.json").exists() else None
@@ -332,6 +384,7 @@ def build_q3():
                 "documents are not tied to a block.")
         inner += squares_results(HELD=ROOT / "sparse_experts/olmoe3_routing/runs_heldout20b_std", PPL=ROOT / "sparse_experts/olmoe3_squares_std/ppl_validation", SQO=OUT / "olmoe3_squares_std",
                                  start="std_step19074", start_ppl="olmoe3_275m_10b", base_runs=("olmoe3_275m_20b_1node",), label="", take_main=STD_TAKE, take_pw=STD_PW_TAKE)
+        inner += std_window2()
         body += variant("B", inner)
     # ---- C: EMO squares without the EMO loss ----
     if (ROOT / "sparse_experts/olmoe3_routing/runs_heldout20b_noemo").exists():
