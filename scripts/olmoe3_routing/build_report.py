@@ -297,7 +297,7 @@ def std_window2():
         "documents assigned with the same rule and the same 10B start model), with checkpoints at the same five progress fractions; the baseline "
         "continues to 30B. <b>Held-out CE</b> here is a new sample of 7,991 instances taken 300B tokens into the stream (steps 572,205&ndash;572,605), "
         "on which every point of both windows was re-evaluated, so the whole curve is on one unseen set. x-axis: tokens trained.",
-        charts, "WINDOW2_TAKEAWAY")
+        charts, "Window-2 evaluations in progress.")
     pw = {st: json.load(open(PW / f"piecewise_match{st}.json")) for st in steps if (PW / f"piecewise_match{st}.json").exists() and json.load(open(PW / f"piecewise_match{st}.json")).get("piecewise")}
     if pw:
         pxs = [round(st * 524288 / 1e9, 1) for st in pw]; D = list(pw.values())
@@ -315,7 +315,7 @@ def std_window2():
                               title=f"Group {g} documents ({D[0]['docs_per_group'][g]:,} held-out docs)", W=400, H=250, xlabels=[f"{t:g}B" for t in pxs], x_label="tokens trained")
         out += section("Where the merge loses, both windows (300B sample)",
             "Piecewise CE (each held-out document scored by its own square) vs the merged model on the same documents, over 10B &rarr; 30B tokens.",
-            CHART_CSS + avg + "<p><b>By document group</b>:</p>" + grp, "WINDOW2_PW_TAKEAWAY")
+            CHART_CSS + avg + "<p><b>By document group</b>:</p>" + grp, "Window-2 square passes in progress.")
     return out
 
 
