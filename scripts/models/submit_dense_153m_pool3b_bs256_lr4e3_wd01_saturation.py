@@ -69,7 +69,8 @@ def build_spec(item: dict[str, Any], revision: str, priority: str) -> dict[str, 
         "153M DCLM-3B BS256 DR+WT+EmbedWD LR4e-3 WD0.1 matched saturation probe. "
         "Bootstrap the exact Pool-1B E1 source from scratch, bridge the sealed disjoint 2B "
         "extension, then train the canonical Pool-3B trajectory on two synchronized 8-GPU "
-        "nodes. Save PD every 32 epochs through E384; evaluate isolated uncapped 10% WSD "
+        "nodes. Save one rolling recovery checkpoint about every epoch and permanent PD "
+        "every 32 epochs through E384; evaluate isolated uncapped 10% WSD "
         "POST at E64/E128/E192/E256/E320/E384; stop on first adjacent "
         "non-improvement. Protected minRuntime=8h, auto-resume, eight retries."
     )
@@ -100,12 +101,13 @@ def register(experiment: str, revision: str, *, replace_existing: bool) -> None:
                 "experiment": existing.get("experiment"),
                 "jobs": existing.get("jobs", []),
                 "revision": existing.get("revision"),
-                "status": "stopped_after_deterministic_bootstrap_configuration_failure",
+                "status": "canceled_to_enable_per_epoch_recovery_checkpointing",
                 "replacedAt": datetime.now(tz=UTC).isoformat(),
             }
         )
         records.remove(existing)
     record = {
+            **copy.deepcopy(existing or {}),
             "id": runner.EXPECTED_ID,
             "role": "integrated_checkpoint_producer_and_evaluator",
             "policy": runner.POLICY,
@@ -119,16 +121,17 @@ def register(experiment: str, revision: str, *, replace_existing: bool) -> None:
             "gpuCount": 16,
             "rankMicrobatchSequences": 16,
             "gradientAccumulationSteps": 1,
-            "resolvedCheckpointEpochs": [],
-            "resolvedPostEpochs": [],
-            "postDecayResults": {},
+            "resolvedCheckpointEpochs": list((existing or {}).get("resolvedCheckpointEpochs", [])),
+            "resolvedPostEpochs": list((existing or {}).get("resolvedPostEpochs", [])),
+            "postDecayResults": copy.deepcopy((existing or {}).get("postDecayResults", {})),
             "targetEpochs": list(runner.CHECKPOINT_EPOCHS),
             "evaluationEpochs": list(runner.EVALUATION_EPOCHS),
-            "currentEpoch": 1,
-            "currentPhase": "pool1b_e1_bootstrap",
+            "currentEpoch": 384,
+            "currentPhase": "repacked_shuffled_pool3b_constant_lr",
             "status": "submitted",
             "beakerStatus": "submitted",
             "experiment": experiment,
+            "jobs": [],
             "revision": revision,
             "bootstrapOutput": str(runner.BOOTSTRAP_OUTPUT),
             "output": str(runner.OUTPUT),
@@ -136,6 +139,8 @@ def register(experiment: str, revision: str, *, replace_existing: bool) -> None:
             "stopOnAdjacentPostNonImprovement": True,
             "submittedAt": datetime.now(tz=UTC).isoformat(),
         }
+    record.pop("job", None)
+    record.pop("wandbHealth", None)
     if history:
         record["experimentHistory"] = history
     records.append(record)

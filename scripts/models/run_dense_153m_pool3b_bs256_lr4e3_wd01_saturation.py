@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import subprocess
 import time
 from decimal import Decimal
@@ -35,10 +36,115 @@ STATE_DIR = OUTPUT / ".lr4e3_wd01_saturation_v1"
 TRAINING_SCRIPT = "src/scripts/train/olmo2-1B.py"
 CHECKPOINT_EPOCHS = tuple(range(32, 385, 32))
 EVALUATION_EPOCHS = (64, 128, 192, 256, 320, 384)
+RUNTIME_LOG_DIR = Path("/tmp/icsl-dense-153m-pool3b-lr4e3-wd01")
 
 
 def checkpoint_step(epoch: int, pool_tokens: int = producer.TARGET_POOL_TOKENS) -> int:
     return producer.stable_step(epoch, pool_tokens, 256)
+
+
+# Recovery checkpoints do not need to land on an exact epoch boundary: they are
+# only used to bound lost work after preemption. Exact 32-epoch PD checkpoints
+# remain permanent via ``fixed_steps`` below. The checkpointer keeps only the
+# newest ephemeral checkpoint and removes its predecessor after the new save is
+# complete, so this adds at most one recovery-only checkpoint to the trajectory.
+RECOVERY_SAVE_INTERVAL_STEPS = checkpoint_step(1)
+
+
+def recovery_checkpoint_steps_through(target_epoch: int) -> list[int]:
+    """Return recovery-only steps that may exist through an exact PD target."""
+    target_step = checkpoint_step(target_epoch)
+    permanent_steps = {checkpoint_step(1), *map(checkpoint_step, CHECKPOINT_EPOCHS)}
+    return [
+        step
+        for step in range(
+            RECOVERY_SAVE_INTERVAL_STEPS,
+            target_step + 1,
+            RECOVERY_SAVE_INTERVAL_STEPS,
+        )
+        if step not in permanent_steps
+    ]
+
+
+def resume_checkpoint_steps_before(target_epoch: int) -> list[int]:
+    """Return every authorized permanent or recovery step before a target."""
+    target_step = checkpoint_step(target_epoch)
+    steps = {
+        checkpoint_step(1),
+        *(
+            checkpoint_step(epoch)
+            for epoch in CHECKPOINT_EPOCHS
+            if checkpoint_step(epoch) < target_step
+        ),
+        *recovery_checkpoint_steps_through(target_epoch),
+    }
+    return sorted(step for step in steps if step < target_step)
+
+
+def latest_resume_checkpoint(source: Path, target_epoch: int) -> Path:
+    latest = source
+    latest_step = checkpoint_step(1)
+    for step in resume_checkpoint_steps_before(target_epoch):
+        path = OUTPUT / f"step{step}"
+        if step > latest_step and distributed.checkpoint_complete(path, 16):
+            latest = path
+            latest_step = step
+    return latest
+
+
+def cleanup_recovery_checkpoints(target_epoch: int) -> list[int]:
+    """Remove recovery-only checkpoints after the exact target is durable."""
+    target_path = OUTPUT / f"step{checkpoint_step(target_epoch)}"
+    if not distributed.checkpoint_complete(target_path, 16):
+        raise RuntimeError(f"refusing recovery cleanup before complete target {target_path}")
+    removed: list[int] = []
+    for step in recovery_checkpoint_steps_through(target_epoch):
+        path = OUTPUT / f"step{step}"
+        if not path.exists():
+            continue
+        if not distributed.checkpoint_complete(path, 16):
+            raise RuntimeError(f"refusing to delete incomplete recovery checkpoint {path}")
+        shutil.rmtree(path)
+        removed.append(step)
+    return removed
+
+
+def post_recovery_checkpoint_steps(epoch: int) -> list[int]:
+    """Return recovery-only WSD steps between the PD source and POST endpoint."""
+    source_step = checkpoint_step(epoch)
+    endpoint_step = producer.total_step(epoch, producer.TARGET_POOL_TOKENS, 256)
+    first_step = (
+        (source_step // RECOVERY_SAVE_INTERVAL_STEPS) + 1
+    ) * RECOVERY_SAVE_INTERVAL_STEPS
+    return list(range(first_step, endpoint_step, RECOVERY_SAVE_INTERVAL_STEPS))
+
+
+def latest_post_resume_checkpoint(post_output: Path, source: Path, epoch: int) -> Path:
+    latest = source
+    latest_step = checkpoint_step(epoch)
+    for step in post_recovery_checkpoint_steps(epoch):
+        path = post_output / f"step{step}"
+        if step > latest_step and distributed.checkpoint_complete(path, 16):
+            latest = path
+            latest_step = step
+    return latest
+
+
+def cleanup_post_recovery_checkpoints(post_output: Path, epoch: int) -> list[int]:
+    endpoint_step = producer.total_step(epoch, producer.TARGET_POOL_TOKENS, 256)
+    endpoint = post_output / f"step{endpoint_step}"
+    if not distributed.checkpoint_complete(endpoint, 16):
+        raise RuntimeError(f"refusing POST recovery cleanup before complete endpoint {endpoint}")
+    removed: list[int] = []
+    for step in post_recovery_checkpoint_steps(epoch):
+        path = post_output / f"step{step}"
+        if not path.exists():
+            continue
+        if not distributed.checkpoint_complete(path, 16):
+            raise RuntimeError(f"refusing to delete incomplete POST recovery checkpoint {path}")
+        shutil.rmtree(path)
+        removed.append(step)
+    return removed
 
 
 def is_leader() -> bool:
@@ -105,6 +211,11 @@ def torchrun(name: str, arguments: list[str], log_path: Path, stage: str) -> Non
     distributed.torchrun(name, arguments, log_path, stage)
 
 
+def runtime_log(name: str) -> Path:
+    """Keep verbose per-step logs off the checkpoint filesystem."""
+    return RUNTIME_LOG_DIR / name
+
+
 def common_arguments(
     config: dict[str, Any], item: dict[str, Any], manifest: str, *, heldout: bool = False
 ) -> list[str]:
@@ -152,8 +263,16 @@ def train_arguments(
     steps = [checkpoint_step(epoch) for epoch in pending_epochs]
     target = pending_epochs[-1]
     name = f"{EXPECTED_ID}-constant-pd-to-e{target}"
+    arguments = producer.common.upsert(
+        common_arguments(config, item, str(config["repeatedManifest"])),
+        "--trainer.callbacks.checkpointer.ephemeral_save_interval=",
+        (
+            "--trainer.callbacks.checkpointer.ephemeral_save_interval="
+            f"{RECOVERY_SAVE_INTERVAL_STEPS}"
+        ),
+    )
     return [
-        *common_arguments(config, item, str(config["repeatedManifest"])),
+        *arguments,
         "--dynamic-repacking",
         f"--save-folder={OUTPUT}",
         f"--trainer.max_duration={{value: {steps[-1]}, unit: steps}}",
@@ -177,7 +296,7 @@ def ensure_bootstrap(config: dict[str, Any], item: dict[str, Any]) -> Path:
     torchrun(
         f"{EXPECTED_ID}-bootstrap-pool1b-e1",
         bootstrap_arguments(config, item),
-        STATE_DIR / "bootstrap.log",
+        runtime_log("bootstrap.log"),
         "bootstrap",
     )
     if not distributed.checkpoint_complete(source, 16):
@@ -200,7 +319,7 @@ def ensure_bridge(config: dict[str, Any], item: dict[str, Any]) -> Path:
     torchrun(
         f"{EXPECTED_ID}-fresh-2b-bridge-to-pd-e1",
         producer.bridge_arguments(config, item),
-        STATE_DIR / "bridge.log",
+        runtime_log("bridge.log"),
         "bridge",
     )
     if not distributed.checkpoint_complete(bridge, 16):
@@ -218,19 +337,43 @@ def evaluate(config: dict[str, Any], item: dict[str, Any], epoch: int) -> dict[s
     post_output = STATE_DIR / "post_decay_runs" / f"e{epoch}"
     endpoint = post_output / f"step{producer.total_step(epoch, producer.TARGET_POOL_TOKENS, 256)}"
     name = f"{EXPECTED_ID}-post-e{epoch}"
-    log_path = STATE_DIR / "logs" / f"post_e{epoch}.log"
-    if distributed.checkpoint_complete(endpoint, 16):
+    log_path = runtime_log(f"post_e{epoch}.log")
+    endpoint_complete = distributed.checkpoint_complete(endpoint, 16)
+    if endpoint_complete:
+        resume_source = endpoint
         arguments = evaluator.evaluation_arguments(
             config, item, endpoint, post_output / "recovered_eval", f"{name}-recovered-eval"
         )
     else:
-        arguments = evaluator.postdecay_arguments(config, item, epoch, source, post_output, name)
+        resume_source = latest_post_resume_checkpoint(post_output, source, epoch)
+        arguments = evaluator.postdecay_arguments(
+            config, item, epoch, resume_source, post_output, name
+        )
+        arguments = producer.common.upsert(
+            arguments,
+            "--trainer.callbacks.checkpointer.ephemeral_save_interval=",
+            (
+                "--trainer.callbacks.checkpointer.ephemeral_save_interval="
+                f"{RECOVERY_SAVE_INTERVAL_STEPS}"
+            ),
+        )
     if is_leader():
-        print(f"DENSE153M_POOL3B_LR4_POST_START epoch={epoch} source={source}", flush=True)
+        print(
+            f"DENSE153M_POOL3B_LR4_POST_START epoch={epoch} source={source} "
+            f"resume={resume_source}",
+            flush=True,
+        )
     torchrun(name, arguments, log_path, f"post-e{epoch}")
     if is_leader():
         if not distributed.checkpoint_complete(endpoint, 16):
             raise RuntimeError(f"E{epoch} POST exited without complete endpoint {endpoint}")
+        removed = cleanup_post_recovery_checkpoints(post_output, epoch)
+        if removed:
+            print(
+                f"DENSE153M_POOL3B_LR4_POST_RECOVERY_CLEANUP epoch={epoch} "
+                f"removedSteps={removed}",
+                flush=True,
+            )
         result = dense1b.parse_validation(log_path, epoch, "post_decay", endpoint)
         result.update(
             {
@@ -279,13 +422,7 @@ def run(config: dict[str, Any], item: dict[str, Any]) -> None:
             and not distributed.checkpoint_complete(OUTPUT / f"step{checkpoint_step(epoch)}", 16)
         ]
         if pending:
-            completed = [
-                epoch
-                for epoch in CHECKPOINT_EPOCHS
-                if epoch < pending[0]
-                and distributed.checkpoint_complete(OUTPUT / f"step{checkpoint_step(epoch)}", 16)
-            ]
-            active_source = OUTPUT / f"step{checkpoint_step(max(completed))}" if completed else source
+            active_source = latest_resume_checkpoint(source, target)
             state.update({"status": "producer_running", "currentEpoch": target})
             atomic_json(STATE_DIR / "producer.json", state)
             if is_leader():
@@ -296,13 +433,20 @@ def run(config: dict[str, Any], item: dict[str, Any]) -> None:
             torchrun(
                 f"{EXPECTED_ID}-constant-pd-to-e{target}",
                 train_arguments(config, item, active_source, pending),
-                STATE_DIR / "logs" / f"pd_to_e{target}.log",
+                runtime_log(f"pd_to_e{target}.log"),
                 f"pd-e{target}",
             )
         target_path = OUTPUT / f"step{checkpoint_step(target)}"
         if not distributed.checkpoint_complete(target_path, 16):
             raise RuntimeError(f"missing complete E{target} PD checkpoint")
         if is_leader():
+            removed = cleanup_recovery_checkpoints(target)
+            if removed:
+                print(
+                    f"DENSE153M_POOL3B_LR4_RECOVERY_CLEANUP target={target} "
+                    f"removedSteps={removed}",
+                    flush=True,
+                )
             print(f"DENSE153M_POOL3B_LR4_PD_RETAINED epoch={target} checkpoint={target_path}", flush=True)
         state.update({"status": "post_running", "currentEpoch": target})
         atomic_json(STATE_DIR / "producer.json", state)
