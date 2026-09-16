@@ -24,6 +24,7 @@ def ce_of(d):
 
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument("--name", required=True); ap.add_argument("--groups", type=Path, default=Path(f"sparse_experts/{SQN}/groups.json"))
+    ap.add_argument("--out-dir", type=Path, default=None, help="where to write piecewise_<name>.json (default claude_outputs/olmoe3_routing/<squares dir>)")
     a = ap.parse_args(); G = json.load(open(a.groups)); k = G["k"]; PL = [int(l) for l in G["partitioned_layers"]]
     u = np.load(H / START / "none/doc_usage.npy", mmap_mode="r")
     mass = np.zeros((u.shape[0], k))
@@ -47,7 +48,7 @@ def main():
         p = H / d / "doc_stats.npz"
         if p.exists():
             cs, cl = ce_of(H / d); out[tag] = float(cs.sum() / cl.sum()); out[tag + "_by_group"] = {str(h): float(cs[grp == h].sum() / cl[grp == h].sum()) for h in range(k)}
-    od = Path("claude_outputs/olmoe3_routing") / ("squares" if SQN == "olmoe3_squares" else SQN); od.mkdir(parents=True, exist_ok=True)
+    od = a.out_dir or Path("claude_outputs/olmoe3_routing") / ("squares" if SQN == "olmoe3_squares" else SQN); od.mkdir(parents=True, exist_ok=True)
     json.dump(out, open(od / f"piecewise_{a.name}.json", "w"), indent=1)
     print(json.dumps({key: out[key] for key in out if not key.endswith("_by_group")}, indent=1))
 
