@@ -522,6 +522,12 @@ LOADER_SEED = 928_543_231  # dense-mainline PT loader seed
 
 TOKENS = int(float(os.environ["OLMOE3_TOKENS"])) if "OLMOE3_TOKENS" in os.environ else None
 LR = float(os.environ.get("OLMOE3_LR", "8e-4"))
+# Router-only training (olmoe3_squares router-recovery test): every parameter stays in the optimizer, but the base LR is 0
+# (and so is the decoupled weight decay), and only the routed-expert routers get OLMOE3_ROUTER_ONLY_LR. Keeps the
+# checkpoint layout standard (a real freeze drops frozen weights from OLMoDDP checkpoints).
+ROUTER_ONLY_LR = float(os.environ["OLMOE3_ROUTER_ONLY_LR"]) if os.environ.get("OLMOE3_ROUTER_ONLY_LR") else None
+if ROUTER_ONLY_LR is not None:
+    LR = 0.0
 NUM_NODES = int(os.environ.get("OLMOE3_NUM_NODES", "4"))
 NUM_GPUS = int(os.environ.get("OLMOE3_NUM_GPUS", "8"))
 RANK_MICROBATCH_SEQUENCES = int(os.environ.get("OLMOE3_RANK_MB", "2"))
@@ -559,7 +565,7 @@ FORWARDED_ENV = (
     "OLMOE3_EMO_POOL_DIST", "OLMOE3_EXPERIMENT", "OLMOE3_PPL_EVAL_INTERVAL",
     "OLMOE3_EMO_LEARNED_D", "OLMOE3_LD_TEMP", "OLMOE3_LD_LAMBDA", "OLMOE3_LD_WARMUP", "OLMOE3_LD_FLOOR_WARMUP",
     "OLMOE3_LD_LAMBDA_WARMUP", "OLMOE3_LD_INIT", "OLMOE3_LD_EVAL", "OLMOE3_LD_DETACH", "OLMOE3_LD_LR_MULT",
-    "OLMOE3_LD_SIGNAL", "OLMOE3_LD_LAMBDA_COV",
+    "OLMOE3_LD_SIGNAL", "OLMOE3_LD_LAMBDA_COV", "OLMOE3_ROUTER_ONLY_LR",
     "OLMOE3_GROUPS", "OLMOE3_GROUP", "OLMOE3_DATA_PATHS", "OLMOE3_INIT_FROM", "OLMOE3_FIXED_STEPS", "OLMOE3_WARMUP",
 )
 
@@ -732,7 +738,7 @@ def build_train_module_config(common: CommonComponents) -> OLMoDDPTrainModuleCon
         + " "
         f"nodes={NUM_NODES} gpus/node={NUM_GPUS} rank_mb={RANK_MICROBATCH_SEQUENCES} ep={EP_SIZE}/{EP_PATH} attn={ATTN_BACKEND} "
         f"cute_kda={KDA_USE_CUTE_KERNEL} ppl_eval_interval={PPL_EVAL_INTERVAL} emo={EMO_ENABLED} "
-        f"learned_d={LEARNED_D}" + (f" (T={LD_TEMP:g} lambda={LD_LAMBDA:g} warmup={LD_WARMUP} floor_warmup={LD_FLOOR_WARMUP} lambda_warmup={LD_LAMBDA_WARMUP} init={LD_INIT} eval={LD_EVAL} detach={LD_DETACH} lr_mult={LD_LR_MULT:g} signal={LD_SIGNAL} lambda_cov={LD_LAMBDA_COV:g})" if LEARNED_D else "")
+        f"router_only_lr={ROUTER_ONLY_LR} learned_d={LEARNED_D}" + (f" (T={LD_TEMP:g} lambda={LD_LAMBDA:g} warmup={LD_WARMUP} floor_warmup={LD_FLOOR_WARMUP} lambda_warmup={LD_LAMBDA_WARMUP} init={LD_INIT} eval={LD_EVAL} detach={LD_DETACH} lr_mult={LD_LR_MULT:g} signal={LD_SIGNAL} lambda_cov={LD_LAMBDA_COV:g})" if LEARNED_D else "")
         + (f" pool=[{EMO_MIN_POOL},{EMO_MAX_POOL}] pool_dist={EMO_POOL_DIST} eval_pool={EMO_EVAL_POOL}" if EMO_ENABLED else "")
     )
     return OLMoDDPTrainModuleConfig(
@@ -746,6 +752,7 @@ def build_train_module_config(common: CommonComponents) -> OLMoDDPTrainModuleCon
                 # Dense mainline: only token embeddings are exempt from weight decay.
                 OptimGroupOverride(params=["embeddings.weight"], opts={"weight_decay": 0.0}),
                 # learned-d pool-size head bias: no decay (decay would pull every pool toward mid-range)
+                *([OptimGroupOverride(params=["*routed_experts_router.weight"], opts={"lr": ROUTER_ONLY_LR})] if ROUTER_ONLY_LR is not None else []),
                 *([OptimGroupOverride(params=["*routed_experts_router.d_bias"], opts={"weight_decay": 0.0, "lr": LR * LD_LR_MULT}),
                    OptimGroupOverride(params=["*routed_experts_router.d_weight"], opts={"lr": LR * LD_LR_MULT})] if LEARNED_D else []),
                 # Routed experts get their own group for OLMoDDP's distributed expert handling
@@ -849,6 +856,7 @@ def build_trainer_config(common: CommonComponents, cluster: str) -> TrainerConfi
                       "emo" if EMO_ENABLED else "noemo",
                       *([f"pool_{EMO_POOL_DIST.replace(':', '').replace(',', 'or')}"] if EMO_ENABLED and EMO_POOL_ALPHA is not None else []),
                       *(["learned_d", f"ld_T{LD_TEMP:g}_l{LD_LAMBDA:g}_w{LD_WARMUP}_m{LD_LR_MULT:g}", f"ld_signal_{LD_SIGNAL}"] if LEARNED_D else []),
+                      *(["router_only"] if ROUTER_ONLY_LR is not None else []),
                       cluster.rsplit("/", 1)[-1], *EXTRA_WANDB_TAGS],
             ),
         )
