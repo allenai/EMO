@@ -297,7 +297,12 @@ def std_window2():
         "documents assigned with the same rule and the same 10B start model), with checkpoints at the same five progress fractions; the baseline "
         "continues to 30B. <b>Held-out CE</b> here is a new sample of 7,991 instances taken 300B tokens into the stream (steps 572,205&ndash;572,605), "
         "on which every point of both windows was re-evaluated, so the whole curve is on one unseen set. x-axis: tokens trained.",
-        charts, "Window-2 evaluations in progress.")
+        charts,
+        "The suspicion that longer separate training would make the merge worse is not what the data show: the merged model is flat at "
+        "2.46&ndash;2.47 from 15.7B to 30B while the baseline keeps improving (2.399 &rarr; 2.352), so the gap widens only through the "
+        "baseline's progress, from 0.065 at 15.7B to 0.11 at 30B. On the v3-small sets the merged model still improves slowly (2.970 &rarr; "
+        "2.948) and the gap grows from 0.045 to 0.073. All of this is on a sample 300B tokens into the stream, unseen by every model; the "
+        "window-1 numbers here differ slightly from the block's first charts, which used the older 20B-window sample.")
     pw = {st: json.load(open(PW / f"piecewise_match{st}.json")) for st in steps if (PW / f"piecewise_match{st}.json").exists() and json.load(open(PW / f"piecewise_match{st}.json")).get("piecewise")}
     if pw:
         pxs = [round(st * 524288 / 1e9, 1) for st in pw]; D = list(pw.values())
@@ -315,7 +320,10 @@ def std_window2():
                               title=f"Group {g} documents ({D[0]['docs_per_group'][g]:,} held-out docs)", W=400, H=250, xlabels=[f"{t:g}B" for t in pxs], x_label="tokens trained")
         out += section("Where the merge loses, both windows (300B sample)",
             "Piecewise CE (each held-out document scored by its own square) vs the merged model on the same documents, over 10B &rarr; 30B tokens.",
-            CHART_CSS + avg + "<p><b>By document group</b>:</p>" + grp, "Window-2 square passes in progress.")
+            CHART_CSS + avg + "<p><b>By document group</b>:</p>" + grp,
+            "The standard squares on their own keep improving through window 2 (2.451 at 20B &rarr; 2.413 at 30B) but never reach the baseline "
+            "(2.352 at 30B); the merged model sits above them at 2.46. So for the standard model both parts cost: each square is weaker than the "
+            "full model on its own documents, and merging adds another 0.05 on top, both roughly constant over the second window.")
     return out
 
 
