@@ -509,20 +509,32 @@ def squares_results(HELD=HELD, PPL=PPL, SQO=SQO, start="emo_step19074", start_pp
     xs_all = xs + extra_x; labels = [f"{v}%" for v in xs] + extra_lab
     shade = (125, "finetuned on 0.5B / 1B more tokens" if has_ft2 else "finetuned 0.5B") if has_ft else None
     def ext(y, v1, v2): return y + ([v1] if has_ft else []) + ([v2] if has_ft2 else [])
+    # router-only finetune of the 100% merge (block A): a third line that starts at the merged 100% point
+    rft = {tag: _ce(HELD / f"merged_{tag}/none") for tag in ("rft", "rft2")}
+    rft_ppl = {tag: _ppl(PPL / f"olmoe3_275m_emo_merged_{tag}" / f"step{st}.json") for tag, st in (("rft", 39502), ("rft2", 40456))}
+    has_rft = any(v is not None for v in rft.values()) or any(v is not None for v in rft_ppl.values())
+    def rline(m, a, b):
+        if not has_rft: return []
+        y = [None] * (len(xs) - 1) + [m[-1]] + ([a] if has_ft else []) + ([b] if has_ft2 else [])
+        return [{"name": "merged squares, router-only finetune", "y": y, "color": "#d97706"}]
     charts = ""
     if have:
         charts = CHART_CSS + line_chart(xs_all, [{"name": "baseline (full model, continued)", "y": ext(b_h, ft["baseline_ft"], ft2["baseline_ft"])}, {"name": "merged squares", "y": ext(m_h, ft["merged_ft"], ft2["merged_ft"])},
+                                                *rline(m_h, rft["rft"], rft["rft2"]),
                                                 {"name": "start model (step 19,074)", "y": [ref_none] * len(xs_all), "const": True, "dashed": True, "color": "#64748b"}],
                                        title="Held-out CE (20B window, 65M tokens)", xlabels=labels, shade=shade)
         if any(v is not None for v in b_p + m_p):
             charts += line_chart(xs_all, [{"name": "baseline (full model, continued)", "y": ext(b_p, ppl_ft.get("baseline_ft"), ppl_ft.get("baseline_ft2"))}, {"name": "merged squares", "y": ext(m_p, ppl_ft.get("merged_ft"), ppl_ft.get("merged_ft2"))},
+                                          *rline(m_p, rft_ppl["rft"], rft_ppl["rft2"]),
                                           {"name": "start model (step 19,074)", "y": [ref_ppl] * len(xs_all), "const": True, "dashed": True, "color": "#64748b"}],
                                  title="v3-small ppl sets, mean CE", xlabels=labels, shade=shade)
     ft_html = ""
     if has_ft:
         ft_html = ("<p><b>Finetuning</b> (shaded): the 100% merged model (Adam moments merged like the weights) and the baseline each trained on the same "
                    "0.5B more tokens (steps 38,548&ndash;39,502) at the same constant LR" + (", then on a further 0.5B (steps 39,502&ndash;40,456; 1B in total)" if has_ft2 else "")
-                   + ". The held-out sample is steps 38,148&ndash;38,547 of the stream, so no finetuning token is in it.</p>")
+                   + ". The held-out sample is steps 38,148&ndash;38,547 of the stream, so no finetuning token is in it."
+                   + (" <b>Router-only finetune</b> (orange): the same tokens and LR from the 100% merge, but only the routed-expert routers "
+                      "train (every other parameter at LR 0; verified after each stage by comparing the checkpoints tensor by tensor).</p>" if has_rft else "</p>"))
     intro = ("<b>Held-out CE</b>: mean token cross-entropy of 7,991 unseen instances (65.5M tokens) from the 20B&ndash;30B window of the training "
              "stream, which neither the baseline nor the sub-models see. <b>v3-small ppl sets</b>: OLMo-core's 11 validation sets, mean CE over sets. "
              "Baseline = the full model continued from step 19,074 on the same 10B tokens; merged = the four sub-models at the same fraction of "
