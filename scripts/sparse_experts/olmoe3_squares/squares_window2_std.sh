@@ -44,7 +44,7 @@ for g in 0 1 2 3; do
   tokens=$(python -c "import json; print(json.load(open('$SQ/pack2/stats.json'))['tokens_per_group'][$g])")
   W2_SQ[$g]=$(python -c "import math; s=math.ceil($tokens/524288); print(' '.join(str(max(1, round(s*f/19074))) for f in (926, 5926, 10926, 15926)) + f' {s}')")
   if [ ! -f $LOG/square${g}_w2_launched ]; then u=""
-    for attempt in 1 2 3 4 5 6; do SQUARE_GROUP=$g SQUARES_NAME=$SQN OLMOE3_TOKENS=$tokens OLMOE3_DATA_PATHS="$W/$SQN/pack2/group$g/*.npy" OLMOE3_INIT_FROM="$W/$SQN/init2/group$g" OLMOE3_RUNNAME=olmoe3_275m_square${g}_w2 OLMOE3_WANDB_TAGS=$SQN,square,w2 OLMOE3_FOLLOW=0 bash scripts/sparse_experts/model_scripts/olmoe3_275m_std_square.sh launch > $LOG/launch_square${g}_w2.log 2>&1
+    for attempt in 1 2 3 4 5 6; do SQUARE_GROUP=$g SQUARES_NAME=$SQN OLMOE3_TOKENS=$tokens OLMOE3_DATA_PATHS="$W/$SQN/pack2/group$g/*.npy" OLMOE3_INIT_FROM="$W/$SQN/init2/group$g/model_and_optim" OLMOE3_RUNNAME=olmoe3_275m_square${g}_w2 OLMOE3_WANDB_TAGS=$SQN,square,w2 OLMOE3_FOLLOW=0 bash scripts/sparse_experts/model_scripts/olmoe3_275m_std_square.sh launch > $LOG/launch_square${g}_w2.log 2>&1
       u=$(sed 's/\x1b\[[0-9;]*m//g' $LOG/launch_square${g}_w2.log | grep -aoE 'beaker.org/ex/[A-Z0-9]+' | head -1); [ -n "$u" ] && break; sleep 45; done
     say "square${g}_w2: ${u:-LAUNCH FAILED}"; [ -n "$u" ] && echo "$u" > $LOG/square${g}_w2_launched; fi
 done
