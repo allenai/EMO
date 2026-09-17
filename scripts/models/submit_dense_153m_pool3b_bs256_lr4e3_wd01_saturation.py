@@ -18,7 +18,7 @@ import submit_dense_small_pool3b_bs256_e512_continuation as base
 WORKSPACE = "ai2/flex2"
 REPORT = Path("reports/0802/data/wsd_checkpoint_producer_grid.json")
 REPORT_JS = REPORT.with_suffix(".js")
-NAME = "dense-153m-dclm3b-bs256-lr4e-3-wd0.1-saturation-protected-two-node-v4"
+NAME = "dense-153m-dclm3b-bs256-lr4e-3-wd0.1-saturation-protected-two-node-v5"
 MIN_RUNTIME = "8h"
 
 

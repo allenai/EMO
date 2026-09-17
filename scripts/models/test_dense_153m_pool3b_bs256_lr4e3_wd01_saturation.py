@@ -171,26 +171,46 @@ class RecoveryCheckpointPolicyTest(unittest.TestCase):
         epoch = 320
         source = runner.OUTPUT / f"step{runner.checkpoint_step(epoch)}"
         post_output = runner.STATE_DIR / "post_decay_runs" / f"e{epoch}"
-        arguments = runner.evaluator.postdecay_arguments(
+        arguments = runner.postdecay_resume_arguments(
             self.config,
             self.item,
             epoch,
             source,
+            source,
             post_output,
             "test-post",
-        )
-        arguments = runner.producer.common.upsert(
-            arguments,
-            "--trainer.callbacks.checkpointer.ephemeral_save_interval=",
-            (
-                "--trainer.callbacks.checkpointer.ephemeral_save_interval="
-                f"{runner.RECOVERY_SAVE_INTERVAL_STEPS}"
-            ),
         )
         self.assertIn(
             "--trainer.callbacks.checkpointer.ephemeral_save_interval="
             f"{runner.RECOVERY_SAVE_INTERVAL_STEPS}",
             arguments,
+        )
+
+    def test_post_decay_recovery_accepts_decayed_optimizer_lr(self) -> None:
+        epoch = 384
+        source = runner.OUTPUT / f"step{runner.checkpoint_step(epoch)}"
+        recovery = runner.STATE_DIR / "post_decay_runs" / f"e{epoch}" / "step1017125"
+        arguments = runner.postdecay_resume_arguments(
+            self.config,
+            self.item,
+            epoch,
+            source,
+            recovery,
+            runner.STATE_DIR / "post_decay_runs" / f"e{epoch}",
+            "test-post-recovery",
+        )
+        self.assertIn(
+            "--train_module.validate_optimizer_hyperparameters_on_load=false",
+            arguments,
+        )
+        self.assertEqual(
+            1,
+            sum(
+                argument.startswith(
+                    "--train_module.validate_optimizer_hyperparameters_on_load="
+                )
+                for argument in arguments
+            ),
         )
 
 

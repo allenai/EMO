@@ -337,6 +337,38 @@ def ensure_bridge(config: dict[str, Any], item: dict[str, Any]) -> Path:
     return bridge
 
 
+def postdecay_resume_arguments(
+    config: dict[str, Any],
+    item: dict[str, Any],
+    epoch: int,
+    source: Path,
+    resume_source: Path,
+    post_output: Path,
+    name: str,
+) -> list[str]:
+    arguments = evaluator.postdecay_arguments(
+        config, item, epoch, resume_source, post_output, name
+    )
+    arguments = producer.common.upsert(
+        arguments,
+        "--trainer.callbacks.checkpointer.ephemeral_save_interval=",
+        (
+            "--trainer.callbacks.checkpointer.ephemeral_save_interval="
+            f"{RECOVERY_SAVE_INTERVAL_STEPS}"
+        ),
+    )
+    if resume_source != source:
+        # A WSD recovery checkpoint contains the optimizer's decayed current LR,
+        # which intentionally differs from the trajectory's original command LR.
+        # Load that optimizer/scheduler state exactly instead of rejecting it.
+        arguments = producer.common.upsert(
+            arguments,
+            "--train_module.validate_optimizer_hyperparameters_on_load=",
+            "--train_module.validate_optimizer_hyperparameters_on_load=false",
+        )
+    return arguments
+
+
 def evaluate(config: dict[str, Any], item: dict[str, Any], epoch: int) -> dict[str, Any]:
     result_path = STATE_DIR / "results" / f"e{epoch}.json"
     if result_path.is_file():
@@ -356,16 +388,14 @@ def evaluate(config: dict[str, Any], item: dict[str, Any], epoch: int) -> dict[s
         )
     else:
         resume_source = latest_post_resume_checkpoint(post_output, source, epoch)
-        arguments = evaluator.postdecay_arguments(
-            config, item, epoch, resume_source, post_output, name
-        )
-        arguments = producer.common.upsert(
-            arguments,
-            "--trainer.callbacks.checkpointer.ephemeral_save_interval=",
-            (
-                "--trainer.callbacks.checkpointer.ephemeral_save_interval="
-                f"{RECOVERY_SAVE_INTERVAL_STEPS}"
-            ),
+        arguments = postdecay_resume_arguments(
+            config,
+            item,
+            epoch,
+            source,
+            resume_source,
+            post_output,
+            name,
         )
     if is_leader():
         print(
