@@ -305,9 +305,19 @@ def ensure_bootstrap(config: dict[str, Any], item: dict[str, Any]) -> Path:
 
 
 def ensure_bridge(config: dict[str, Any], item: dict[str, Any]) -> Path:
+    # A retry may enter here after the canonical Pool-3B trajectory already
+    # contains durable checkpoints.  Prefer the newest verified checkpoint
+    # before applying the empty-output guard, which is only for a fresh bridge.
+    authorized_steps = {
+        checkpoint_step(1),
+        *map(checkpoint_step, CHECKPOINT_EPOCHS),
+        *recovery_checkpoint_steps_through(CHECKPOINT_EPOCHS[-1]),
+    }
+    for step in sorted(authorized_steps, reverse=True):
+        existing = OUTPUT / f"step{step}"
+        if distributed.checkpoint_complete(existing, 16):
+            return existing
     bridge = OUTPUT / f"step{checkpoint_step(1)}"
-    if distributed.checkpoint_complete(bridge, 16):
-        return bridge
     source = ensure_bootstrap(config, item)
     producer.validate_source_checkpoint(item)
     if OUTPUT.exists():

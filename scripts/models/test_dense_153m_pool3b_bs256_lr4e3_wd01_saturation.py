@@ -120,6 +120,31 @@ class RecoveryCheckpointPolicyTest(unittest.TestCase):
                 )
             self.assertEqual(resume, output / f"step{recovery_step}")
 
+    def test_existing_pool3b_checkpoint_bypasses_fresh_bridge_guard(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output = Path(temp_dir)
+            retained = output / f"step{runner.checkpoint_step(384)}"
+            retained.mkdir()
+
+            def complete(path: Path, _: int) -> bool:
+                return path == retained
+
+            with (
+                mock.patch.object(runner, "OUTPUT", output),
+                mock.patch.object(
+                    runner.distributed,
+                    "checkpoint_complete",
+                    side_effect=complete,
+                ),
+                mock.patch.object(
+                    runner,
+                    "ensure_bootstrap",
+                    side_effect=AssertionError("fresh bridge path must not run"),
+                ),
+            ):
+                source = runner.ensure_bridge(self.config, self.item)
+            self.assertEqual(source, retained)
+
     def test_post_decay_uses_latest_complete_recovery_checkpoint(self) -> None:
         epoch = 320
         with tempfile.TemporaryDirectory() as temp_dir:

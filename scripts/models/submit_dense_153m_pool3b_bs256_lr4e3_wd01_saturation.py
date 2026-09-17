@@ -18,7 +18,7 @@ import submit_dense_small_pool3b_bs256_e512_continuation as base
 WORKSPACE = "ai2/flex2"
 REPORT = Path("reports/0802/data/wsd_checkpoint_producer_grid.json")
 REPORT_JS = REPORT.with_suffix(".js")
-NAME = "dense-153m-dclm3b-bs256-lr4e-3-wd0.1-saturation-protected-two-node-v3"
+NAME = "dense-153m-dclm3b-bs256-lr4e-3-wd0.1-saturation-protected-two-node-v4"
 MIN_RUNTIME = "8h"
 
 
@@ -101,7 +101,11 @@ def register(experiment: str, revision: str, *, replace_existing: bool) -> None:
                 "experiment": existing.get("experiment"),
                 "jobs": existing.get("jobs", []),
                 "revision": existing.get("revision"),
-                "status": "canceled_to_enable_per_epoch_recovery_checkpointing",
+                "status": (
+                    "failed_resume_guard_replaced"
+                    if existing.get("status") == "failed"
+                    else "canceled_to_enable_per_epoch_recovery_checkpointing"
+                ),
                 "replacedAt": datetime.now(tz=UTC).isoformat(),
             }
         )
