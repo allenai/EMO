@@ -7,6 +7,7 @@ set -u
 cd "$(git rev-parse --show-toplevel)"
 i=$1; BASE=(20000 25000 30000 35000 38148); NAME=match${BASE[$i]}
 SQN="${SQUARES_NAME:-olmoe3_squares}"; RP="${SQUARE_RUN_PREFIX:-olmoe3_275m_emo_square}"; FULL="${FULL_RUN:-olmoe3_275m_emo_10b}"; HR="${HELDOUT_DIR:-runs_heldout20b}"
+SAMPLE="${SAMPLE:-sample_8k_20b.npz}"   # held-out instances (olmoe3_routing/<file>); sample_8k_300b.npz for the 300B-token sample
 # fixed checkpoint steps per square (from their launch logs); override with STEPS_G0..STEPS_G<K-1>="a b c d e"; K squares (default 4)
 K="${K:-4}"
 S0=(${STEPS_G0:-212 1354 2496 3638 4356}); S1=(${STEPS_G1:-370 2367 4364 6361 7617}); S2=(${STEPS_G2:-140 893 1647 2401 2874}); S3=(${STEPS_G3:-205 1314 2422 3530 4227})
@@ -29,6 +30,6 @@ launch() { local name=$1; shift; local log=/tmp/claude-0/-root-EMO/c7db74f2-bbe3
     u=$(sed 's/\x1b\[[0-9;]*m//g' "$log" | grep -aoE 'beaker.org/ex/[A-Z0-9]+' | head -1); [ -n "$u" ] && break; sleep 30   # gantry's git check fails with a broken pipe now and then
   done
   echo "$name: ${u:-LAUNCH FAILED after 4 attempts}"; }
-launch "$SQN-eval-$NAME-none" python scripts/sparse_experts/olmoe3_routing/extract_routing.py --checkpoint "$M" --instances "$W/olmoe3_routing/sample_8k_20b.npz" --out-dir "$R/none/rank0" --restrict none --batch-size 8 --log-every 100
-[ "${SKIP_ORACLE:-0}" = 1 ] || launch "$SQN-eval-$NAME-oracle" python scripts/sparse_experts/olmoe3_routing/extract_routing.py --checkpoint "$M" --instances "$W/olmoe3_routing/sample_8k_20b.npz" --out-dir "$R/oracle/rank0" --group-restrict "$W/$SQN/groups.json" --batch-size 8 --log-every 100
+launch "$SQN-eval-$NAME-none" python scripts/sparse_experts/olmoe3_routing/extract_routing.py --checkpoint "$M" --instances "$W/olmoe3_routing/$SAMPLE" --out-dir "$R/none/rank0" --restrict none --batch-size 8 --log-every 100
+[ "${SKIP_ORACLE:-0}" = 1 ] || launch "$SQN-eval-$NAME-oracle" python scripts/sparse_experts/olmoe3_routing/extract_routing.py --checkpoint "$M" --instances "$W/olmoe3_routing/$SAMPLE" --out-dir "$R/oracle/rank0" --group-restrict "$W/$SQN/groups.json" --batch-size 8 --log-every 100
 launch "$SQN-eval-$NAME-ppl" python scripts/debug_validation/eval_ppl_validation.py --checkpoints "$M" --out-dir "$W/$SQN/ppl_validation" --batch-size 8

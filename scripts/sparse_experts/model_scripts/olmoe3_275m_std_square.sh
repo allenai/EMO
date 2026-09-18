@@ -9,7 +9,7 @@
 #   SQUARE_GROUP=g bash scripts/sparse_experts/model_scripts/olmoe3_275m_std_square.sh [dry_run]
 ##############################################################
 export OLMOE3_EMO=0
-export SQUARES_NAME=olmoe3_squares_std
+export SQUARES_NAME="${SQUARES_NAME:-olmoe3_squares_std}"   # olmoe3_squares_stdrand = the random-partition control
 export OLMOE3_RUNNAME="${OLMOE3_RUNNAME:-olmoe3_275m_square${SQUARE_GROUP:?set SQUARE_GROUP}}"
-export OLMOE3_WANDB_TAGS=olmoe3_squares_std,square
+export OLMOE3_WANDB_TAGS="${OLMOE3_WANDB_TAGS:-$SQUARES_NAME,square}"
 source "$(dirname "${BASH_SOURCE[0]}")/olmoe3_275m_emo_square.sh" "$@"
