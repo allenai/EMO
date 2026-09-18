@@ -31,7 +31,7 @@ tok = json.load(open(f"sparse_experts/{sqn}/{pack}/stats.json"))["tokens_per_gro
 for g in range(k):
     t = tok[g]; s = t // 524288; run = f"sparse_experts/{rp}{g}"
     steps = sorted(int(m.group(1)) for d in os.listdir(run) if (m := re.fullmatch(r"step(\d+)(_epoch2)?", d)))
-    old = s + 1; assert max(steps) in (s, s + 1), (run, max(steps), s)   # tainted final = ceil (renamed/purged once repaired)
+    old = s + 1; assert max(steps) <= s + 1, (run, max(steps), s)   # tainted final = ceil (renamed/purged; the repaired final may not exist yet)
     resume = max(x for x in steps if x < s)   # latest full checkpoint before the final (ephemeral or fixed)
     print(f"{g}:{t}:{s}:{old}:{resume}")
 PY
