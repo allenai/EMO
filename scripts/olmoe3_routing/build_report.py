@@ -272,7 +272,14 @@ WINDOW2_FT_TAKE = ("Joint finetuning (shaded) behaves the same at both window en
                    "2.380 &rarr; 2.378 &rarr; 2.376. Half a billion tokens recovers about 40% of the merge loss at either point (the gap drops from 0.109 to "
                    "0.070 at 30B and from 0.082 to 0.054 at 20B), the second half billion adds 0.005&ndash;0.007, and the merge that had the longer "
                    "separate training keeps the larger residual gap.")
-STDRAND_TAKE = "Square trainings running."
+STDRAND_TAKE = ("With no structure in the split the merge does <i>better</i> than with the routing split: 2.483 &rarr; 2.430 vs 2.487 &rarr; 2.462 on the "
+                "held-out sample (v3-small 2.952 vs 2.958 at 20B), and it keeps improving with more separate training instead of going flat, ending 0.05 above "
+                "the baseline (2.380) instead of 0.08. The random squares themselves are much weaker: a quarter of the experts trained on a random quarter of the "
+                "data sits at 2.63 &rarr; 2.50, worse than the start model (2.446) at every point and worse than the routing squares on their own documents "
+                "(2.618 &rarr; 2.448), and the four are indistinguishable (within 0.002). So the routing split buys specialised squares and pays for it at the "
+                "merge, while the random split gives four interchangeable generalists whose merge loses little: averaging shared parameters that saw "
+                "statistically identical data adds 0.07 of CE over any single square (2.501 &rarr; 2.430). Merging helps when the squares are alike and hurts "
+                "when they are specialised; either way the merged standard model stays behind the baseline.")
 
 
 def std_window2():
