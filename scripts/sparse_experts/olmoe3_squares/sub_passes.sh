@@ -10,6 +10,8 @@ case $V in
        ST=("212 1354 2496 3638 4356" "370 2367 4364 6361 7617" "140 893 1647 2401 2874" "205 1314 2422 3530 4227");;
   std) HR=runs_heldout20b_std; RP=olmoe3_275m_square; SQN=olmoe3_squares_std; START=std_step19074
        ST=("180 1149 2118 3088 3697" "251 1606 2961 4317 5169" "275 1757 3240 4723 5655" "221 1415 2609 3802 4553");;
+# NOTE: steps are floor(tokens/524288) since 2026-09-17; squares trained before that have their INTERMEDIATE fixed checkpoints at the
+# ceil-based positions (off by one in a few cases) and only their repaired FINAL at the floor step -- use POINTS=4 on those.
   pool64or512|learnedd)
        HR=runs_heldout20b_$V; RP=olmoe3_275m_${V}_square; SQN=olmoe3_squares_$V; START=${V}_step19074
        ST=(); for g in 0 1 2 3; do ST+=("$(python -c "

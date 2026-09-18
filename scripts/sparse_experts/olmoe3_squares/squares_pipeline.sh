@@ -53,6 +53,8 @@ done
 for g in 0 1 2 3; do
   TRAIN_SCRIPT=scripts/sparse_experts/model_scripts/olmoe3_275m_emo_square.sh launch_train $LOG/square${g}_launched $LOG/launch_square$g.log SQUARE_GROUP=$g SQUARES_NAME=$SQN OLMOE3_RUNNAME=${RP}$g OLMOE3_WANDB_TAGS=$SQN,square $EXTRA_ENV
 done
+# NOTE: steps are floor(tokens/524288) since 2026-09-17; squares trained before that have their INTERMEDIATE fixed checkpoints at the
+# ceil-based positions (off by one in a few cases) and only their repaired FINAL at the floor step -- use POINTS=4 on those.
 # ---- matched-point drivers (wait for checkpoints, merge, launch evals) ----
 declare -a STEPS
 for g in 0 1 2 3; do STEPS[$g]=$(python -c "
