@@ -267,6 +267,9 @@ def squares_block(tag, full_run, start_ppl_run, base_run, take_main="", take_pw=
     return inner
 
 
+WINDOW2_FT_TAKE = "Finetune evaluations running."
+
+
 def std_window2():
     """Block B continued to 30B tokens: separate training of the squares on the next 10B (window 2) vs the baseline continued,
     both windows re-evaluated on one held-out sample taken 300B tokens into the stream; x-axis = tokens trained."""
@@ -303,7 +306,7 @@ def std_window2():
         "(2.399 &rarr; 2.352), so the gap widens only through the baseline's progress, from 0.065 at 15.7B to 0.11 at 30B: longer separate "
         "training does not make the merge worse in absolute terms. On the v3-small sets the merged model still improves slowly (2.970 &rarr; "
         "2.948) and the gap grows from 0.045 to 0.073.")
-    pw = {st: json.load(open(PW / f"piecewise_match{st}.json")) for st in steps if (PW / f"piecewise_match{st}.json").exists() and json.load(open(PW / f"piecewise_match{st}.json")).get("piecewise")}
+    pw = {st: d for st in steps if (d := _jload(PW / f"piecewise_match{st}.json")) and d.get("piecewise")}
     if pw:
         pxs = [round(st * 524288 / 1e9, 1) for st in pw]; D = list(pw.values())
         avg = line_chart(pxs, [{"name": "piecewise (own square, no merge)", "y": [d["piecewise"] for d in D]},
@@ -325,6 +328,23 @@ def std_window2():
             "The standard squares on their own keep improving through window 2 (2.451 at 20B &rarr; 2.413 at 30B) but never reach the baseline "
             "(2.352 at 30B); the merged model sits above them at 2.46. So for the standard model both parts cost: each square is weaker than the "
             "full model on its own documents, and merging adds another 0.05 on top, both roughly constant over the second window.")
+    # joint finetuning from both window ends: merged model and baseline continued together on the stream right after the window
+    hv = lambda tag: _ce(HR / f"{tag}/none"); pv = lambda f: _ppl(PPL / f)
+    F = [("merged, from 20B", "#dc2626", False, [hv("merged_match38148"), hv("merged_ft"), hv("merged_ft2")], [_ppl(PPL / "merged/match38148.json"), pv("olmoe3_275m_merged_ft/step39502.json"), pv("olmoe3_275m_merged_ft2/step40456.json")]),
+         ("baseline, from 20B", "#2563eb", False, [hv("baseline_step38148"), hv("baseline_ft"), hv("baseline_ft2")], [bppl(38148), pv("olmoe3_275m_baseline_ft/step39502.json"), pv("olmoe3_275m_baseline_ft2/step40456.json")]),
+         ("merged, from 30B", "#dc2626", True, [hv("merged_match57221"), hv("merged30_ft"), hv("merged30_ft2")], [_ppl(PPL / "merged/match57221.json"), pv("olmoe3_275m_merged30_ft/step58175.json"), pv("olmoe3_275m_merged30_ft2/step59129.json")]),
+         ("baseline, from 30B", "#2563eb", True, [hv("baseline_step57221"), hv("baseline30_ft"), hv("baseline30_ft2")], [bppl(57221), pv("olmoe3_275m_baseline30_ft/step58175.json"), pv("olmoe3_275m_baseline30_ft2/step59129.json")])]
+    if any(v is not None for _, _, _, ys, _ in F for v in ys[1:]):
+        fx = [0, 0.5, 1.0]; fl = ["merge", "+0.5B", "+1B"]; sh = (0.5, "joint finetuning")
+        fch = CHART_CSS + line_chart(fx, [{"name": n, "y": ys, "color": c, "dashed": d} for n, c, d, ys, _ in F], title="Held-out CE (300B sample)", xlabels=fl, x_label="finetuning tokens", shade=sh)
+        if any(v is not None for _, _, _, _, ps in F for v in ps[1:]):
+            fch += line_chart(fx, [{"name": n, "y": ps, "color": c, "dashed": d} for n, c, d, _, ps in F], title="v3-small ppl sets, mean CE", xlabels=fl, x_label="finetuning tokens", shade=sh)
+        out += section("Joint finetuning from the 20B and the 30B merge",
+            "From each window end, the merged model (Adam moments merged like the weights) and the baseline are trained jointly on the "
+            "stream right after that point: from 20B on steps 38,548&ndash;40,456 (the same tokens as the other blocks' finetunes), from 30B on "
+            "steps 57,221&ndash;59,129 (the tokens right after window 2, seen by no square). +0.5B = 954 steps, +1B = 1,908 steps, constant LR. "
+            "Solid: from 20B; dashed: from 30B. Held-out CE on the 300B-token sample.",
+            fch, WINDOW2_FT_TAKE)
     return out
 
 
@@ -433,6 +453,12 @@ MATCH = [(20000, "match20000"), (25000, "match25000"), (30000, "match30000"), (3
 
 
 ROBUST_NOTE = []
+
+
+def _jload(f):
+    """json.load that returns None for a missing or partially written file (drivers write results while the report builds)."""
+    try: return json.load(open(f))
+    except (FileNotFoundError, json.JSONDecodeError): return None
 
 
 def _ce(d):
@@ -547,6 +573,9 @@ STD_PW_TAKE = ("For the standard model the squares themselves are the problem: o
             "reverse of the EMO case, and is a gain early on while the squares are still weak.")
 
 
+ROUTER_LR_TAKE = ""
+
+
 def squares_results(HELD=HELD, PPL=PPL, SQO=SQO, start="emo_step19074", start_ppl="olmoe3_275m_emo_10b", base_runs=("olmoe3_275m_emo_20b", "olmoe3_275m_emo_20b_filler", "olmoe3_275m_emo_20b_1node"), label="", take_main=EMO_TAKE, take_pw=EMO_PW_TAKE):
     ref_none = _ce(HELD / f"{start}/none")
     ref_ppl = _ppl(ROOT / f"claude_outputs/debug_validation/ppl_validation/{start_ppl}/step19074.json")
@@ -598,6 +627,22 @@ def squares_results(HELD=HELD, PPL=PPL, SQO=SQO, start="emo_step19074", start_pp
                    + ". The held-out sample is steps 38,148&ndash;38,547 of the stream, so no finetuning token is in it."
                    + (" <b>Router-only finetune</b> (orange): the same tokens and LR from the 100% merge, but only the routed-expert routers "
                       "train (every other parameter at LR 0; verified after each stage by comparing the checkpoints tensor by tensor).</p>" if has_rft else "</p>"))
+    if has_rft:
+        rows = []
+        for lr in ("2e-4", "8e-4", "2e-3", "4e-3", "8e-3", "1.6e-2"):
+            tag, run, chk = ("merged_rft", "olmoe3_275m_emo_merged_rft", "check_rft.json") if lr == "8e-4" else (f"merged_rft_lr{lr}", f"olmoe3_275m_emo_merged_rft_lr{lr}", f"check_rft_lr{lr}.json")
+            h = _ce(HELD / f"{tag}/none"); pp = _ppl(PPL / run / "step39502.json"); c = _jload(ROOT / "sparse_experts/olmoe3_squares/logs" / chk)
+            if h is not None or pp is not None: rows.append((lr, h, pp, None if c is None else c.get("ok")))
+        if len(rows) > 1:
+            f3 = lambda v: "&ndash;" if v is None else f"{v:.3f}"; best = min((r[1] for r in rows if r[1] is not None), default=None)
+            tr = "".join(f"<tr><td>{lr}</td><td>{('<b>%s</b>' % f3(h)) if h == best else f3(h)}</td><td>{f3(pp)}</td><td>{'yes' if ok else ('no' if ok is False else '&ndash;')}</td></tr>" for lr, h, pp, ok in rows)
+            ref = (f"<tr><td colspan=4 style='color:#64748b'>reference: merged 100% without finetuning {f3(m_h[-1] if m_h else None)} / {f3(m_p[-1] if m_p else None)}; "
+                   f"full finetune +0.5B {f3(ft['merged_ft'])} / {f3(ppl_ft.get('merged_ft'))}; baseline +0.5B {f3(ft['baseline_ft'])} / {f3(ppl_ft.get('baseline_ft'))}</td></tr>")
+            ft_html += ("<p><b>Router-only finetune, learning-rate sweep</b> (+0.5B, same start, same tokens; the pretraining LR is 8e-4). Only 2.95M "
+                        "of the 2.6B parameters train, but Adam moves each weight by about the LR per step whatever the gradient, so the question is "
+                        "how far the routers may move before routing drifts.</p>"
+                        "<table style='border-collapse:collapse;font-size:13px'><tr><th style='text-align:left;padding:2px 10px'>LR</th><th style='padding:2px 10px'>held-out CE</th>"
+                        "<th style='padding:2px 10px'>v3-small CE</th><th style='padding:2px 10px'>only routers changed</th></tr>" + tr.replace("<td>", "<td style='padding:2px 10px;text-align:center'>") + ref + "</table>" + ROUTER_LR_TAKE)
     intro = ("<b>Held-out CE</b>: mean token cross-entropy of 7,991 unseen instances (65.5M tokens) from the 20B&ndash;30B window of the training "
              "stream, which neither the baseline nor the sub-models see. <b>v3-small ppl sets</b>: OLMo-core's 11 validation sets, mean CE over sets. "
              "Baseline = the full model continued from step 19,074 on the same 10B tokens; merged = the four sub-models at the same fraction of "
