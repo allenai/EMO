@@ -34,7 +34,7 @@ for g in 0 1 2 3; do
 done
 # ---- 2. matched points: merge (waits for the checkpoints) + merged evals on the 300B sample ----
 for i in 0 1 2 3 4; do
-  [ -f $LOG/merge_point$i.log ] || SQUARES_NAME=$SQN SQUARE_RUN_PREFIX=$RP FULL_RUN=$FULL HELDOUT_DIR=$HR MERGE_WEIGHTS=$SHARES SKIP_ORACLE=1 SAMPLE=$SAMPLE \
+  [ -f $SQ/merged/match${STEPS[$i]}/merge_info.json ] && [ -f $SQ/ppl_validation/merged/match${STEPS[$i]}.json ] || SQUARES_NAME=$SQN SQUARE_RUN_PREFIX=$RP FULL_RUN=$FULL HELDOUT_DIR=$HR MERGE_WEIGHTS=$SHARES SKIP_ORACLE=1 SAMPLE=$SAMPLE \
     STEPS_G0="${SQS[0]}" STEPS_G1="${SQS[1]}" STEPS_G2="${SQS[2]}" STEPS_G3="${SQS[3]}" bash scripts/sparse_experts/olmoe3_squares/merge_point.sh $i > $LOG/merge_point$i.log 2>&1 &
 done
 # ---- 3. every square on the whole sample at every point ----
