@@ -9,8 +9,8 @@ S=sparse_experts; W=/weka/oe-training-default/ryanwang/EMO/sparse_experts; SQN=o
 ST=$S/olmoe3_routing/stream_20b_30b; SAMPLE=olmoe3_routing/sample_8k_300b.npz; HR=runs_heldout300b_std; START=std_step19074
 FULL=olmoe3_275m_10b; BRUN=olmoe3_275m_30b_1node; B1RUN=olmoe3_275m_20b_1node; PW=claude_outputs/olmoe3_routing/${SQN}_w2
 LOG=$SQ/logs; mkdir -p $LOG $S/olmoe3_routing/$HR $PW
-W1_STEPS=(20000 25000 30000 35000 38148); W1_FINAL=(3698 5170 5656 4554)
-W1_SQ=("180 1149 2118 3088 3698" "251 1606 2961 4317 5170" "275 1757 3240 4723 5656" "221 1415 2609 3802 4554")
+W1_STEPS=(20000 25000 30000 35000 38148); W1_FINAL=(3697 5169 5655 4553)   # repaired finals (floor steps, no epoch-2 step)
+W1_SQ=("180 1149 2118 3088 3697" "251 1606 2961 4317 5169" "275 1757 3240 4723 5655" "221 1415 2609 3802 4553")
 W2_STEPS=(39073 44073 49073 54073 57221)
 say() { echo "$(date -u +%m-%d\ %H:%M) $*"; }
 launch() { local name=$1; shift; local log=$SP/launch_$name.log; local u=""
@@ -42,7 +42,7 @@ declare -a W2_SQ
 for g in 0 1 2 3; do
   [ -f $SQ/init2/group$g/model_and_optim/.metadata ] || { PYTHONPATH=external/OLMo-core/src python scripts/sparse_experts/olmoe3_squares/rewrite_checkpoint.py --src $S/olmoe3_275m_square$g/step${W1_FINAL[$g]} --out $SQ/init2/group$g --overwrite 2>&1 | tail -1; say "init2 group$g done"; }
   tokens=$(python -c "import json; print(json.load(open('$SQ/pack2/stats.json'))['tokens_per_group'][$g])")
-  W2_SQ[$g]=$(python -c "import math; s=math.ceil($tokens/524288); print(' '.join(str(max(1, round(s*f/19074))) for f in (926, 5926, 10926, 15926)) + f' {s}')")
+  W2_SQ[$g]=$(python -c "s=$tokens//524288; print(' '.join(str(max(1, round(s*f/19074))) for f in (926, 5926, 10926, 15926)) + f' {s}')")
   if [ ! -f $LOG/square${g}_w2_launched ]; then u=""
     for attempt in 1 2 3 4 5 6; do SQUARE_GROUP=$g SQUARES_NAME=$SQN OLMOE3_TOKENS=$tokens OLMOE3_DATA_PATHS="$W/$SQN/pack2/group$g/*.npy" OLMOE3_INIT_FROM="$W/$SQN/init2/group$g/model_and_optim" OLMOE3_RUNNAME=olmoe3_275m_square${g}_w2 OLMOE3_WANDB_TAGS=$SQN,square,w2 OLMOE3_FOLLOW=0 bash scripts/sparse_experts/model_scripts/olmoe3_275m_std_square.sh launch > $LOG/launch_square${g}_w2.log 2>&1
       u=$(sed 's/\x1b\[[0-9;]*m//g' $LOG/launch_square${g}_w2.log | grep -aoE 'beaker.org/ex/[A-Z0-9]+' | head -1); [ -n "$u" ] && break; sleep 45; done

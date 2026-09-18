@@ -693,6 +693,12 @@ def build_data_components(common: CommonComponents) -> DataComponents:
 
 
 def _max_steps(tokens: int) -> int:
+    """Steps of a run with a `tokens` budget. A square run (OLMOE3_DATA_PATHS = a re-packed document set whose
+    size IS the budget) gets floor(tokens / batch): the loader yields only full batches, so ceil() made every
+    square run one step longer than its data and that last step trained on a reshuffled epoch-2 batch (found
+    2026-09-17; every 100% checkpoint before the repair carried it). Stream runs keep ceil() (unchanged steps)."""
+    if DATA_PATHS:
+        return tokens // GLOBAL_BATCH_SIZE
     return math.ceil(tokens / GLOBAL_BATCH_SIZE)
 
 
@@ -825,7 +831,7 @@ def build_trainer_config(common: CommonComponents, cluster: str) -> TrainerConfi
         metrics_collect_interval=10,
         cancel_check_interval=cancel_check_interval,
         async_bookkeeping=False,
-        max_duration=Duration.tokens(TOKENS),
+        max_duration=Duration.steps(_max_steps(TOKENS)),  # == Duration.tokens(TOKENS) for stream runs; one step fewer for square runs (see _max_steps)
     )
     if PPL_EVAL_INTERVAL > 0:
         trainer = trainer.with_callback("lm_evaluator", _ppl_eval_callback(common))

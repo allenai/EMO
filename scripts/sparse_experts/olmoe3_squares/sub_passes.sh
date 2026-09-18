@@ -7,13 +7,13 @@ V=$1; POINTS="${POINTS:-2 3 4}"; BASE=(20000 25000 30000 35000 38148)
 W=/weka/oe-training-default/ryanwang/EMO/sparse_experts; S=sparse_experts; SP=/tmp/claude-0/-root-EMO/c7db74f2-bbe3-4a2c-9d37-93c64250d7c6/scratchpad
 case $V in
   emo) HR=runs_heldout20b; RP=olmoe3_275m_emo_square; SQN=olmoe3_squares; START=emo_step19074
-       ST=("212 1354 2496 3638 4357" "370 2367 4364 6361 7618" "140 893 1647 2401 2875" "205 1314 2422 3530 4228");;
+       ST=("212 1354 2496 3638 4356" "370 2367 4364 6361 7617" "140 893 1647 2401 2874" "205 1314 2422 3530 4227");;
   std) HR=runs_heldout20b_std; RP=olmoe3_275m_square; SQN=olmoe3_squares_std; START=std_step19074
-       ST=("180 1149 2118 3088 3698" "251 1606 2961 4317 5170" "275 1757 3240 4723 5656" "221 1415 2609 3802 4554");;
+       ST=("180 1149 2118 3088 3697" "251 1606 2961 4317 5169" "275 1757 3240 4723 5655" "221 1415 2609 3802 4553");;
   pool64or512|learnedd)
        HR=runs_heldout20b_$V; RP=olmoe3_275m_${V}_square; SQN=olmoe3_squares_$V; START=${V}_step19074
        ST=(); for g in 0 1 2 3; do ST+=("$(python -c "
-import json,math; t=json.load(open('sparse_experts/$SQN/pack/stats.json'))['tokens_per_group'][$g]; s=math.ceil(t/524288)
+import json,math; t=json.load(open('sparse_experts/$SQN/pack/stats.json'))['tokens_per_group'][$g]; s=t//524288
 print(' '.join(str(max(1, round(s*f/19074))) for f in (926, 5926, 10926, 15926)) + f' {s}')")"); done;;
   *) echo "emo|std|pool64or512|learnedd"; exit 1;;
 esac

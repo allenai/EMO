@@ -9,7 +9,7 @@ i=$1; BASE=(20000 25000 30000 35000 38148); NAME=match${BASE[$i]}
 SQN="${SQUARES_NAME:-olmoe3_squares}"; RP="${SQUARE_RUN_PREFIX:-olmoe3_275m_emo_square}"; FULL="${FULL_RUN:-olmoe3_275m_emo_10b}"; HR="${HELDOUT_DIR:-runs_heldout20b}"
 # fixed checkpoint steps per square (from their launch logs); override with STEPS_G0..STEPS_G<K-1>="a b c d e"; K squares (default 4)
 K="${K:-4}"
-S0=(${STEPS_G0:-212 1354 2496 3638 4357}); S1=(${STEPS_G1:-370 2367 4364 6361 7618}); S2=(${STEPS_G2:-140 893 1647 2401 2875}); S3=(${STEPS_G3:-205 1314 2422 3530 4228})
+S0=(${STEPS_G0:-212 1354 2496 3638 4356}); S1=(${STEPS_G1:-370 2367 4364 6361 7617}); S2=(${STEPS_G2:-140 893 1647 2401 2874}); S3=(${STEPS_G3:-205 1314 2422 3530 4227})
 S=sparse_experts; W=/weka/oe-training-default/ryanwang/EMO/sparse_experts
 subs=()
 for ((g=0; g<K; g++)); do v="STEPS_G$g"; steps=(${!v:-}); if [ "${#steps[@]}" -eq 0 ]; then case $g in 0) steps=("${S0[@]}");; 1) steps=("${S1[@]}");; 2) steps=("${S2[@]}");; 3) steps=("${S3[@]}");; *) echo "STEPS_G$g required for K=$K"; exit 1;; esac; fi

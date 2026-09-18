@@ -20,7 +20,7 @@ mkdir -p ~/.aws && printf "[S3]\naws_access_key_id=%s\naws_secret_access_key=%s\
 status=0
 for g in "$@"; do
   tokens="${OLMOE3_TOKENS_OVERRIDE:-$(python -c "import json; print(json.load(open('$SQ/pack/stats.json'))['tokens_per_group'][$g])")}"
-  steps=$(( (tokens + 524287) / 524288 ))
+  steps=$(( tokens / 524288 ))   # floor: only full batches exist (ceil ran one epoch-2 step; repaired 2026-09-17)
   fixed=$(python -c "s=$steps; print(','.join(str(max(1, round(s*f/19074))) for f in (926, 5926, 10926, 15926)) + f',{s}')")
   export OLMOE3_TOKENS="$tokens" OLMOE3_GROUP="$g" OLMOE3_DATA_PATHS="$SQ/pack/group$g/*.npy" OLMOE3_INIT_FROM="$SQ/init/group$g" OLMOE3_FIXED_STEPS="$fixed"
   run="${RP}$g"

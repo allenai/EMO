@@ -56,7 +56,7 @@ done
 # ---- matched-point drivers (wait for checkpoints, merge, launch evals) ----
 declare -a STEPS
 for g in 0 1 2 3; do STEPS[$g]=$(python -c "
-import json,math; t=json.load(open('$S/$SQN/pack/stats.json'))['tokens_per_group'][$g]; s=math.ceil(t/524288)
+import json,math; t=json.load(open('$S/$SQN/pack/stats.json'))['tokens_per_group'][$g]; s=t//524288
 print(' '.join(str(max(1, round(s*f/19074))) for f in (926, 5926, 10926, 15926)) + f' {s}')"); done
 say "square steps: g0 [${STEPS[0]}] g1 [${STEPS[1]}] g2 [${STEPS[2]}] g3 [${STEPS[3]}]; token shares $SHARES"
 for i in 0 1 2 3 4; do
