@@ -25,8 +25,7 @@ train() { local run=$1 start=$2 step=$3; [ -f $LOG/${run}_launched ] || [ -f $S/
 repaired() { [ -n "$(find "$1" -maxdepth 0 -newermt "2026-09-18 04:10 UTC" 2>/dev/null)" ]; }   # written after the epoch-2 repair launch (the pre-repair copies are purged, not kept)
 until [ -f $S/olmoe3_275m_merged_ft/step39502/train/rank0.pt ] && repaired $S/olmoe3_275m_merged_ft/step39502/train/rank0.pt; do sleep 300; done
 heldout merged_ft $W/olmoe3_275m_merged_ft/step39502; heldout baseline_ft $W/olmoe3_275m_baseline_ft/step39502; heldout baseline_ft2 $W/olmoe3_275m_baseline_ft2/step40456
-until [ -f $S/olmoe3_275m_merged_ft2/step40456/train/rank0.pt ] && repaired $S/olmoe3_275m_merged_ft2/step40456/train/rank0.pt; do sleep 300; done
-heldout merged_ft2 $W/olmoe3_275m_merged_ft2/step40456; say "20B finetune passes launched"
+say "20B finetune passes launched (the +1B pass is collected at the end)"
 # ---- (b) 30B: repaired window-2 finals (floor steps of pack2) -> merge with Adam state -> finetune start; baseline 30B start ----
 W2F=(); for g in 0 1 2 3; do W2F+=($(python -c "import json; print(json.load(open('$SQ/pack2/stats.json'))['tokens_per_group'][$g] // 524288)")); done
 SHARES=$(python -c "import json; print(','.join(f'{x:.4f}' for x in json.load(open('$SQ/pack2/stats.json'))['token_share']))")
@@ -48,5 +47,7 @@ done
 for m in merged baseline; do run=olmoe3_275m_${m}30_ft2; until [ -f $S/$run/step59129/train/rank0.pt ]; do sleep 180; done; say "$run finished"
   heldout ${m}30_ft2 $W/$run/step59129; ppl $W/$run/step59129 $run/step59129.json ${m}30_ft2
 done
+until [ -f $S/olmoe3_275m_merged_ft2/step40456/train/rank0.pt ] && repaired $S/olmoe3_275m_merged_ft2/step40456/train/rank0.pt; do sleep 300; done
+heldout merged_ft2 $W/olmoe3_275m_merged_ft2/step40456
 for tag in merged_ft merged_ft2 baseline_ft baseline_ft2 merged30_ft merged30_ft2 baseline30_ft baseline30_ft2; do R=$S/olmoe3_routing/$HR/$tag/none; until have $R; do sleep 120; done; [ -f $R/meta.json ] || python scripts/sparse_experts/olmoe3_routing/merge_routing.py $R 2>&1 | tail -1; done
 say "window-2 joint finetunes done"
