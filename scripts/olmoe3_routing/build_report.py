@@ -267,22 +267,25 @@ def squares_block(tag, full_run, start_ppl_run, base_run, take_main="", take_pw=
     return inner
 
 
-WINDOW2_FT_TAKE = ("Joint finetuning behaves the same at both window ends: from 20B the merged model goes 2.462 &rarr; 2.432 &rarr; 2.425 against "
-                   "a baseline that barely moves (2.380 &rarr; 2.378 &rarr; 2.376), from 30B it goes 2.460 &rarr; 2.420 &rarr; 2.415 against 2.351 &rarr; "
-                   "2.350 &rarr; 2.349. Half a billion tokens recovers about 40% of the merge loss at either point (the gap drops from 0.082 to 0.054 "
-                   "at 20B and from 0.109 to 0.070 at 30B), the second half billion adds 0.005&ndash;0.007, and the merge that had the longer separate "
-                   "training keeps the larger residual gap.")
+WINDOW2_FT_TAKE = ("Joint finetuning (shaded) behaves the same at both window ends: from 30B (solid) the merged model goes 2.460 &rarr; 2.420 &rarr; 2.415 "
+                   "against a baseline that barely moves (2.351 &rarr; 2.350 &rarr; 2.349); from 20B (dashed) it goes 2.462 &rarr; 2.432 &rarr; 2.425 against "
+                   "2.380 &rarr; 2.378 &rarr; 2.376. Half a billion tokens recovers about 40% of the merge loss at either point (the gap drops from 0.109 to "
+                   "0.070 at 30B and from 0.082 to 0.054 at 20B), the second half billion adds 0.005&ndash;0.007, and the merge that had the longer "
+                   "separate training keeps the larger residual gap.")
+STDRAND_TAKE = "Square trainings running."
 
 
 def std_window2():
     """Block B continued to 30B tokens: separate training of the squares on the next 10B (window 2) vs the baseline continued,
-    both windows re-evaluated on one held-out sample taken 300B tokens into the stream; x-axis = tokens trained."""
+    both windows re-evaluated on one held-out sample taken 300B tokens into the stream; x-axis = tokens trained. The joint
+    finetunes from both window ends sit in a shaded region at the right; the random-partition control follows."""
     HR = ROOT / "sparse_experts/olmoe3_routing/runs_heldout300b_std"; PPL = ROOT / "sparse_experts/olmoe3_squares_std/ppl_validation"; PW = OUT / "olmoe3_squares_std_w2"
     if not HR.exists(): return ""
     W1 = [20000, 25000, 30000, 35000, 38148]; W2 = [39073, 44073, 49073, 54073, 57221]; steps = W1 + W2
     toks = [round(st * 524288 / 1e9, 1) for st in steps]  # tokens trained (B) at each matched point
-    start = _ce(HELD_ / "std_step19074/none") if (HELD_ := HR) else None
-    b_h = [_ce(HR / f"baseline_step{st}/none") for st in steps]; m_h = [_ce(HR / f"merged_match{st}/none") for st in steps]
+    hv = lambda tag: _ce(HR / f"{tag}/none"); pv = lambda f: _ppl(PPL / f)
+    start = hv("std_step19074")
+    b_h = [hv(f"baseline_step{st}") for st in steps]; m_h = [hv(f"merged_match{st}") for st in steps]
     def bppl(st):
         for run in ("olmoe3_275m_20b_1node", "olmoe3_275m_30b_1node"):
             for s_ in (st, st - 1):
@@ -291,25 +294,39 @@ def std_window2():
     b_p = [bppl(st) for st in steps]; m_p = [_ppl(PPL / "merged" / f"match{st}.json") for st in steps]
     ref_ppl = _ppl(ROOT / "claude_outputs/debug_validation/ppl_validation/olmoe3_275m_10b/step19074.json")
     if not any(v is not None for v in b_h + m_h): return card("info", "Window 2 (20B &rarr; 30B)", "<p>Evaluations on the 300B-token held-out sample running.</p>")
-    labels = [f"{t:g}B" for t in toks]
-    charts = CHART_CSS + line_chart(toks, [{"name": "baseline (full model, continued)", "y": b_h}, {"name": "merged squares", "y": m_h},
-                                          {"name": "start model (10B)", "y": [start] * len(toks), "const": True, "dashed": True, "color": "#64748b"}],
-                                   title="Held-out CE (sample from 300B tokens into the stream)", xlabels=labels, x_label="tokens trained")
+    # joint finetuning from both window ends: +0.5B / +1B points in a shaded region at the right (solid = from 30B, dashed = from 20B)
+    ft = {t: hv(t) for t in ("merged30_ft", "merged30_ft2", "baseline30_ft", "baseline30_ft2", "merged_ft", "merged_ft2", "baseline_ft", "baseline_ft2")}
+    ftp = {"merged30_ft": pv("olmoe3_275m_merged30_ft/step58175.json"), "merged30_ft2": pv("olmoe3_275m_merged30_ft2/step59129.json"),
+           "baseline30_ft": pv("olmoe3_275m_baseline30_ft/step58175.json"), "baseline30_ft2": pv("olmoe3_275m_baseline30_ft2/step59129.json"),
+           "merged_ft": pv("olmoe3_275m_merged_ft/step39502.json"), "merged_ft2": pv("olmoe3_275m_merged_ft2/step40456.json"),
+           "baseline_ft": pv("olmoe3_275m_baseline_ft/step39502.json"), "baseline_ft2": pv("olmoe3_275m_baseline_ft2/step40456.json")}
+    has_ft = any(v is not None for v in ft.values())
+    xs_all = toks + ([32.5, 35.0] if has_ft else []); labels = [f"{t:g}B" for t in toks] + (["+0.5B ft", "+1B ft"] if has_ft else [])
+    shade = (32.5, "joint finetuning") if has_ft else None
+    def ser(b, m, F, name_b="baseline (full model, continued)", name_m="merged squares"):
+        out = [{"name": name_b, "y": b + ([F["baseline30_ft"], F["baseline30_ft2"]] if has_ft else [])}, {"name": name_m, "y": m + ([F["merged30_ft"], F["merged30_ft2"]] if has_ft else [])}]
+        if has_ft:
+            out += [{"name": "merged, finetuned from 20B", "y": [None] * len(toks) + [F["merged_ft"], F["merged_ft2"]], "color": "#dc2626", "dashed": True},
+                    {"name": "baseline, finetuned from 20B", "y": [None] * len(toks) + [F["baseline_ft"], F["baseline_ft2"]], "color": "#2563eb", "dashed": True}]
+        return out
+    charts = CHART_CSS + line_chart(xs_all, ser(b_h, m_h, ft) + [{"name": "start model (10B)", "y": [start] * len(xs_all), "const": True, "dashed": True, "color": "#64748b"}],
+                                   title="Held-out CE (sample from 300B tokens into the stream)", xlabels=labels, x_label="tokens trained", shade=shade)
     if any(v is not None for v in b_p + m_p):
-        charts += line_chart(toks, [{"name": "baseline (full model, continued)", "y": b_p}, {"name": "merged squares", "y": m_p},
-                                    {"name": "start model (10B)", "y": [ref_ppl] * len(toks), "const": True, "dashed": True, "color": "#64748b"}],
-                             title="v3-small ppl sets, mean CE", xlabels=labels, x_label="tokens trained")
-    out = section("Stages 2&ndash;4: merged squares vs continued baseline, 10B &rarr; 30B tokens",
+        charts += line_chart(xs_all, ser(b_p, m_p, ftp) + [{"name": "start model (10B)", "y": [ref_ppl] * len(xs_all), "const": True, "dashed": True, "color": "#64748b"}],
+                             title="v3-small ppl sets, mean CE", xlabels=labels, x_label="tokens trained", shade=shade)
+    out = section("Stages 2&ndash;4: merged squares vs continued baseline, 10B &rarr; 30B tokens, then joint finetuning",
         "The squares train separately on their own documents for 20B tokens in two 10B windows (stream steps 19,074&ndash;38,147, then "
         "38,147&ndash;57,221; the second window's documents assigned with the same rule and the same 10B start model, each square continuing from "
         "its own checkpoint), with checkpoints at five progress fractions per window; the baseline is the full model continued to 30B. "
         "<b>Held-out CE</b>: 7,993 instances taken 300B tokens into the stream (steps 572,205&ndash;572,605), unseen by every model. x-axis: tokens "
-        "trained. Joint finetuning from both window ends is two sections below.",
+        "trained. <b>Shaded</b>: joint finetuning of the merged model (Adam moments merged like the weights) and of the baseline on the stream right "
+        "after the window end, +0.5B = 954 steps and +1B = 1,908 steps at the same constant LR. Solid lines continue from the 30B merge (steps "
+        "57,221&ndash;59,129, seen by no square); dashed lines start from the 20B merge (steps 38,548&ndash;40,456, the other blocks' finetuning tokens).",
         charts,
         "The merged model never beats the baseline and is flat at 2.46 from 15.7B to 30B (2.464 &rarr; 2.460) while the baseline keeps improving "
         "(2.399 &rarr; 2.351), so the gap widens only through the baseline's progress, from 0.065 at 15.7B to 0.11 at 30B: longer separate "
         "training does not make the merge worse in absolute terms. On the v3-small sets the merged model still improves slowly (2.970 &rarr; "
-        "2.944) and the gap grows from 0.045 to 0.069.")
+        "2.944) and the gap grows from 0.045 to 0.069. " + WINDOW2_FT_TAKE)
     pw = {st: d for st in steps if (d := _jload(PW / f"piecewise_match{st}.json")) and d.get("piecewise")}
     if pw:
         pxs = [round(st * 524288 / 1e9, 1) for st in pw]; D = list(pw.values())
@@ -332,24 +349,47 @@ def std_window2():
             "The standard squares on their own keep improving through window 2 (2.448 at 20B &rarr; 2.411 at 30B) but never reach the baseline "
             "(2.351 at 30B); the merged model sits above them at 2.46. So for the standard model both parts cost: each square is weaker than the "
             "full model on its own documents, and merging adds another 0.05 on top, both roughly constant over the second window.")
-    # joint finetuning from both window ends: merged model and baseline continued together on the stream right after the window
-    hv = lambda tag: _ce(HR / f"{tag}/none"); pv = lambda f: _ppl(PPL / f)
-    F = [("merged, from 20B", "#dc2626", False, [hv("merged_match38148"), hv("merged_ft"), hv("merged_ft2")], [_ppl(PPL / "merged/match38148.json"), pv("olmoe3_275m_merged_ft/step39502.json"), pv("olmoe3_275m_merged_ft2/step40456.json")]),
-         ("baseline, from 20B", "#2563eb", False, [hv("baseline_step38148"), hv("baseline_ft"), hv("baseline_ft2")], [bppl(38148), pv("olmoe3_275m_baseline_ft/step39502.json"), pv("olmoe3_275m_baseline_ft2/step40456.json")]),
-         ("merged, from 30B", "#dc2626", True, [hv("merged_match57221"), hv("merged30_ft"), hv("merged30_ft2")], [_ppl(PPL / "merged/match57221.json"), pv("olmoe3_275m_merged30_ft/step58175.json"), pv("olmoe3_275m_merged30_ft2/step59129.json")]),
-         ("baseline, from 30B", "#2563eb", True, [hv("baseline_step57221"), hv("baseline30_ft"), hv("baseline30_ft2")], [bppl(57221), pv("olmoe3_275m_baseline30_ft/step58175.json"), pv("olmoe3_275m_baseline30_ft2/step59129.json")])]
-    if any(v is not None for _, _, _, ys, _ in F for v in ys[1:]):
-        fx = [0, 0.5, 1.0]; fl = ["merge", "+0.5B", "+1B"]; sh = (0.5, "joint finetuning")
-        fch = CHART_CSS + line_chart(fx, [{"name": n, "y": ys, "color": c, "dashed": d} for n, c, d, ys, _ in F], title="Held-out CE (300B sample)", xlabels=fl, x_label="finetuning tokens", shade=sh)
-        if any(v is not None for _, _, _, _, ps in F for v in ps[1:]):
-            fch += line_chart(fx, [{"name": n, "y": ps, "color": c, "dashed": d} for n, c, d, _, ps in F], title="v3-small ppl sets, mean CE", xlabels=fl, x_label="finetuning tokens", shade=sh)
-        out += section("Joint finetuning from the 20B and the 30B merge",
-            "From each window end, the merged model (Adam moments merged like the weights) and the baseline are trained jointly on the "
-            "stream right after that point: from 20B on steps 38,548&ndash;40,456 (the same tokens as the other blocks' finetunes), from 30B on "
-            "steps 57,221&ndash;59,129 (the tokens right after window 2, seen by no square). +0.5B = 954 steps, +1B = 1,908 steps, constant LR. "
-            "Solid: from 20B; dashed: from 30B. Held-out CE on the 300B-token sample.",
-            fch, WINDOW2_FT_TAKE)
+    out += std_random_control(W1, b_h[:5], m_h[:5], b_p[:5], m_p[:5], start, ref_ppl, pw)
     return out
+
+
+def std_random_control(W1, b_h, m_h, b_p, m_p, start, ref_ppl, pw):
+    """Control for block B: four random expert groups of equal size and documents split uniformly at random (window 1 only,
+    10B -> 20B), same start model, same 300B-token held-out sample. Squares are scored on ALL held-out documents (a random
+    partition gives a held-out document no 'own' square), so the square line is the mean of the four."""
+    HR = ROOT / "sparse_experts/olmoe3_routing/runs_heldout300b_stdrand"; PPL = ROOT / "sparse_experts/olmoe3_squares_stdrand/ppl_validation"
+    G = _jload(ROOT / "sparse_experts/olmoe3_squares_stdrand/groups.json"); stt = _jload(ROOT / "sparse_experts/olmoe3_squares_stdrand/pack/stats.json")
+    if G is None: return ""
+    hv = lambda tag: _ce(HR / f"{tag}/none")
+    mr = [hv(f"merged_match{st}") for st in W1]; sq = [[hv(f"sub{g}_match{st}") for g in range(4)] for st in W1]
+    sqm = [sum(v) / 4 if all(x is not None for x in v) else None for v in sq]
+    mp = [_ppl(PPL / "merged" / f"match{st}.json") for st in W1]
+    toks = [round(st * 524288 / 1e9, 1) for st in W1]; labels = [f"{t:g}B" for t in toks]
+    setup = ("Same standard-routing start model (10B), same window (stream steps 19,074&ndash;38,147), same held-out sample, but the split has no "
+             "structure: in every layer 2&ndash;9 the 512 experts are shuffled into four groups of 128 (layer 1 whole, as before), and every document "
+             "of the window goes to a uniformly random group, so each square owns a quarter of the experts and a random quarter of the tokens"
+             + (f" ({', '.join(f'{100*x:.1f}%' for x in stt['token_share'])} of the tokens)" if stt else "") + ". Squares are merged with equal weights. "
+             "Because a held-out document has no 'own' square under a random split, the square line is the mean CE of the four squares each scored "
+             "on all held-out documents; the routing-based curves of the block above are repeated in grey for comparison.")
+    if not any(v is not None for v in mr + sqm):
+        return section("Control: random expert groups, random document split (10B &rarr; 20B)", setup, "", STDRAND_TAKE)
+    pw_pc = [(pw.get(st) or {}).get("piecewise") for st in W1]
+    charts = CHART_CSS + line_chart(toks, [{"name": "baseline (full model, continued)", "y": b_h},
+                                          {"name": "merged squares, random split", "y": mr, "color": "#dc2626"},
+                                          {"name": "squares, random split (mean of 4, all documents)", "y": sqm, "color": "#d97706"},
+                                          {"name": "merged squares, routing split (block above)", "y": m_h, "color": "#9ca3af"},
+                                          {"name": "piecewise, routing split (block above)", "y": pw_pc, "color": "#9ca3af", "dashed": True},
+                                          {"name": "start model (10B)", "y": [start] * len(toks), "const": True, "dashed": True, "color": "#64748b"}],
+                                   title="Held-out CE (300B sample)", xlabels=labels, x_label="tokens trained")
+    if any(v is not None for v in mp):
+        charts += line_chart(toks, [{"name": "baseline (full model, continued)", "y": b_p}, {"name": "merged squares, random split", "y": mp, "color": "#dc2626"},
+                                    {"name": "merged squares, routing split (block above)", "y": m_p, "color": "#9ca3af"},
+                                    {"name": "start model (10B)", "y": [ref_ppl] * len(toks), "const": True, "dashed": True, "color": "#64748b"}],
+                             title="v3-small ppl sets, mean CE", xlabels=labels, x_label="tokens trained")
+    per = "<p><b>Each random square on all held-out documents</b>:</p>" + line_chart(toks, [{"name": f"square {g}", "y": [sq[i][g] for i in range(len(W1))]} for g in range(4)]
+                                                                                    + [{"name": "baseline", "y": b_h, "dashed": True, "color": "#059669"}, {"name": "start model", "y": [start] * len(toks), "const": True, "dashed": True, "color": "#64748b"}],
+                                                                                    title="Held-out CE (300B sample)", xlabels=labels, x_label="tokens trained")
+    return section("Control: random expert groups, random document split (10B &rarr; 20B)", setup, charts + per, STDRAND_TAKE)
 
 
 def build_q3():
