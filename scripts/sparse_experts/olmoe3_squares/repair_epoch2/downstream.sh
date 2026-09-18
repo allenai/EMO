@@ -10,8 +10,12 @@ source scripts/sparse_experts/olmoe3_squares/repair_epoch2/variants.sh
 S=sparse_experts; W=/weka/oe-training-default/ryanwang/EMO/sparse_experts; SP=/tmp/claude-0/-root-EMO/c7db74f2-bbe3-4a2c-9d37-93c64250d7c6/scratchpad; OUT=claude_outputs/olmoe3_routing
 MIN_FREE_GB="${MIN_FREE_GB:-300}"; mkdir -p $SP
 say() { echo "$(date -u +%m-%d\ %H:%M) [$V] $*"; }
-aside() { local p; for p in "$@"; do [ -e "$p" ] && [ ! -e "${p}_epoch2" ] && mv "$p" "${p}_epoch2" && say "aside $p"; done; return 0; }
-aside_json() { local p; for p in "$@"; do [ -f "$p" ] && [ ! -f "${p%.json}.epoch2.json" ] && mv "$p" "${p%.json}.epoch2.json" && say "aside $p"; done; return 0; }
+# only PRE-repair artifacts are set aside (older than the repair launch, 2026-09-18 04:10 UTC): the *_epoch2 copies are purged
+# (purge.sh), so their absence must not make a re-run move the repaired outputs aside
+REPAIR_T0="2026-09-18 04:10 UTC"
+old() { [ -e "$1" ] && [ -z "$(find "$1" -maxdepth 0 -newermt "$REPAIR_T0" 2>/dev/null)" ]; }
+aside() { local p; for p in "$@"; do old "$p" && [ ! -e "${p}_epoch2" ] && mv "$p" "${p}_epoch2" && say "aside $p"; done; return 0; }
+aside_json() { local p; for p in "$@"; do old "$p" && [ ! -f "${p%.json}.epoch2.json" ] && mv "$p" "${p%.json}.epoch2.json" && say "aside $p"; done; return 0; }
 launch() { local name=$1; shift; local log=$SP/launch_$name.log; local u=""
   for attempt in 1 2 3 4 5 6; do
     PYTHONPATH=external/OLMo-core/src python scripts/sparse_experts/olmoe3_beaker_cmd.py --name "$name" --gpus 1 --allocated -- "$@" > "$log" 2>&1

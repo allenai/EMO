@@ -22,14 +22,14 @@ train() { local run=$1 start=$2 step=$3; [ -f $LOG/${run}_launched ] || [ -f $S/
     u=$(sed 's/\x1b\[[0-9;]*m//g' $LOG/launch_$run.log | grep -aoE 'beaker.org/ex/[A-Z0-9]+' | head -1); [ -n "$u" ] && break; sleep 45; done
   say "$run: ${u:-LAUNCH FAILED}"; [ -n "$u" ] && echo "$u" > $LOG/${run}_launched; }
 # ---- (a) 20B: repaired merged / baseline finetunes on the 300B sample ----
-until [ -d $S/olmoe3_275m_merged_ft_epoch2 ] && [ -f $S/olmoe3_275m_merged_ft/step39502/train/rank0.pt ]; do sleep 300; done
+repaired() { [ -n "$(find "$1" -maxdepth 0 -newermt "2026-09-18 04:10 UTC" 2>/dev/null)" ]; }   # written after the epoch-2 repair launch (the pre-repair copies are purged, not kept)
+until [ -f $S/olmoe3_275m_merged_ft/step39502/train/rank0.pt ] && repaired $S/olmoe3_275m_merged_ft/step39502/train/rank0.pt; do sleep 300; done
 heldout merged_ft $W/olmoe3_275m_merged_ft/step39502; heldout baseline_ft $W/olmoe3_275m_baseline_ft/step39502; heldout baseline_ft2 $W/olmoe3_275m_baseline_ft2/step40456
-until [ -d $S/olmoe3_275m_merged_ft2_epoch2 ] && [ -f $S/olmoe3_275m_merged_ft2/step40456/train/rank0.pt ]; do sleep 300; done
+until [ -f $S/olmoe3_275m_merged_ft2/step40456/train/rank0.pt ] && repaired $S/olmoe3_275m_merged_ft2/step40456/train/rank0.pt; do sleep 300; done
 heldout merged_ft2 $W/olmoe3_275m_merged_ft2/step40456; say "20B finetune passes launched"
 # ---- (b) 30B: repaired window-2 finals (floor steps of pack2) -> merge with Adam state -> finetune start; baseline 30B start ----
 W2F=(); for g in 0 1 2 3; do W2F+=($(python -c "import json; print(json.load(open('$SQ/pack2/stats.json'))['tokens_per_group'][$g] // 524288)")); done
 SHARES=$(python -c "import json; print(','.join(f'{x:.4f}' for x in json.load(open('$SQ/pack2/stats.json'))['token_share']))")
-until [ -d $SQ/init2_epoch2 ]; do sleep 300; done   # the repair has moved the tainted window 2 aside
 for g in 0 1 2 3; do until [ -f $S/olmoe3_275m_square${g}_w2/step${W2F[$g]}/train/rank0.pt ]; do sleep 300; done; done; say "repaired window-2 finals present: ${W2F[*]}"
 until [ -f $S/$BRUN/step57221/train/rank0.pt ]; do sleep 300; done
 subs="$S/olmoe3_275m_square0_w2/step${W2F[0]},$S/olmoe3_275m_square1_w2/step${W2F[1]},$S/olmoe3_275m_square2_w2/step${W2F[2]},$S/olmoe3_275m_square3_w2/step${W2F[3]}"

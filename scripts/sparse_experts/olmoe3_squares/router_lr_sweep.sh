@@ -15,7 +15,8 @@ launch() { local name=$1; shift; local log=$SP/launch_$name.log; local u=""
   say "$name: ${u:-LAUNCH FAILED}"; }
 have() { [ -f "$1/meta.json" ] || [ -f "$1/rank0/DONE" ]; }
 # ---- start checkpoint: the repaired 100% merge's hybrid finetune start (the pre-repair one was moved to *_epoch2) ----
-until [ -d $SQ/ft_start/emo_merged_epoch2 ] && [ -f $SQ/ft_start/emo_merged/step38548/train/rank0.pt ] && [ -f $SQ/merged_optim/match38148/merge_info.json ]; do sleep 300; done
+repaired() { [ -n "$(find "$1" -maxdepth 0 -newermt "2026-09-18 04:10 UTC" 2>/dev/null)" ]; }   # written after the epoch-2 repair launch (the pre-repair copies are purged, not kept)
+until [ -f $SQ/ft_start/emo_merged/step38548/train/rank0.pt ] && repaired $SQ/ft_start/emo_merged/step38548/train/rank0.pt && [ -f $SQ/merged_optim/match38148/merge_info.json ] && repaired $SQ/merged_optim/match38148/merge_info.json; do sleep 300; done
 say "repaired start checkpoint present"
 for lr in $LRS; do run=olmoe3_275m_emo_merged_rft_lr$lr
   [ -f $LOG/${run}_launched ] || [ -f $S/$run/step39502/train/rank0.pt ] && continue; u=""
