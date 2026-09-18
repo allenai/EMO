@@ -58,6 +58,8 @@ for i in 0 1 2 3 4; do s=${W2_STEPS[$i]}; subs=(); for g in 0 1 2 3; do st=(${W2
   until [ -f $S/$BRUN/step$s/train/rank0.pt ]; do sleep 300; done; heldout baseline_step$s $W/$BRUN/step$s; ppl $W/$BRUN/step$s $BRUN/step$s.json baseline-$s
 done
 # ---- 6. collect + piecewise for both windows on the new sample ----
-for tag in $S/olmoe3_routing/$HR/*/none; do until [ -f $tag/rank0/DONE ] || [ -f $tag/meta.json ]; do sleep 120; done; done; mergeall
+# wait for every EXPECTED pass by name (a queued job has not created its directory yet, so a glob would miss it)
+expected="$START"; for s in "${W1_STEPS[@]}" "${W2_STEPS[@]}"; do expected="$expected merged_match$s baseline_step$s"; for g in 0 1 2 3; do expected="$expected sub${g}_match$s"; done; done
+for tag in $expected; do until have $S/olmoe3_routing/$HR/$tag/none; do sleep 120; done; done; mergeall
 for s in "${W1_STEPS[@]}" "${W2_STEPS[@]}"; do HELDOUT_DIR=$HR SQUARES_NAME=$SQN START_TAG=$START python scripts/sparse_experts/olmoe3_squares/piecewise_eval.py --name match$s --out-dir $PW | head -2; done
 say "window 2 done"
