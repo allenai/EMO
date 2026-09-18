@@ -267,7 +267,11 @@ def squares_block(tag, full_run, start_ppl_run, base_run, take_main="", take_pw=
     return inner
 
 
-WINDOW2_FT_TAKE = "Finetune evaluations running."
+WINDOW2_FT_TAKE = ("Joint finetuning behaves the same at both window ends: from 20B the merged model goes 2.462 &rarr; 2.432 &rarr; 2.425 against "
+                   "a baseline that barely moves (2.380 &rarr; 2.378 &rarr; 2.376), from 30B it goes 2.460 &rarr; 2.420 &rarr; 2.415 against 2.351 &rarr; "
+                   "2.350 &rarr; 2.349. Half a billion tokens recovers about 40% of the merge loss at either point (the gap drops from 0.082 to 0.054 "
+                   "at 20B and from 0.109 to 0.070 at 30B), the second half billion adds 0.005&ndash;0.007, and the merge that had the longer separate "
+                   "training keeps the larger residual gap.")
 
 
 def std_window2():
@@ -300,12 +304,12 @@ def std_window2():
         "38,147&ndash;57,221; the second window's documents assigned with the same rule and the same 10B start model, each square continuing from "
         "its own checkpoint), with checkpoints at five progress fractions per window; the baseline is the full model continued to 30B. "
         "<b>Held-out CE</b>: 7,993 instances taken 300B tokens into the stream (steps 572,205&ndash;572,605), unseen by every model. x-axis: tokens "
-        "trained. No post-merge finetuning is shown here.",
+        "trained. Joint finetuning from both window ends is two sections below.",
         charts,
-        "The merged model never beats the baseline and is flat at 2.46&ndash;2.47 from 15.7B to 30B while the baseline keeps improving "
-        "(2.399 &rarr; 2.352), so the gap widens only through the baseline's progress, from 0.065 at 15.7B to 0.11 at 30B: longer separate "
+        "The merged model never beats the baseline and is flat at 2.46 from 15.7B to 30B (2.464 &rarr; 2.460) while the baseline keeps improving "
+        "(2.399 &rarr; 2.351), so the gap widens only through the baseline's progress, from 0.065 at 15.7B to 0.11 at 30B: longer separate "
         "training does not make the merge worse in absolute terms. On the v3-small sets the merged model still improves slowly (2.970 &rarr; "
-        "2.948) and the gap grows from 0.045 to 0.073.")
+        "2.944) and the gap grows from 0.045 to 0.069.")
     pw = {st: d for st in steps if (d := _jload(PW / f"piecewise_match{st}.json")) and d.get("piecewise")}
     if pw:
         pxs = [round(st * 524288 / 1e9, 1) for st in pw]; D = list(pw.values())
@@ -325,8 +329,8 @@ def std_window2():
             "Piecewise CE (each held-out document scored by its own square, group = the start model's routing) vs the merged model on the same "
             "documents, over 10B &rarr; 30B tokens, on the 300B-token held-out sample.",
             CHART_CSS + avg + "<p><b>By document group</b>:</p>" + grp,
-            "The standard squares on their own keep improving through window 2 (2.451 at 20B &rarr; 2.413 at 30B) but never reach the baseline "
-            "(2.352 at 30B); the merged model sits above them at 2.46. So for the standard model both parts cost: each square is weaker than the "
+            "The standard squares on their own keep improving through window 2 (2.448 at 20B &rarr; 2.411 at 30B) but never reach the baseline "
+            "(2.351 at 30B); the merged model sits above them at 2.46. So for the standard model both parts cost: each square is weaker than the "
             "full model on its own documents, and merging adds another 0.05 on top, both roughly constant over the second window.")
     # joint finetuning from both window ends: merged model and baseline continued together on the stream right after the window
     hv = lambda tag: _ce(HR / f"{tag}/none"); pv = lambda f: _ppl(PPL / f)
@@ -419,7 +423,9 @@ def build_q3():
                      "sub-models and the post-merge 0.5B finetune train with plain top-16 routing (no per-document pool rule, instance-level load "
                      "balancing). Compared against the same EMO baseline as A.</p>")
         inner += squares_results(HELD=ROOT / "sparse_experts/olmoe3_routing/runs_heldout20b_noemo", PPL=ROOT / "sparse_experts/olmoe3_squares_noemo/ppl_validation", SQO=OUT / "olmoe3_squares_noemo",
-                                 start="emo_step19074", start_ppl="olmoe3_275m_emo_10b", base_runs=("olmoe3_275m_emo_20b_1node",), label="", take_main="", take_pw="")
+                                 start="emo_step19074", start_ppl="olmoe3_275m_emo_10b", base_runs=("olmoe3_275m_emo_20b_1node",), label="",
+                                 take_main="Dropping the EMO loss from the sub-models changes nothing: the merge beats the baseline only at 5% (2.415 vs 2.455), "
+                                           "ends 0.15 above it (2.549 vs 2.398; A: 2.557) and finetunes back to 2.422 (A: 2.434).", take_pw="")
         body += variant("C", inner)
     # ---- D: EMO, k = 8 ----
     if (ROOT / "sparse_experts/olmoe3_routing/runs_heldout20b_k8").exists():
@@ -435,14 +441,16 @@ def build_q3():
             inner += section("Stage 1: assigning the next 10B tokens", "Raw-count assignment as in A.", _assign_table(st, 8),
                              f"Token-weighted, {100*st['in_group_share_token_weighted']:.0f}% of the selections a sub-model's documents make are inside its own expert group.")
         inner += squares_results(HELD=ROOT / "sparse_experts/olmoe3_routing/runs_heldout20b_k8", PPL=ROOT / "sparse_experts/olmoe3_squares_k8/ppl_validation", SQO=OUT / "olmoe3_squares_k8",
-                                 start="emo_step19074", start_ppl="olmoe3_275m_emo_10b", base_runs=("olmoe3_275m_emo_20b_1node",), label="", take_main="", take_pw="")
+                                 start="emo_step19074", start_ppl="olmoe3_275m_emo_10b", base_runs=("olmoe3_275m_emo_20b_1node",), label="",
+                                 take_main="With eight sub-models the merge is worse at every point: it never beats the baseline (2.442 vs 2.455 at 5%) and ends "
+                                           "0.19 above it (2.587 vs 2.398; A with four: 2.557). Finetuning brings it to 2.445 / 2.444, close to A's 2.434 / 2.433.", take_pw="")
         body += variant("D", inner)
     # ---- E: pool-{64,512} arm, k = 4 ----
     if (ROOT / "sparse_experts/olmoe3_squares_pool64or512/groups.json").exists():
         body += variant("E", squares_block("pool64or512", "olmoe3_275m_emo_pool64or512_10b", "olmoe3_275m_emo_pool64or512_10b", "olmoe3_275m_pool64or512_20b_1node",
             take_main="Same shape as A: the merged model beats the baseline only at 5% (2.425 vs 2.457) and then drifts up while the baseline keeps "
-                      "improving, ending 0.13 above it (2.531 vs 2.397), a slightly smaller gap than A's 0.15.",
-            take_pw="As in A, the squares on their own track and then beat the baseline (2.377 vs 2.397 at 100%), so the loss is in averaging the "
+                      "improving, ending 0.14 above it (2.535 vs 2.397), a slightly smaller gap than A's 0.16; finetuning brings it to 2.428 / 2.426.",
+            take_pw="As in A, the squares on their own track and then beat the baseline (2.376 vs 2.397 at 100%), so the loss is in averaging the "
                     "diverged shared parameters, not in the partition or the sub-models.",
             stage1_take="46% of the selections a sub-model's documents make fall inside its own group (52% for the uniform-pool model in A)."))
     return body
@@ -555,16 +563,16 @@ def line_chart(xs, series, *, title="", y_label="CE", x_label="progress through 
             + f'<div style="font-size:12px;margin-left:44px">{"".join(legend)}</div><div class="lc-tip"></div></div>')
 
 
-EMO_TAKE = ("The merged model beats the baseline only at 5% (2.424 vs 2.455) and then falls behind monotonically, ending 0.15 above it and "
-            "0.09 above the start model on the held-out sample; the v3-small sets tell the same story. Finetuning the merge closes most of the "
-            "gap (2.433 after 0.5B, 2.431 after 1B, vs the baseline's 2.396); the second 0.5B adds nothing. Retraining only the routers "
-            "(orange) recovers about half of it (2.475, then 2.473), so roughly half of the merge loss is router mismatch that the routers "
-            "can fix on their own, and the other half sits in the averaged non-router weights and needs the full model to train.")
-EMO_PW_TAKE = ("The squares on their own track the baseline the whole way and end slightly below it (2.385 vs 2.398 at 100%), while the merged "
-            "model drifts up to 2.551. Only at 5% is merging a gain (2.424 vs 2.509 piecewise): the four copies of the shared parameters are still "
+EMO_TAKE = ("The merged model beats the baseline only at 5% (2.424 vs 2.455) and then falls behind monotonically, ending 0.16 above it "
+            "(2.557 vs 2.398) and 0.10 above the start model on the held-out sample; the v3-small sets tell the same story. Finetuning the merge "
+            "closes most of the gap (2.434 after 0.5B, 2.433 after 1B, vs the baseline's 2.396 / 2.395); the second 0.5B adds nothing. Retraining "
+            "only the routers (orange) recovers about half of it (2.476, then 2.474), so roughly half of the merge loss is router mismatch that the "
+            "routers can fix on their own, and the other half sits in the averaged non-router weights and needs the full model to train.")
+EMO_PW_TAKE = ("The squares on their own track the baseline the whole way and end slightly below it (2.383 vs 2.398 at 100%), while the merged "
+            "model drifts up to 2.557. Only at 5% is merging a gain (2.424 vs 2.509 piecewise): the four copies of the shared parameters are still "
             "nearly identical, so averaging is free and routing across groups adds experts. From 31% on, averaging diverged shared parameters is "
             "what costs, and the damage is concentrated on group 0, the code group: its own square improves from 1.56 to 1.45 while the merged "
-            "model on the same documents worsens from 1.53 to 1.91. The partition and the sub-models are not the problem; averaging is.")
+            "model on the same documents worsens from 1.53 to 1.92. The partition and the sub-models are not the problem; averaging is.")
 STD_TAKE = ("The standard merge never beats its baseline: 2.482 vs 2.436 at 5%, then flat around 2.46 while the baseline keeps improving to 2.374, "
             "ending 0.09 behind. Unlike EMO it does not degrade with more separate training.")
 STD_PW_TAKE = ("For the standard model the squares themselves are the problem: on their own they start far behind (2.614 at 5% vs the start "
@@ -573,7 +581,10 @@ STD_PW_TAKE = ("For the standard model the squares themselves are the problem: o
             "reverse of the EMO case, and is a gain early on while the squares are still weak.")
 
 
-ROUTER_LR_TAKE = ""
+ROUTER_LR_TAKE = ("<p><b>Takeaway.</b> The optimum is flat between 8e-4 and 2e-3 (both 2.476 held-out); 2e-4 is worse (2.485) and every larger LR "
+                  "is worse again (2.480, 2.491, 2.513 at 4e-3, 8e-3, 1.6e-2), with the v3-small sets agreeing. The routers do move: their relative "
+                  "change after 0.5B grows from 0.2&ndash;0.3 at 2e-4 to 1.1&ndash;1.8 at 1.6e-2, so larger steps are taken and do not help. The LR is "
+                  "not what limits the router-only recovery; the 0.04 that separates it from the full finetune (2.434) sits in the non-router weights.</p>")
 
 
 def squares_results(HELD=HELD, PPL=PPL, SQO=SQO, start="emo_step19074", start_ppl="olmoe3_275m_emo_10b", base_runs=("olmoe3_275m_emo_20b", "olmoe3_275m_emo_20b_filler", "olmoe3_275m_emo_20b_1node"), label="", take_main=EMO_TAKE, take_pw=EMO_PW_TAKE):
@@ -780,8 +791,8 @@ def build_q4():
             'learned-d head and the coverage signal.</p>' \
             + squares_block("learnedd", "olmoe3_275m_emo_learnedd_10b", "olmoe3_275m_emo_learnedd_10b", "olmoe3_275m_learnedd_20b_1node",
                 take_main="Same shape as the uniform-pool model in Q3 A: the merged model beats the baseline only at 5% (2.417 vs 2.453) and then "
-                          "drifts up while the baseline keeps improving, ending 0.16 above it (2.548 vs 2.389).",
-                take_pw="The squares on their own track and then beat the baseline (2.368 vs 2.389 at 100%; every group's own square keeps improving), "
+                          "drifts up while the baseline keeps improving, ending 0.16 above it (2.549 vs 2.389); 0.5B of finetuning brings it to 2.424.",
+                take_pw="The squares on their own track and then beat the baseline (2.365 vs 2.389 at 100%; every group's own square keeps improving), "
                         "so learned pools change nothing about the diagnosis: averaging the diverged shared parameters is what loses.",
                 stage1_take="49% of the selections a sub-model's documents make fall inside its own group (52% for the uniform-pool model); the "
                             "learned pools give a partition of the same quality.") + "</div>"
