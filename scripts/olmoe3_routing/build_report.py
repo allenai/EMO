@@ -287,22 +287,22 @@ def std_window2():
     labels = [f"{t:g}B" for t in toks]
     charts = CHART_CSS + line_chart(toks, [{"name": "baseline (full model, continued)", "y": b_h}, {"name": "merged squares", "y": m_h},
                                           {"name": "start model (10B)", "y": [start] * len(toks), "const": True, "dashed": True, "color": "#64748b"}],
-                                   title="Held-out CE (sample from 300B tokens into the stream)", xlabels=labels, x_label="tokens trained", shade=(39073 * 524288 / 1e9, "window 2: squares continued separately"))
+                                   title="Held-out CE (sample from 300B tokens into the stream)", xlabels=labels, x_label="tokens trained")
     if any(v is not None for v in b_p + m_p):
         charts += line_chart(toks, [{"name": "baseline (full model, continued)", "y": b_p}, {"name": "merged squares", "y": m_p},
                                     {"name": "start model (10B)", "y": [ref_ppl] * len(toks), "const": True, "dashed": True, "color": "#64748b"}],
-                             title="v3-small ppl sets, mean CE", xlabels=labels, x_label="tokens trained", shade=(39073 * 524288 / 1e9, "window 2"))
-    out = section("Window 2: the squares keep training separately, 20B &rarr; 30B tokens",
-        "Each square continues from its window-1 final checkpoint on its own documents of the next 10B tokens (stream steps 38,147&ndash;57,221; "
-        "documents assigned with the same rule and the same 10B start model), with checkpoints at the same five progress fractions; the baseline "
-        "continues to 30B. <b>Held-out CE</b> here is a new sample of 7,991 instances taken 300B tokens into the stream (steps 572,205&ndash;572,605), "
-        "on which every point of both windows was re-evaluated, so the whole curve is on one unseen set. x-axis: tokens trained.",
+                             title="v3-small ppl sets, mean CE", xlabels=labels, x_label="tokens trained")
+    out = section("Stages 2&ndash;4: merged squares vs continued baseline, 10B &rarr; 30B tokens",
+        "The squares train separately on their own documents for 20B tokens in two 10B windows (stream steps 19,074&ndash;38,147, then "
+        "38,147&ndash;57,221; the second window's documents assigned with the same rule and the same 10B start model, each square continuing from "
+        "its own checkpoint), with checkpoints at five progress fractions per window; the baseline is the full model continued to 30B. "
+        "<b>Held-out CE</b>: 7,993 instances taken 300B tokens into the stream (steps 572,205&ndash;572,605), unseen by every model. x-axis: tokens "
+        "trained. No post-merge finetuning is shown here.",
         charts,
-        "The suspicion that longer separate training would make the merge worse is not what the data show: the merged model is flat at "
-        "2.46&ndash;2.47 from 15.7B to 30B while the baseline keeps improving (2.399 &rarr; 2.352), so the gap widens only through the "
-        "baseline's progress, from 0.065 at 15.7B to 0.11 at 30B. On the v3-small sets the merged model still improves slowly (2.970 &rarr; "
-        "2.948) and the gap grows from 0.045 to 0.073. All of this is on a sample 300B tokens into the stream, unseen by every model; the "
-        "window-1 numbers here differ slightly from the block's first charts, which used the older 20B-window sample.")
+        "The merged model never beats the baseline and is flat at 2.46&ndash;2.47 from 15.7B to 30B while the baseline keeps improving "
+        "(2.399 &rarr; 2.352), so the gap widens only through the baseline's progress, from 0.065 at 15.7B to 0.11 at 30B: longer separate "
+        "training does not make the merge worse in absolute terms. On the v3-small sets the merged model still improves slowly (2.970 &rarr; "
+        "2.948) and the gap grows from 0.045 to 0.073.")
     pw = {st: json.load(open(PW / f"piecewise_match{st}.json")) for st in steps if (PW / f"piecewise_match{st}.json").exists() and json.load(open(PW / f"piecewise_match{st}.json")).get("piecewise")}
     if pw:
         pxs = [round(st * 524288 / 1e9, 1) for st in pw]; D = list(pw.values())
@@ -318,8 +318,9 @@ def std_window2():
                                     {"name": "baseline", "y": [(d.get("baseline_by_group") or {}).get(str(g)) for d in D], "dashed": True, "color": "#059669"},
                                     {"name": "start model", "y": [D[0]["start_full_by_group"][str(g)]] * len(D), "const": True, "dashed": True, "color": "#64748b"}],
                               title=f"Group {g} documents ({D[0]['docs_per_group'][g]:,} held-out docs)", W=400, H=250, xlabels=[f"{t:g}B" for t in pxs], x_label="tokens trained")
-        out += section("Where the merge loses, both windows (300B sample)",
-            "Piecewise CE (each held-out document scored by its own square) vs the merged model on the same documents, over 10B &rarr; 30B tokens.",
+        out += section("Where the merge loses: each square alone vs the merged model",
+            "Piecewise CE (each held-out document scored by its own square, group = the start model's routing) vs the merged model on the same "
+            "documents, over 10B &rarr; 30B tokens, on the 300B-token held-out sample.",
             CHART_CSS + avg + "<p><b>By document group</b>:</p>" + grp,
             "The standard squares on their own keep improving through window 2 (2.451 at 20B &rarr; 2.413 at 30B) but never reach the baseline "
             "(2.352 at 30B); the merged model sits above them at 2.46. So for the standard model both parts cost: each square is weaker than the "
@@ -390,8 +391,6 @@ def build_q3():
                 _assign_table(json.load(open(Ss)), 4),
                 "Even with the per-expert rule only 27% of a document's selections fall inside its own group (52% for EMO): the standard model's "
                 "documents are not tied to a block.")
-        inner += squares_results(HELD=ROOT / "sparse_experts/olmoe3_routing/runs_heldout20b_std", PPL=ROOT / "sparse_experts/olmoe3_squares_std/ppl_validation", SQO=OUT / "olmoe3_squares_std",
-                                 start="std_step19074", start_ppl="olmoe3_275m_10b", base_runs=("olmoe3_275m_20b_1node",), label="", take_main=STD_TAKE, take_pw=STD_PW_TAKE)
         inner += std_window2()
         body += variant("B", inner)
     # ---- C: EMO squares without the EMO loss ----
