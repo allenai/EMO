@@ -355,7 +355,7 @@ def std_window2():
             "The standard squares on their own keep improving through window 2 (2.448 at 20B &rarr; 2.411 at 30B) but never reach the baseline "
             "(2.351 at 30B); the merged model sits above them at 2.46. So for the standard model both parts cost: each square is weaker than the "
             "full model on its own documents, and merging adds another 0.05 on top, both roughly constant over the second window.")
-    out += std_random_control(W1, b_h[:5], m_h[:5], b_p[:5], m_p[:5], start, ref_ppl, pw)
+    out += std_random_control(steps, b_h, m_h, b_p, m_p, start, ref_ppl, pw)
     return out
 
 
@@ -367,18 +367,21 @@ def std_random_control(W1, b_h, m_h, b_p, m_p, start, ref_ppl, pw):
     G = _jload(ROOT / "sparse_experts/olmoe3_squares_stdrand/groups.json"); stt = _jload(ROOT / "sparse_experts/olmoe3_squares_stdrand/pack/stats.json")
     if G is None: return ""
     hv = lambda tag: _ce(HR / f"{tag}/none")
+    W1 = [st for st in W1 if st <= 38148 or hv(f"merged_match{st}") is not None or any(hv(f"sub{g}_match{st}") is not None for g in range(4))]  # window-2 points once they exist
+    b_h, m_h, b_p, m_p = b_h[:len(W1)], m_h[:len(W1)], b_p[:len(W1)], m_p[:len(W1)]
     mr = [hv(f"merged_match{st}") for st in W1]; sq = [[hv(f"sub{g}_match{st}") for g in range(4)] for st in W1]
     sqm = [sum(v) / 4 if all(x is not None for x in v) else None for v in sq]
     mp = [_ppl(PPL / "merged" / f"match{st}.json") for st in W1]
-    toks = [round(st * 524288 / 1e9, 1) for st in W1]; labels = [f"{t:g}B" for t in toks]
-    setup = ("Same standard-routing start model (10B), same window (stream steps 19,074&ndash;38,147), same held-out sample, but the split has no "
+    toks = [st * 524288 / 1e9 for st in W1]; labels = [f"{t:.3g}B" for t in toks]
+    w2 = len(W1) > 5
+    setup = ("Same standard-routing start model (10B), same window" + (" and the same second window (stream steps 38,147&ndash;57,221, each square continuing from its own window-1 final on a fresh random quarter)" if w2 else "") + " (stream steps 19,074&ndash;38,147), same held-out sample, but the split has no "
              "structure: in every layer 2&ndash;9 the 512 experts are shuffled into four groups of 128 (layer 1 whole, as before), and every document "
              "of the window goes to a uniformly random group, so each square owns a quarter of the experts and a random quarter of the tokens"
              + (f" ({', '.join(f'{100*x:.1f}%' for x in stt['token_share'])} of the tokens)" if stt else "") + ". Squares are merged with equal weights. "
              "Because a held-out document has no 'own' square under a random split, the square line is the mean CE of the four squares each scored "
              "on all held-out documents.")
     if not any(v is not None for v in mr + sqm):
-        return section("Control: random expert groups, random document split (10B &rarr; 20B)", setup, "", STDRAND_TAKE)
+        return section("Control: random expert groups, random document split (10B &rarr; 20B)", setup, "", STDRAND_TAKE)  # noqa
     charts = CHART_CSS + line_chart(toks, [{"name": "baseline (full model, continued)", "y": b_h}, {"name": "merged squares", "y": mr},
                                           {"name": "start model (10B)", "y": [start] * len(toks), "const": True, "dashed": True, "color": "#64748b"}],
                                    title="Held-out CE (300B sample)", xlabels=labels, x_label="tokens trained")
@@ -390,7 +393,7 @@ def std_random_control(W1, b_h, m_h, b_p, m_p, start, ref_ppl, pw):
         [{"name": "squares (mean of 4, no merge)", "y": sqm}, {"name": "merged, free routing", "y": mr},
          {"name": "baseline", "y": b_h, "dashed": True, "color": "#059669"}, {"name": "start model", "y": [start] * len(toks), "const": True, "dashed": True, "color": "#64748b"}],
         title="All held-out documents (300B sample)", xlabels=labels, x_label="tokens trained")
-    return section("Control: random expert groups, random document split (10B &rarr; 20B)", setup, charts, STDRAND_TAKE)
+    return section("Control: random expert groups, random document split (10B &rarr; " + ("30B" if w2 else "20B") + ")", setup, charts, STDRAND_TAKE)
 
 
 def build_q3():
