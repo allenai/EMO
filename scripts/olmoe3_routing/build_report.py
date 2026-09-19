@@ -267,19 +267,12 @@ def squares_block(tag, full_run, start_ppl_run, base_run, take_main="", take_pw=
     return inner
 
 
-WINDOW2_FT_TAKE = ("Joint finetuning (shaded) behaves the same at both window ends: from 30B (solid) the merged model goes 2.460 &rarr; 2.420 &rarr; 2.415 "
-                   "against a baseline that barely moves (2.351 &rarr; 2.350 &rarr; 2.349); from 20B (dashed) it goes 2.462 &rarr; 2.432 &rarr; 2.425 against "
-                   "2.380 &rarr; 2.378 &rarr; 2.376. Half a billion tokens recovers about 40% of the merge loss at either point (the gap drops from 0.109 to "
-                   "0.070 at 30B and from 0.082 to 0.054 at 20B), the second half billion adds 0.005&ndash;0.007, and the merge that had the longer "
-                   "separate training keeps the larger residual gap.")
-STDRAND_TAKE = ("With no structure in the split the merge does <i>better</i> than with the routing split: 2.483 &rarr; 2.430 vs 2.487 &rarr; 2.462 on the "
-                "held-out sample (v3-small 2.952 vs 2.958 at 20B), and it keeps improving with more separate training instead of going flat, ending 0.05 above "
-                "the baseline (2.380) instead of 0.08. The random squares themselves are much weaker: a quarter of the experts trained on a random quarter of the "
-                "data sits at 2.63 &rarr; 2.50, worse than the start model (2.446) at every point and worse than the routing squares on their own documents "
-                "(2.618 &rarr; 2.448), and the four are indistinguishable (within 0.002). So the routing split buys specialised squares and pays for it at the "
-                "merge, while the random split gives four interchangeable generalists whose merge loses little: averaging shared parameters that saw "
-                "statistically identical data adds 0.07 of CE over any single square (2.501 &rarr; 2.430). Merging helps when the squares are alike and hurts "
-                "when they are specialised; either way the merged standard model stays behind the baseline.")
+WINDOW2_FT_TAKE = ("Joint finetuning (dotted) recovers about 40% of the merge loss after 0.5B tokens at either window end and adds little in the "
+                   "next 0.5B; the merged model stays behind the baseline.")
+STDRAND_TAKE = ("With no structure in the split the merge does <i>better</i> than with the routing split (2.430 vs 2.462 at 20B on the held-out sample; "
+                "baseline 2.380) and keeps improving instead of going flat, while the squares themselves are much weaker (2.63 &rarr; 2.50, below the start "
+                "model at every point, and the four are indistinguishable). Merging helps when the squares are alike and hurts when they are specialised; "
+                "either way the merged standard model stays behind the baseline.")
 
 
 def std_window2():
@@ -301,34 +294,39 @@ def std_window2():
     b_p = [bppl(st) for st in steps]; m_p = [_ppl(PPL / "merged" / f"match{st}.json") for st in steps]
     ref_ppl = _ppl(ROOT / "claude_outputs/debug_validation/ppl_validation/olmoe3_275m_10b/step19074.json")
     if not any(v is not None for v in b_h + m_h): return card("info", "Window 2 (20B &rarr; 30B)", "<p>Evaluations on the 300B-token held-out sample running.</p>")
-    # joint finetuning from both window ends: +0.5B / +1B points in a shaded region at the right (solid = from 30B, dashed = from 20B)
+    # joint finetuning from both window ends: dotted branches right after the 20B and the 30B point (+0.5B, +1B of tokens)
     ft = {t: hv(t) for t in ("merged30_ft", "merged30_ft2", "baseline30_ft", "baseline30_ft2", "merged_ft", "merged_ft2", "baseline_ft", "baseline_ft2")}
     ftp = {"merged30_ft": pv("olmoe3_275m_merged30_ft/step58175.json"), "merged30_ft2": pv("olmoe3_275m_merged30_ft2/step59129.json"),
            "baseline30_ft": pv("olmoe3_275m_baseline30_ft/step58175.json"), "baseline30_ft2": pv("olmoe3_275m_baseline30_ft2/step59129.json"),
            "merged_ft": pv("olmoe3_275m_merged_ft/step39502.json"), "merged_ft2": pv("olmoe3_275m_merged_ft2/step40456.json"),
            "baseline_ft": pv("olmoe3_275m_baseline_ft/step39502.json"), "baseline_ft2": pv("olmoe3_275m_baseline_ft2/step40456.json")}
     has_ft = any(v is not None for v in ft.values())
-    xs_all = toks + ([32.5, 35.0] if has_ft else []); labels = [f"{t:g}B" for t in toks] + (["+0.5B ft", "+1B ft"] if has_ft else [])
-    shade = (32.5, "joint finetuning") if has_ft else None
-    def ser(b, m, F, name_b="baseline (full model, continued)", name_m="merged squares"):
-        out = [{"name": name_b, "y": b + ([F["baseline30_ft"], F["baseline30_ft2"]] if has_ft else [])}, {"name": name_m, "y": m + ([F["merged30_ft"], F["merged30_ft2"]] if has_ft else [])}]
+    toks = [st * 524288 / 1e9 for st in steps]  # exact token counts, so the finetune x positions (20.5 / 21.0 / 30.5 / 31.0) stay distinct
+    ftx = [toks[4] + 0.5, toks[4] + 1.0, toks[9] + 0.5, toks[9] + 1.0] if has_ft else []
+    xs_all = sorted(toks + ftx); pos = {x: i for i, x in enumerate(xs_all)}
+    labels = [f"{x:.3g}B" if x in toks else "" for x in xs_all]
+    def ser(b, m, F):
+        col = lambda vals: [vals.get(x) for x in xs_all]
+        out = [{"name": "baseline (full model, continued)", "y": col(dict(zip(toks, b)))}, {"name": "merged squares", "y": col(dict(zip(toks, m)))}]
         if has_ft:
-            out += [{"name": "merged, finetuned from 20B", "y": [None] * len(toks) + [F["merged_ft"], F["merged_ft2"]], "color": "#dc2626", "dashed": True},
-                    {"name": "baseline, finetuned from 20B", "y": [None] * len(toks) + [F["baseline_ft"], F["baseline_ft2"]], "color": "#2563eb", "dashed": True}]
+            out += [{"name": "merged, joint finetuning (+0.5B, +1B)", "color": "#dc2626", "dotted": True,
+                     "y": col({toks[4]: m[4], ftx[0]: F["merged_ft"], ftx[1]: F["merged_ft2"], toks[9]: m[9], ftx[2]: F["merged30_ft"], ftx[3]: F["merged30_ft2"]})},
+                    {"name": "baseline, joint finetuning (+0.5B, +1B)", "color": "#2563eb", "dotted": True,
+                     "y": col({toks[4]: b[4], ftx[0]: F["baseline_ft"], ftx[1]: F["baseline_ft2"], toks[9]: b[9], ftx[2]: F["baseline30_ft"], ftx[3]: F["baseline30_ft2"]})}]
         return out
     charts = CHART_CSS + line_chart(xs_all, ser(b_h, m_h, ft) + [{"name": "start model (10B)", "y": [start] * len(xs_all), "const": True, "dashed": True, "color": "#64748b"}],
-                                   title="Held-out CE (sample from 300B tokens into the stream)", xlabels=labels, x_label="tokens trained", shade=shade)
+                                   title="Held-out CE (sample from 300B tokens into the stream)", xlabels=labels, x_label="tokens trained")
     if any(v is not None for v in b_p + m_p):
         charts += line_chart(xs_all, ser(b_p, m_p, ftp) + [{"name": "start model (10B)", "y": [ref_ppl] * len(xs_all), "const": True, "dashed": True, "color": "#64748b"}],
-                             title="v3-small ppl sets, mean CE", xlabels=labels, x_label="tokens trained", shade=shade)
-    out = section("Stages 2&ndash;4: merged squares vs continued baseline, 10B &rarr; 30B tokens, then joint finetuning",
+                             title="v3-small ppl sets, mean CE", xlabels=labels, x_label="tokens trained")
+    out = section("Stages 2&ndash;4: merged squares vs continued baseline, 10B &rarr; 30B tokens, with joint finetuning",
         "The squares train separately on their own documents for 20B tokens in two 10B windows (stream steps 19,074&ndash;38,147, then "
         "38,147&ndash;57,221; the second window's documents assigned with the same rule and the same 10B start model, each square continuing from "
         "its own checkpoint), with checkpoints at five progress fractions per window; the baseline is the full model continued to 30B. "
         "<b>Held-out CE</b>: 7,993 instances taken 300B tokens into the stream (steps 572,205&ndash;572,605), unseen by every model. x-axis: tokens "
-        "trained. <b>Shaded</b>: joint finetuning of the merged model (Adam moments merged like the weights) and of the baseline on the stream right "
-        "after the window end, +0.5B = 954 steps and +1B = 1,908 steps at the same constant LR. Solid lines continue from the 30B merge (steps "
-        "57,221&ndash;59,129, seen by no square); dashed lines start from the 20B merge (steps 38,548&ndash;40,456, the other blocks' finetuning tokens).",
+        "trained. <b>Dotted</b>: joint finetuning of the merged model (Adam moments merged like the weights) and of the baseline on the stream right "
+        "after each window end, +0.5B = 954 steps and +1B = 1,908 steps at the same constant LR (from 20B: steps 38,548&ndash;40,456, the other "
+        "blocks' finetuning tokens; from 30B: steps 57,221&ndash;59,129, seen by no square).",
         charts,
         "The merged model never beats the baseline and is flat at 2.46 from 15.7B to 30B (2.464 &rarr; 2.460) while the baseline keeps improving "
         "(2.399 &rarr; 2.351), so the gap widens only through the baseline's progress, from 0.065 at 15.7B to 0.11 at 30B: longer separate "
@@ -336,19 +334,19 @@ def std_window2():
         "2.944) and the gap grows from 0.045 to 0.069. " + WINDOW2_FT_TAKE)
     pw = {st: d for st in steps if (d := _jload(PW / f"piecewise_match{st}.json")) and d.get("piecewise")}
     if pw:
-        pxs = [round(st * 524288 / 1e9, 1) for st in pw]; D = list(pw.values())
+        pxs = [st * 524288 / 1e9 for st in pw]; D = list(pw.values())
         avg = line_chart(pxs, [{"name": "piecewise (own square, no merge)", "y": [d["piecewise"] for d in D]},
                                {"name": "merged, free routing", "y": [d.get(f"merged_{d['name']}") for d in D]},
                                {"name": "baseline", "y": [d.get("baseline") for d in D], "dashed": True, "color": "#059669"},
                                {"name": "start model", "y": [D[0]["start_full"]] * len(D), "const": True, "dashed": True, "color": "#64748b"}],
-                         title="All held-out documents (300B sample)", xlabels=[f"{t:g}B" for t in pxs], x_label="tokens trained")
+                         title="All held-out documents (300B sample)", xlabels=[f"{t:.3g}B" for t in pxs], x_label="tokens trained")
         grp = ""
         for g in range(4):
             grp += line_chart(pxs, [{"name": "own square", "y": [d["sub_on_group"][str(g)][str(g)] for d in D]},
                                     {"name": "merged, free routing", "y": [(d.get(f"merged_{d['name']}_by_group") or {}).get(str(g)) for d in D]},
                                     {"name": "baseline", "y": [(d.get("baseline_by_group") or {}).get(str(g)) for d in D], "dashed": True, "color": "#059669"},
                                     {"name": "start model", "y": [D[0]["start_full_by_group"][str(g)]] * len(D), "const": True, "dashed": True, "color": "#64748b"}],
-                              title=f"Group {g} documents ({D[0]['docs_per_group'][g]:,} held-out docs)", W=400, H=250, xlabels=[f"{t:g}B" for t in pxs], x_label="tokens trained")
+                              title=f"Group {g} documents ({D[0]['docs_per_group'][g]:,} held-out docs)", W=400, H=250, xlabels=[f"{t:.3g}B" for t in pxs], x_label="tokens trained")
         out += section("Where the merge loses: each square alone vs the merged model",
             "Piecewise CE (each held-out document scored by its own square, group = the start model's routing) vs the merged model on the same "
             "documents, over 10B &rarr; 30B tokens, on the 300B-token held-out sample.",
@@ -377,26 +375,21 @@ def std_random_control(W1, b_h, m_h, b_p, m_p, start, ref_ppl, pw):
              "of the window goes to a uniformly random group, so each square owns a quarter of the experts and a random quarter of the tokens"
              + (f" ({', '.join(f'{100*x:.1f}%' for x in stt['token_share'])} of the tokens)" if stt else "") + ". Squares are merged with equal weights. "
              "Because a held-out document has no 'own' square under a random split, the square line is the mean CE of the four squares each scored "
-             "on all held-out documents; the routing-based curves of the block above are repeated in grey for comparison.")
+             "on all held-out documents.")
     if not any(v is not None for v in mr + sqm):
         return section("Control: random expert groups, random document split (10B &rarr; 20B)", setup, "", STDRAND_TAKE)
-    pw_pc = [(pw.get(st) or {}).get("piecewise") for st in W1]
-    charts = CHART_CSS + line_chart(toks, [{"name": "baseline (full model, continued)", "y": b_h},
-                                          {"name": "merged squares, random split", "y": mr, "color": "#dc2626"},
-                                          {"name": "squares, random split (mean of 4, all documents)", "y": sqm, "color": "#d97706"},
-                                          {"name": "merged squares, routing split (block above)", "y": m_h, "color": "#9ca3af"},
-                                          {"name": "piecewise, routing split (block above)", "y": pw_pc, "color": "#9ca3af", "dashed": True},
+    charts = CHART_CSS + line_chart(toks, [{"name": "baseline (full model, continued)", "y": b_h}, {"name": "merged squares", "y": mr},
                                           {"name": "start model (10B)", "y": [start] * len(toks), "const": True, "dashed": True, "color": "#64748b"}],
                                    title="Held-out CE (300B sample)", xlabels=labels, x_label="tokens trained")
     if any(v is not None for v in mp):
-        charts += line_chart(toks, [{"name": "baseline (full model, continued)", "y": b_p}, {"name": "merged squares, random split", "y": mp, "color": "#dc2626"},
-                                    {"name": "merged squares, routing split (block above)", "y": m_p, "color": "#9ca3af"},
+        charts += line_chart(toks, [{"name": "baseline (full model, continued)", "y": b_p}, {"name": "merged squares", "y": mp},
                                     {"name": "start model (10B)", "y": [ref_ppl] * len(toks), "const": True, "dashed": True, "color": "#64748b"}],
                              title="v3-small ppl sets, mean CE", xlabels=labels, x_label="tokens trained")
-    per = "<p><b>Each random square on all held-out documents</b>:</p>" + line_chart(toks, [{"name": f"square {g}", "y": [sq[i][g] for i in range(len(W1))]} for g in range(4)]
-                                                                                    + [{"name": "baseline", "y": b_h, "dashed": True, "color": "#059669"}, {"name": "start model", "y": [start] * len(toks), "const": True, "dashed": True, "color": "#64748b"}],
-                                                                                    title="Held-out CE (300B sample)", xlabels=labels, x_label="tokens trained")
-    return section("Control: random expert groups, random document split (10B &rarr; 20B)", setup, charts + per, STDRAND_TAKE)
+    charts += "<p><b>Where the merge stands against the squares</b> (each square scored on all held-out documents, mean of the four):</p>" + line_chart(toks,
+        [{"name": "squares (mean of 4, no merge)", "y": sqm}, {"name": "merged, free routing", "y": mr},
+         {"name": "baseline", "y": b_h, "dashed": True, "color": "#059669"}, {"name": "start model", "y": [start] * len(toks), "const": True, "dashed": True, "color": "#64748b"}],
+        title="All held-out documents (300B sample)", xlabels=labels, x_label="tokens trained")
+    return section("Control: random expert groups, random document split (10B &rarr; 20B)", setup, charts, STDRAND_TAKE)
 
 
 def build_q3():
@@ -591,7 +584,7 @@ def line_chart(xs, series, *, title="", y_label="CE", x_label="progress through 
     data = {"W": W, "x0": x0, "pw": pw, "xmin": xmin, "xmax": xmax, "xs": xs, "xlab": labels, "series": []}
     legend = []
     for i, s_ in enumerate(series):
-        c = s_.get("color") or _LC_COLORS[i % len(_LC_COLORS)]; dash = ' stroke-dasharray="5,4"' if s_.get("dashed") else ""
+        c = s_.get("color") or _LC_COLORS[i % len(_LC_COLORS)]; dash = ' stroke-dasharray="2,3"' if s_.get("dotted") else (' stroke-dasharray="5,4"' if s_.get("dashed") else "")
         y = s_["y"]
         if s_.get("const"):
             v = next((v for v in y if v is not None), None)
@@ -600,10 +593,16 @@ def line_chart(xs, series, *, title="", y_label="CE", x_label="progress through 
             y = [v] * len(xs)
         else:
             pts = [(X(x), Y(v)) for x, v in zip(xs, y) if v is not None]
-            if len(pts) > 1: g.append(f'<polyline fill="none" stroke="{c}" stroke-width="2"{dash} points="' + " ".join(f"{a:.1f},{b:.1f}" for a, b in pts) + '"/>')
+            segs, cur = [], []  # a None breaks the line (a series may hold several separate branches)
+            for x, v in zip(xs, y):
+                if v is None: segs.append(cur); cur = []
+                else: cur.append((X(x), Y(v)))
+            segs.append(cur)
+            for seg in segs:
+                if len(seg) > 1: g.append(f'<polyline fill="none" stroke="{c}" stroke-width="2"{dash} points="' + " ".join(f"{a:.1f},{b:.1f}" for a, b in seg) + '"/>')
             for a, b in pts: g.append(f'<circle cx="{a:.1f}" cy="{b:.1f}" r="3.2" fill="{c}"/>')
         data["series"].append({"n": s_["name"], "y": y, "c": c})
-        legend.append(f'<span style="display:inline-block;margin-right:10px"><span style="display:inline-block;width:18px;border-top:2px {"dashed" if s_.get("dashed") else "solid"} {c};vertical-align:middle"></span> {s_["name"]}</span>')
+        legend.append(f'<span style="display:inline-block;margin-right:10px"><span style="display:inline-block;width:18px;border-top:2px {"dotted" if s_.get("dotted") else ("dashed" if s_.get("dashed") else "solid")} {c};vertical-align:middle"></span> {s_["name"]}</span>')
     g.append(f'<line class="lc-vline" x1="0" x2="0" y1="{y0}" y2="{y0+ph}" stroke="#94a3b8" stroke-dasharray="2,3" style="display:none"/></svg>')
     payload = html.escape(json.dumps(data), quote=True)
     return (f'<div class="lc" data-chart="{payload}"><div class="lc-title">{title}</div>' + "".join(g)
@@ -628,10 +627,7 @@ STD_PW_TAKE = ("For the standard model the squares themselves are the problem: o
             "reverse of the EMO case, and is a gain early on while the squares are still weak.")
 
 
-ROUTER_LR_TAKE = ("<p><b>Takeaway.</b> The optimum is flat between 8e-4 and 2e-3 (both 2.476 held-out); 2e-4 is worse (2.485) and every larger LR "
-                  "is worse again (2.480, 2.491, 2.513 at 4e-3, 8e-3, 1.6e-2), with the v3-small sets agreeing. The routers do move: their relative "
-                  "change after 0.5B grows from 0.2&ndash;0.3 at 2e-4 to 1.1&ndash;1.8 at 1.6e-2, so larger steps are taken and do not help. The LR is "
-                  "not what limits the router-only recovery; the 0.04 that separates it from the full finetune (2.434) sits in the non-router weights.</p>")
+ROUTER_LR_TAKE = "<p><b>Takeaway.</b> Sticking to the original learning rate is best: 8e-4 and 2e-3 tie, and every other value is worse.</p>"
 
 
 def squares_results(HELD=HELD, PPL=PPL, SQO=SQO, start="emo_step19074", start_ppl="olmoe3_275m_emo_10b", base_runs=("olmoe3_275m_emo_20b", "olmoe3_275m_emo_20b_filler", "olmoe3_275m_emo_20b_1node"), label="", take_main=EMO_TAKE, take_pw=EMO_PW_TAKE):
