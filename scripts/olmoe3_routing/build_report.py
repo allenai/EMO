@@ -289,7 +289,7 @@ def std_window2():
     start = hv("std_step19074")
     b_h = [hv(f"baseline_step{st}") for st in steps]; m_h = [hv(f"merged_match{st}") for st in steps]
     def bppl(st):
-        for run in ("olmoe3_275m_20b_1node", "olmoe3_275m_30b_1node"):
+        for run in ("olmoe3_275m_20b_1node", "olmoe3_275m_30b_1node", "olmoe3_275m_130b"):
             for s_ in (st, st - 1):
                 if (PPL / run / f"step{s_}.json").exists(): return _ppl(PPL / run / f"step{s_}.json")
         return None
@@ -368,15 +368,21 @@ def std_random_control(W1, b_h, m_h, b_p, m_p, start, ref_ppl, pw):
     HR = ROOT / "sparse_experts/olmoe3_routing/runs_heldout300b_stdrand"; PPL = ROOT / "sparse_experts/olmoe3_squares_stdrand/ppl_validation"
     G = _jload(ROOT / "sparse_experts/olmoe3_squares_stdrand/groups.json"); stt = _jload(ROOT / "sparse_experts/olmoe3_squares_stdrand/pack/stats.json")
     if G is None: return ""
-    hv = lambda tag: _ce(HR / f"{tag}/none")
+    hv = lambda tag: _ce(HR / f"{tag}/none"); HRB = ROOT / "sparse_experts/olmoe3_routing/runs_heldout300b_std"; PPLB = ROOT / "sparse_experts/olmoe3_squares_std/ppl_validation"
     W1 = [st for st in W1 if st <= 38148 or hv(f"merged_match{st}") is not None or any(hv(f"sub{g}_match{st}") is not None for g in range(4))]  # window-2 points once they exist
     b_h, m_h, b_p, m_p = b_h[:len(W1)], m_h[:len(W1)], b_p[:len(W1)], m_p[:len(W1)]
+    W3 = [st for st in (66481, 116479, 166478, 216477, 247956) if hv(f"merged_match{st}") is not None or any(hv(f"sub{g}_match{st}") is not None for g in range(4))]  # window 3 (30B -> 130B)
+    W1 = W1 + W3; b_h = b_h + [_ce(HRB / f"baseline_step{st}/none") for st in W3]
+    b_p = b_p + [_ppl(PPLB / "olmoe3_275m_130b" / f"step{st}.json") for st in W3]
     mr = [hv(f"merged_match{st}") for st in W1]; sq = [[hv(f"sub{g}_match{st}") for g in range(4)] for st in W1]
     sqm = [sum(v) / 4 if all(x is not None for x in v) else None for v in sq]
+    sqb = [min(x for x in v if x is not None) if any(x is not None for x in v) else None for v in sq]  # best square at each point
     mp = [_ppl(PPL / "merged" / f"match{st}.json") for st in W1]
     toks = [st * 524288 / 1e9 for st in W1]; labels = [f"{t:.3g}B" for t in toks]
-    w2 = len(W1) > 5
-    setup = ("Same standard-routing start model (10B), same window" + (" and the same second window (stream steps 38,147&ndash;57,221, each square continuing from its own window-1 final on a fresh random quarter)" if w2 else "") + " (stream steps 19,074&ndash;38,147), same held-out sample, but the split has no "
+    w2 = len(W1) > 5; w3 = len(W1) > 10
+    setup = ("Same standard-routing start model (10B), same window" + (" and the same second window (stream steps 38,147&ndash;57,221, each square continuing from its own window-1 final on a fresh random quarter)" if w2 else "")
+             + (", then a third window of 100B tokens (stream steps 57,221&ndash;247,956) in which each square continues on a contiguous quarter of the stream, "
+                "a uniformly random quarter of the window's documents since the stream is a global shuffle, while the baseline continues to 130B" if w3 else "") + " (stream steps 19,074&ndash;38,147), same held-out sample, but the split has no "
              "structure: in every layer 2&ndash;9 the 512 experts are shuffled into four groups of 128 (layer 1 whole, as before), and every document "
              "of the window goes to a uniformly random group, so each square owns a quarter of the experts and a random quarter of the tokens"
              + (f" ({', '.join(f'{100*x:.1f}%' for x in stt['token_share'])} of the tokens)" if stt else "") + ". Squares are merged with equal weights. "
@@ -392,10 +398,10 @@ def std_random_control(W1, b_h, m_h, b_p, m_p, start, ref_ppl, pw):
                                     {"name": "start model (10B)", "y": [ref_ppl] * len(toks), "const": True, "dashed": True, "color": "#64748b"}],
                              title="v3-small ppl sets, mean CE", xlabels=labels, x_label="tokens trained")
     charts += "<p><b>Where the merge stands against the squares</b> (each square scored on all held-out documents, mean of the four):</p>" + line_chart(toks,
-        [{"name": "squares (mean of 4, no merge)", "y": sqm}, {"name": "merged, free routing", "y": mr},
+        [{"name": "squares (mean of 4, no merge)", "y": sqm}, {"name": "best square (no merge)", "y": sqb, "color": "#d97706"}, {"name": "merged, free routing", "y": mr},
          {"name": "baseline", "y": b_h, "dashed": True, "color": "#059669"}, {"name": "start model", "y": [start] * len(toks), "const": True, "dashed": True, "color": "#64748b"}],
         title="All held-out documents (300B sample)", xlabels=labels, x_label="tokens trained")
-    return section("Control: random expert groups, random document split (10B &rarr; " + ("30B" if w2 else "20B") + ")", setup, charts, STDRAND_TAKE)
+    return section("Control: random expert groups, random document split (10B &rarr; " + ("130B" if w3 else ("30B" if w2 else "20B")) + ")", setup, charts, STDRAND_TAKE)
 
 
 def build_q3():
