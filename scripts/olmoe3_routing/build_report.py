@@ -267,7 +267,7 @@ def squares_block(tag, full_run, start_ppl_run, base_run, take_main="", take_pw=
     return inner
 
 
-WINDOW2_FT_TAKE = ("Joint finetuning (dotted) recovers about 40% of the merge loss after 0.5B tokens at either window end and adds little in the "
+WINDOW2_FT_TAKE = ("Joint finetuning (dotted, shaded) recovers about 40% of the merge loss after 0.5B tokens at either window end and adds little in the "
                    "next 0.5B; the merged model stays behind the baseline.")
 STDRAND_TAKE = ("With no structure in the split the merge does <i>better</i> than with the routing split (2.430 vs 2.462 at 20B on the held-out sample; "
                 "baseline 2.380) and keeps improving instead of going flat, while the squares themselves are much weaker (2.63 &rarr; 2.50, below the start "
@@ -314,17 +314,18 @@ def std_window2():
                     {"name": "baseline, joint finetuning (+0.5B, +1B)", "color": "#2563eb", "dotted": True,
                      "y": col({toks[4]: b[4], ftx[0]: F["baseline_ft"], ftx[1]: F["baseline_ft2"], toks[9]: b[9], ftx[2]: F["baseline30_ft"], ftx[3]: F["baseline30_ft2"]})}]
         return out
+    bands = [(toks[4], ftx[1], "joint finetuning"), (toks[9], ftx[3], "joint finetuning")] if has_ft else None
     charts = CHART_CSS + line_chart(xs_all, ser(b_h, m_h, ft) + [{"name": "start model (10B)", "y": [start] * len(xs_all), "const": True, "dashed": True, "color": "#64748b"}],
-                                   title="Held-out CE (sample from 300B tokens into the stream)", xlabels=labels, x_label="tokens trained")
+                                   title="Held-out CE (sample from 300B tokens into the stream)", xlabels=labels, x_label="tokens trained", shade=bands)
     if any(v is not None for v in b_p + m_p):
         charts += line_chart(xs_all, ser(b_p, m_p, ftp) + [{"name": "start model (10B)", "y": [ref_ppl] * len(xs_all), "const": True, "dashed": True, "color": "#64748b"}],
-                             title="v3-small ppl sets, mean CE", xlabels=labels, x_label="tokens trained")
+                             title="v3-small ppl sets, mean CE", xlabels=labels, x_label="tokens trained", shade=bands)
     out = section("Stages 2&ndash;4: merged squares vs continued baseline, 10B &rarr; 30B tokens, with joint finetuning",
         "The squares train separately on their own documents for 20B tokens in two 10B windows (stream steps 19,074&ndash;38,147, then "
         "38,147&ndash;57,221; the second window's documents assigned with the same rule and the same 10B start model, each square continuing from "
         "its own checkpoint), with checkpoints at five progress fractions per window; the baseline is the full model continued to 30B. "
         "<b>Held-out CE</b>: 7,993 instances taken 300B tokens into the stream (steps 572,205&ndash;572,605), unseen by every model. x-axis: tokens "
-        "trained. <b>Dotted</b>: joint finetuning of the merged model (Adam moments merged like the weights) and of the baseline on the stream right "
+        "trained. <b>Dotted, shaded</b>: joint finetuning of the merged model (Adam moments merged like the weights) and of the baseline on the stream right "
         "after each window end, +0.5B = 954 steps and +1B = 1,908 steps at the same constant LR (from 20B: steps 38,548&ndash;40,456, the other "
         "blocks' finetuning tokens; from 30B: steps 57,221&ndash;59,129, seen by no square).",
         charts,
@@ -554,7 +555,8 @@ _LC_COLORS = ["#2563eb", "#dc2626", "#059669", "#7c3aed", "#d97706", "#0891b2"]
 def line_chart(xs, series, *, title="", y_label="CE", x_label="progress through the 10B tokens", xfmt=lambda v: f"{v:.0f}%", W=480, H=280, xlabels=None, shade=None):
     """Interactive line chart (inline SVG; hovering shows every series' value at the nearest x).
     xs: x values; series: dicts(name, y=list with None for missing, dashed=False, const=False (horizontal reference line), color);
-    xlabels: explicit tick labels; shade=(x_from, label): tint the plot area from x_from rightwards (e.g. a finetuning stage)."""
+    xlabels: explicit tick labels; shade=(x_from, label) tints the plot area from x_from rightwards (e.g. a finetuning stage);
+    a list of (x_from, x_to, label) tints bounded bands."""
     import math
     x0, y0, pw, ph = 46, 14, W - 60, H - 52
     ys = [v for s_ in series for v in s_["y"] if v is not None]
@@ -566,10 +568,13 @@ def line_chart(xs, series, *, title="", y_label="CE", x_label="progress through 
     Y = lambda v: y0 + (ymax - v) / (ymax - ymin) * ph
     labels = xlabels or [xfmt(v) for v in xs]
     g = [f'<svg viewBox="0 0 {W} {H}" width="{W}" height="{H}">']
-    if shade:
-        xa = (X(shade[0]) + X(max(v for v in xs if v < shade[0]))) / 2 if any(v < shade[0] for v in xs) else X(shade[0])
-        g.append(f'<rect x="{xa:.1f}" y="{y0}" width="{x0+pw-xa:.1f}" height="{ph}" fill="#f1f5f9"/>'
-                 f'<text x="{(xa+x0+pw)/2:.1f}" y="{y0+11}" font-size="10" text-anchor="middle" fill="#64748b">{shade[1]}</text>')
+    for band in ([shade] if shade and not isinstance(shade, list) else (shade or [])):
+        if len(band) == 3:  # (x_from, x_to, label): a bounded band, padded a little so the end points sit inside it
+            xa, xb = X(band[0]) - 5, min(X(band[1]) + 8, x0 + pw)
+        else:  # (x_from, label): from x_from (half-way to the previous x) to the right edge
+            xa = (X(band[0]) + X(max(v for v in xs if v < band[0]))) / 2 if any(v < band[0] for v in xs) else X(band[0]); xb = x0 + pw
+        g.append(f'<rect x="{xa:.1f}" y="{y0}" width="{xb-xa:.1f}" height="{ph}" fill="#f1f5f9"/>'
+                 f'<text x="{(xa+xb)/2:.1f}" y="{y0+11}" font-size="10" text-anchor="middle" fill="#64748b">{band[-1]}</text>')
     step = (ymax - ymin) / 4
     mag = 10 ** math.floor(math.log10(step)); step = math.ceil(step / mag) * mag
     t = math.ceil(ymin / step) * step
