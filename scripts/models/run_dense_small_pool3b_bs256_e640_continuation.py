@@ -73,10 +73,20 @@ def postdecay_arguments(
         "--trainer.callbacks.checkpointer.fixed_steps="
         + json.dumps(pending_steps, separators=(",", ":"))
     )
-    return [
+    arguments = [
         fixed_steps if value.startswith("--trainer.callbacks.checkpointer.fixed_steps=") else value
         for value in arguments
     ]
+    if resume_step > POST_START_STEP:
+        # A WSD recovery checkpoint contains the optimizer's decayed current LR,
+        # which intentionally differs from the trajectory's original command LR.
+        # Restore that optimizer/scheduler state exactly instead of rejecting it.
+        arguments = producer.common.upsert(
+            arguments,
+            "--train_module.validate_optimizer_hyperparameters_on_load=",
+            "--train_module.validate_optimizer_hyperparameters_on_load=false",
+        )
+    return arguments
 
 
 def run(config: dict[str, Any], item: dict[str, Any]) -> None:
