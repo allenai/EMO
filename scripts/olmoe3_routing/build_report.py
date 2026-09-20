@@ -357,39 +357,59 @@ def std_window2():
             "The standard squares on their own keep improving through window 2 (2.448 at 20B &rarr; 2.411 at 30B) but never reach the baseline "
             "(2.351 at 30B); the merged model sits above them at 2.46. So for the standard model both parts cost: each square is weaker than the "
             "full model on its own documents, and merging adds another 0.05 on top, both roughly constant over the second window.")
-    out += std_random_control(steps, b_h, m_h, b_p, m_p, start, ref_ppl, pw)
+    out += random_control("std")
     return out
 
 
-def std_random_control(W1, b_h, m_h, b_p, m_p, start, ref_ppl, pw):
-    """Control for block B: four random expert groups of equal size and documents split uniformly at random (window 1 only,
-    10B -> 20B), same start model, same 300B-token held-out sample. Squares are scored on ALL held-out documents (a random
-    partition gives a held-out document no 'own' square), so the square line is the mean of the four."""
-    HR = ROOT / "sparse_experts/olmoe3_routing/runs_heldout300b_stdrand"; PPL = ROOT / "sparse_experts/olmoe3_squares_stdrand/ppl_validation"
-    G = _jload(ROOT / "sparse_experts/olmoe3_squares_stdrand/groups.json"); stt = _jload(ROOT / "sparse_experts/olmoe3_squares_stdrand/pack/stats.json")
+RANDOM_CONTROL = {  # random expert groups + random document split, one per start model
+    "std": dict(sqn="olmoe3_squares_stdrand", hr="runs_heldout300b_stdrand", hrb="runs_heldout300b_std", start="std_step19074", ppl_dirs=("olmoe3_squares_std/ppl_validation",),
+                base_runs=("olmoe3_275m_20b_1node", "olmoe3_275m_30b_1node", "olmoe3_275m_130b"), start_ppl="olmoe3_275m_10b", model="standard-routing",
+                w3=(66481, 116479, 166478, 216477, 247956), take=lambda: STDRAND_TAKE),
+    "emo": dict(sqn="olmoe3_squares_emorand", hr="runs_heldout300b_emorand", hrb="runs_heldout300b_emo", start="emo_step19074", ppl_dirs=("olmoe3_squares/ppl_validation", "olmoe3_squares_emorand/ppl_validation"),
+                base_runs=("olmoe3_275m_emo_20b_1node", "olmoe3_275m_emo_20b", "olmoe3_275m_emo_30b_1node"), start_ppl="olmoe3_275m_emo_10b", model="EMO",
+                w3=(), take=lambda: EMORAND_TAKE),
+}
+EMORAND_TAKE = "Square trainings running."
+
+
+def random_control(which):
+    """Control for a squares block: four random expert groups of equal size and documents split uniformly at random (the same
+    groups and packs for every start model), same 300B-token held-out sample. Squares are scored on ALL held-out documents (a
+    random partition gives a held-out document no 'own' square), so the square line is the mean of the four (plus the best one)."""
+    C = RANDOM_CONTROL[which]; HR = ROOT / "sparse_experts/olmoe3_routing" / C["hr"]; HRB = ROOT / "sparse_experts/olmoe3_routing" / C["hrb"]
+    SQ = ROOT / "sparse_experts" / C["sqn"]; PPL = SQ / "ppl_validation"
+    G = _jload(SQ / "groups.json"); stt = _jload(SQ / "pack/stats.json")
     if G is None: return ""
-    hv = lambda tag: _ce(HR / f"{tag}/none"); HRB = ROOT / "sparse_experts/olmoe3_routing/runs_heldout300b_std"; PPLB = ROOT / "sparse_experts/olmoe3_squares_std/ppl_validation"
-    W1 = [st for st in W1 if st <= 38148 or hv(f"merged_match{st}") is not None or any(hv(f"sub{g}_match{st}") is not None for g in range(4))]  # window-2 points once they exist
-    b_h, m_h, b_p, m_p = b_h[:len(W1)], m_h[:len(W1)], b_p[:len(W1)], m_p[:len(W1)]
-    W3 = [st for st in (66481, 116479, 166478, 216477, 247956) if hv(f"merged_match{st}") is not None or any(hv(f"sub{g}_match{st}") is not None for g in range(4))]  # window 3 (30B -> 130B)
-    W1 = W1 + W3; b_h = b_h + [_ce(HRB / f"baseline_step{st}/none") for st in W3]
-    b_p = b_p + [_ppl(PPLB / "olmoe3_275m_130b" / f"step{st}.json") for st in W3]
-    mr = [hv(f"merged_match{st}") for st in W1]; sq = [[hv(f"sub{g}_match{st}") for g in range(4)] for st in W1]
+    hv = lambda tag: _ce(HR / f"{tag}/none"); hb = lambda tag: _ce(HRB / f"{tag}/none")
+    W1 = [20000, 25000, 30000, 35000, 38148]; W2 = [39073, 44073, 49073, 54073, 57221]
+    has = lambda st: hv(f"merged_match{st}") is not None or any(hv(f"sub{g}_match{st}") is not None for g in range(4))
+    steps = W1 + [st for st in W2 if has(st)] + [st for st in C["w3"] if has(st)]
+    w2 = len(steps) > 5; w3 = len(steps) > 10
+    def bppl(st):
+        for d in C["ppl_dirs"]:
+            for run in C["base_runs"]:
+                for s_ in (st, st - 1):
+                    if (ROOT / "sparse_experts" / d / run / f"step{s_}.json").exists(): return _ppl(ROOT / "sparse_experts" / d / run / f"step{s_}.json")
+        return None
+    start = hb(C["start"]); ref_ppl = _ppl(ROOT / f"claude_outputs/debug_validation/ppl_validation/{C['start_ppl']}/step19074.json")
+    b_h = [hb(f"baseline_step{st}") for st in steps]; b_p = [bppl(st) for st in steps]
+    mr = [hv(f"merged_match{st}") for st in steps]; sq = [[hv(f"sub{g}_match{st}") for g in range(4)] for st in steps]
     sqm = [sum(v) / 4 if all(x is not None for x in v) else None for v in sq]
     sqb = [min(x for x in v if x is not None) if any(x is not None for x in v) else None for v in sq]  # best square at each point
-    mp = [_ppl(PPL / "merged" / f"match{st}.json") for st in W1]
-    toks = [st * 524288 / 1e9 for st in W1]; labels = [f"{t:.3g}B" for t in toks]
-    w2 = len(W1) > 5; w3 = len(W1) > 10
-    setup = ("Same standard-routing start model (10B), same window" + (" and the same second window (stream steps 38,147&ndash;57,221, each square continuing from its own window-1 final on a fresh random quarter)" if w2 else "")
+    mp = [_ppl(PPL / "merged" / f"match{st}.json") for st in steps]
+    toks = [st * 524288 / 1e9 for st in steps]; labels = [f"{t:.3g}B" for t in toks]
+    end = "130B" if w3 else ("30B" if w2 else "20B")
+    setup = (f"Same {C['model']} start model (10B), same window" + (" and the same second window (stream steps 38,147&ndash;57,221, each square continuing from its own window-1 final on a fresh random quarter)" if w2 else "")
              + (", then a third window of 100B tokens (stream steps 57,221&ndash;247,956) in which each square continues on a contiguous quarter of the stream, "
                 "a uniformly random quarter of the window's documents since the stream is a global shuffle, while the baseline continues to 130B" if w3 else "") + " (stream steps 19,074&ndash;38,147), same held-out sample, but the split has no "
              "structure: in every layer 2&ndash;9 the 512 experts are shuffled into four groups of 128 (layer 1 whole, as before), and every document "
              "of the window goes to a uniformly random group, so each square owns a quarter of the experts and a random quarter of the tokens"
              + (f" ({', '.join(f'{100*x:.1f}%' for x in stt['token_share'])} of the tokens)" if stt else "") + ". Squares are merged with equal weights. "
              "Because a held-out document has no 'own' square under a random split, the square line is the mean CE of the four squares each scored "
-             "on all held-out documents.")
+             "on all held-out documents." + (" The same random groups and the same random document packs are used for every start model." if which != "std" else ""))
+    title = f"Control: random expert groups, random document split (10B &rarr; {end})"
     if not any(v is not None for v in mr + sqm):
-        return section("Control: random expert groups, random document split (10B &rarr; 20B)", setup, "", STDRAND_TAKE)  # noqa
+        return section(title, setup, "", C["take"]())
     charts = CHART_CSS + line_chart(toks, [{"name": "baseline (full model, continued)", "y": b_h}, {"name": "merged squares", "y": mr},
                                           {"name": "start model (10B)", "y": [start] * len(toks), "const": True, "dashed": True, "color": "#64748b"}],
                                    title="Held-out CE (300B sample)", xlabels=labels, x_label="tokens trained")
@@ -401,7 +421,7 @@ def std_random_control(W1, b_h, m_h, b_p, m_p, start, ref_ppl, pw):
         [{"name": "squares (mean of 4, no merge)", "y": sqm}, {"name": "best square (no merge)", "y": sqb, "color": "#d97706"}, {"name": "merged, free routing", "y": mr},
          {"name": "baseline", "y": b_h, "dashed": True, "color": "#059669"}, {"name": "start model", "y": [start] * len(toks), "const": True, "dashed": True, "color": "#64748b"}],
         title="All held-out documents (300B sample)", xlabels=labels, x_label="tokens trained")
-    return section("Control: random expert groups, random document split (10B &rarr; " + ("130B" if w3 else ("30B" if w2 else "20B")) + ")", setup, charts, STDRAND_TAKE)
+    return section(title, setup, charts, C["take"]())
 
 
 def build_q3():
@@ -445,6 +465,7 @@ def build_q3():
     else:
         inner += card("warn", "Stage 1", "<p>Assignment pass running.</p>")
     inner += squares_results()
+    inner += random_control("emo")
     body += variant("A", inner)
     # ---- B: standard MoE, k = 4 ----
     Gs = SQ.parent / "olmoe3_squares_std" / "groups.json"; Ss = OUT / "olmoe3_squares_std" / "stats.json"
