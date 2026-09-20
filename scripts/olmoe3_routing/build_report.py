@@ -274,7 +274,7 @@ STDRAND_TAKE = ("With no structure in the split the merge does <i>better</i> tha
                 "the baseline at 30B, its gap to the baseline staying near 0.05 while the routing split's grows to 0.11. The squares themselves are much weaker "
                 "(2.63 &rarr; 2.50 &rarr; 2.47, below the start model until 30B, and the four are indistinguishable). Over the next 100B the picture changes: the "
                 "merge stops improving at 2.37 (87B) and drifts back up to 2.38 at 130B while the squares keep improving (2.47 &rarr; 2.39) and the baseline "
-                "pulls away (2.28 at 113B), so by 130B a single random square is within 0.015 of the merge. Merging helps while the squares are alike; with "
+                "pulls away (2.28 at 130B, a gap of 0.10), so by 130B a single random square is within 0.015 of the merge. Merging helps while the squares are alike; with "
                 "enough separate training even random squares diverge until averaging their shared parameters stops paying, and the merged standard model "
                 "stays behind the baseline throughout.")
 
