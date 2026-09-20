@@ -269,12 +269,14 @@ def squares_block(tag, full_run, start_ppl_run, base_run, take_main="", take_pw=
 
 WINDOW2_FT_TAKE = ("Joint finetuning (dotted, shaded) recovers about 40% of the merge loss after 0.5B tokens at either window end and adds little in the "
                    "next 0.5B; the merged model stays behind the baseline.")
-STDRAND_TAKE = ("With no structure in the split the merge does <i>better</i> than with the routing split and keeps improving through both windows "
-                "instead of going flat: 2.483 &rarr; 2.430 at 20B &rarr; 2.408 at 30B on the held-out sample, against 2.462 &rarr; 2.460 for the routing "
-                "split and 2.351 for the baseline at 30B (v3-small 2.925 vs 2.944 and 2.875): its gap to the baseline stays near 0.05 (0.050 at 20B, "
-                "0.057 at 30B) while the routing split's grows to 0.11. The squares themselves are much weaker (2.63 &rarr; 2.50 &rarr; 2.47, below the start model until 30B, and the four are "
-                "indistinguishable). Merging helps when the squares are alike and hurts when they are specialised; either way the merged standard model "
-                "stays behind the baseline.")
+STDRAND_TAKE = ("With no structure in the split the merge does <i>better</i> than with the routing split and keeps improving through the first two "
+                "windows: 2.483 &rarr; 2.430 at 20B &rarr; 2.408 at 30B on the held-out sample, against 2.462 &rarr; 2.460 for the routing split and 2.351 for "
+                "the baseline at 30B, its gap to the baseline staying near 0.05 while the routing split's grows to 0.11. The squares themselves are much weaker "
+                "(2.63 &rarr; 2.50 &rarr; 2.47, below the start model until 30B, and the four are indistinguishable). Over the next 100B the picture changes: the "
+                "merge stops improving at 2.37 (87B) and drifts back up to 2.38 at 130B while the squares keep improving (2.47 &rarr; 2.39) and the baseline "
+                "pulls away (2.28 at 113B), so by 130B a single random square is within 0.015 of the merge. Merging helps while the squares are alike; with "
+                "enough separate training even random squares diverge until averaging their shared parameters stops paying, and the merged standard model "
+                "stays behind the baseline throughout.")
 
 
 def std_window2():
@@ -369,7 +371,11 @@ RANDOM_CONTROL = {  # random expert groups + random document split, one per star
                 base_runs=("olmoe3_275m_emo_20b_1node", "olmoe3_275m_emo_20b", "olmoe3_275m_emo_30b_1node"), start_ppl="olmoe3_275m_emo_10b", model="EMO",
                 w3=(), take=lambda: EMORAND_TAKE),
 }
-EMORAND_TAKE = "Square trainings running."
+EMORAND_TAKE = ("The EMO model behaves like the standard one under a random split, but closer to its baseline: the random merge is 2.427 at 20B and "
+                "2.405 at 30B against 2.403 and 2.376 for the baseline (gap 0.024 &rarr; 0.029; the standard control's is 0.050 &rarr; 0.057), improving "
+                "steadily; on the v3-small sets it stays within 0.02 of the baseline. The squares themselves are far weaker (2.63 &rarr; 2.52 &rarr; 2.49, "
+                "never below the start model's 2.465) and indistinguishable. So the EMO model's large merge loss in the main experiment comes from the "
+                "routing-based split, not from merging as such: with random groups and random documents, merging four EMO squares costs 0.02&ndash;0.03.")
 
 
 def random_control(which):
