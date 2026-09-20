@@ -156,6 +156,8 @@ def validate_config(config: dict[str, Any]) -> None:
     if not set(requested).issubset(ALLOWED_COORDINATES[batch]):
         raise ValueError(f"unsupported BS{batch} coordinates: {requested}")
     variant = str(config["variant"])
+    if variant not in {"Original", "DR+WT+EmbedWD", "DR+EmbedWD"}:
+        raise ValueError(f"unsupported Dense-1B variant {variant}")
     if batch in {128, 256} and set(requested) != ALLOWED_COORDINATES[batch]:
         raise ValueError(f"BS{batch} must contain the full requested coordinate set")
     if batch == 512 and variant == "Original" and requested != [("2e-3", "0.333")]:
@@ -174,7 +176,11 @@ def validate_config(config: dict[str, Any]) -> None:
             raise ValueError(
                 "original BS512 continuation must declare exact historical PD provenance"
             )
-    if [int(value) for value in config["initialTargets"]] != [1, 2, 4]:
+    initial_targets = [int(value) for value in config["initialTargets"]]
+    if config.get("checkpointEveryEpoch"):
+        if initial_targets != [8]:
+            raise ValueError("every-epoch checkpoint workflows must begin at E8")
+    elif initial_targets != [1, 2, 4]:
         raise ValueError("Dense-1B frontier ladder must begin E1 -> E2 -> E4")
     if int(config["epochIncrement"]) != 4 or int(config["maxEpoch"]) < 16:
         raise ValueError("Dense-1B must advance by four epochs with room for three POST sources")
@@ -248,7 +254,11 @@ def checkpoint_for_epoch(config: dict[str, Any], lr: str, wd: str, epoch: int) -
 
 
 def run_name(config: dict[str, Any], lr: str, wd: str, phase: str, epoch: int) -> str:
-    variant = "original" if config["variant"] == "Original" else "dr_wt_embwd"
+    variant = {
+        "Original": "original",
+        "DR+WT+EmbedWD": "dr_wt_embwd",
+        "DR+EmbedWD": "dr_untied_embwd",
+    }[str(config["variant"])]
     return (
         f"dense_1b_step1_0802_repeated_dclm1b_bs{config['globalSequences']}_"
         f"{variant}_{phase}_e{epoch}_lr{lr}_wd{wd}_{config['runSuffix']}"
@@ -264,20 +274,24 @@ def base_arguments(config: dict[str, Any], lr: str, wd: str) -> list[str]:
         f"--train_module.optim.weight_decay={wd}",
         f"--lr={lr}",
     ]
-    if config["variant"] == "DR+WT+EmbedWD":
+    variant = str(config["variant"])
+    if variant == "DR+WT+EmbedWD":
         arguments.extend(("--model.tie_embeddings=true", "--decay-embeddings"))
+    elif variant == "DR+EmbedWD":
+        arguments.extend(("--model.tie_embeddings=false", "--decay-embeddings"))
     else:
         arguments.append("--model.tie_embeddings=false")
     return arguments
 
 
 def phase_metadata(config: dict[str, Any], epoch: int) -> dict[str, Any]:
-    adaptive = config["variant"] == "DR+WT+EmbedWD"
+    variant = str(config["variant"])
+    adaptive = variant in {"DR+WT+EmbedWD", "DR+EmbedWD"}
     return {
-        "variant": str(config["variant"]),
+        "variant": variant,
         "dynamicRepacking": bool(adaptive and epoch > 1),
-        "weightTying": adaptive,
-        "decayEmbeddings": adaptive,
+        "weightTying": variant == "DR+WT+EmbedWD",
+        "decayEmbeddings": variant in {"DR+WT+EmbedWD", "DR+EmbedWD"},
         "dataOrder": "dynamic_repacking" if adaptive and epoch > 1 else "ordinary_shuffled",
     }
 
@@ -400,7 +414,13 @@ def evaluate_checkpoint(
 
 
 def predecay_training_arguments(
-    config: dict[str, Any], lr: str, wd: str, epoch: int, source: Path | None, name: str
+    config: dict[str, Any],
+    lr: str,
+    wd: str,
+    epoch: int,
+    source: Path | None,
+    name: str,
+    previous_epoch: int | None = None,
 ) -> list[str]:
     batch = int(config["globalSequences"])
     target = stable_step(epoch, batch)
@@ -412,6 +432,12 @@ def predecay_training_arguments(
         "--trainer.callbacks.heldout_evaluator=",
         f"--trainer.callbacks.heldout_evaluator={heldout}",
     )
+    checkpoint_epochs = (
+        list(range((previous_epoch or 0) + 1, epoch + 1))
+        if config.get("checkpointEveryEpoch")
+        else [epoch]
+    )
+    checkpoint_steps = [stable_step(value, batch) for value in checkpoint_epochs]
     arguments.extend(
         (
             f"--save-folder={output}",
@@ -421,7 +447,8 @@ def predecay_training_arguments(
                 "--trainer.callbacks.wandb.tags=[pretraining,step1,0802,dense-1b,"
                 f"pdpost,pre-decay,constant-lr,bs{batch},lr{lr},wd{wd}]"
             ),
-            f"--trainer.callbacks.checkpointer.fixed_steps=[{target}]",
+            "--trainer.callbacks.checkpointer.fixed_steps="
+            f"[{','.join(str(value) for value in checkpoint_steps)}]",
             f"--data_loader.ignore_fingerprint_mismatch={'true' if source else 'false'}",
             (
                 "--train_module.scheduler={_CLASS_: "
@@ -432,7 +459,7 @@ def predecay_training_arguments(
             "--trainer.callbacks.checkpointer.ephemeral_save_interval=999999999",
         )
     )
-    adaptive = config["variant"] == "DR+WT+EmbedWD"
+    adaptive = str(config["variant"]) in {"DR+WT+EmbedWD", "DR+EmbedWD"}
     if adaptive and epoch > 1:
         arguments.append("--dynamic-repacking")
     if source is not None:
@@ -516,7 +543,9 @@ def train_predecay(
     if source is not None and not source.is_dir():
         raise FileNotFoundError(f"missing exact PD source checkpoint {source}")
     name = run_name(config, lr, wd, "constant_predecay", epoch)
-    arguments = predecay_training_arguments(config, lr, wd, epoch, source, name)
+    arguments = predecay_training_arguments(
+        config, lr, wd, epoch, source, name, previous_epoch
+    )
     print(
         f"DENSE1B_PDPOST_STAGE_START bs={config['globalSequences']} lr={lr} wd={wd} "
         f"phase=pre_decay_train epoch={epoch} previous_epoch={previous_epoch or 0} "
@@ -560,7 +589,8 @@ def postdecay_training_arguments(
             ),
             "--trainer.callbacks.checkpointer.save_interval=1000000000",
             "--trainer.callbacks.checkpointer.ephemeral_save_interval=999999999",
-            f"--data_loader.restore_data_order_from_state={'false' if config['variant'] == 'DR+WT+EmbedWD' else 'true'}",
+            "--data_loader.restore_data_order_from_state="
+            f"{'false' if str(config['variant']) in {'DR+WT+EmbedWD', 'DR+EmbedWD'} else 'true'}",
             "--force_exact_trainer_load_path=true",
             f"--trainer.load_path={source}",
             "--trainer.load_trainer_state=true",
@@ -569,7 +599,7 @@ def postdecay_training_arguments(
             "--train_module.validate_optimizer_hyperparameters_on_load=true",
         )
     )
-    if config["variant"] == "DR+WT+EmbedWD" and epoch > 1:
+    if str(config["variant"]) in {"DR+WT+EmbedWD", "DR+EmbedWD"} and epoch > 1:
         arguments.append("--dynamic-repacking")
     return arguments
 
@@ -638,7 +668,8 @@ def finish_postdecay(
     ][-POST_DECAY_SOURCE_COUNT:]
     if len(sources) != POST_DECAY_SOURCE_COUNT:
         raise RuntimeError(
-            "POST finalization requires three completed frontier sources at or after E8"
+            f"POST finalization requires {POST_DECAY_SOURCE_COUNT} completed frontier "
+            "sources at or after E8"
         )
     for epoch in sources:
         run_postdecay(config, lr, wd, epoch)
@@ -686,6 +717,49 @@ def finish_postdecay(
         flush=True,
     )
     return pruned or saturated
+
+
+def finish_at_hard_ceiling(
+    config: dict[str, Any], lr: str, wd: str, trigger_epoch: int
+) -> None:
+    results = recover_postdecay_results(config, lr, wd)
+    if trigger_epoch not in results:
+        raise RuntimeError(f"hard ceiling E{trigger_epoch} has no POST result")
+    selected_epoch, selected = min(
+        results.items(), key=lambda item: (Decimal(str(item[1]["validationExact"])), item[0])
+    )
+    decision: dict[str, Any] = {
+        "status": "complete",
+        "policy": POLICY,
+        "lr": lr,
+        "wd": wd,
+        "variant": str(config["variant"]),
+        "trigger": "hard_ceiling",
+        "triggerEpoch": trigger_epoch,
+        "hardTerminalEpoch": int(config["maxEpoch"]),
+        "postDecayDecisionGroup": "post_decay",
+        "postDecayEvaluationStartEpoch": POST_DECAY_START_EPOCH,
+        "postDecaySaturationCriterion": POST_DECAY_SATURATION_CRITERION,
+        "postDecaySaturated": postdecay_saturated(results),
+        "postDecayEvaluatedEpochs": sorted(results),
+        "postDecayValidationExact": {
+            str(epoch): float(result["validationExact"])
+            for epoch, result in results.items()
+        },
+        "postDecaySelectionGroup": "post_decay",
+        "selectedPostDecayEpoch": selected_epoch,
+        "selectedPostDecayValidationExact": float(selected["validationExact"]),
+        "selectedCheckpoint": selected["checkpoint"],
+    }
+    atomic_json(decision_path(config, lr, wd, trigger_epoch), decision)
+    atomic_json(selection_path(config, lr, wd), decision)
+    print(
+        f"DENSE1B_PDPOST_HARD_CEILING bs={config['globalSequences']} lr={lr} wd={wd} "
+        f"trigger_epoch={trigger_epoch} selected_epoch={selected_epoch} "
+        f"validation={selected['validationExact']} json="
+        f"{json.dumps(decision, separators=(',', ':'), sort_keys=True)}",
+        flush=True,
+    )
 
 
 def recover_predecay_results(config: dict[str, Any], lr: str, wd: str) -> dict[int, dict[str, Any]]:
@@ -754,7 +828,8 @@ def run(config: dict[str, Any], lr: str, wd: str, *, finalize_only: bool) -> Non
         eligible = [epoch for epoch in sorted(predecay_results) if epoch >= POST_DECAY_START_EPOCH]
         if len(eligible) < POST_DECAY_SOURCE_COUNT:
             raise RuntimeError(
-                "cannot prune before three E8-or-later frontier checkpoints are complete"
+                f"cannot prune before {POST_DECAY_SOURCE_COUNT} E8-or-later frontier "
+                "checkpoints are complete"
             )
         finish_postdecay(
             config,
@@ -788,6 +863,9 @@ def run(config: dict[str, Any], lr: str, wd: str, *, finalize_only: bool) -> Non
                     pruned=False,
                 ):
                     return
+                if config.get("hardStopAtMaxEpoch") and epoch >= int(config["maxEpoch"]):
+                    finish_at_hard_ceiling(config, lr, wd, epoch)
+                    return
                 selection_state = json.loads(existing_selection.read_text())
             continue
         if len(postdecay_results) >= POST_DECAY_SOURCE_COUNT:
@@ -801,6 +879,9 @@ def run(config: dict[str, Any], lr: str, wd: str, *, finalize_only: bool) -> Non
                     sorted(predecay_results),
                     pruned=False,
                 ):
+                    return
+                if config.get("hardStopAtMaxEpoch") and trigger >= int(config["maxEpoch"]):
+                    finish_at_hard_ceiling(config, lr, wd, trigger)
                     return
                 selection_state = json.loads(existing_selection.read_text())
         previous = max(predecay_results)
