@@ -20,7 +20,7 @@ tokens="${OLMOE3_TOKENS:-$(python -c "import json; print(json.load(open('$LOCAL_
 # checkpoint at the baseline's fractions of progress
 steps=$(( tokens / 524288 ))
 fixed=$(python -c "s=$steps; print(','.join(str(max(1, round(s*f/19074))) for f in (926, 5926, 10926, 15926)) + f',{s}')")
-export OLMOE3_NUM_EXPERTS=512
+export OLMOE3_NUM_EXPERTS="${OLMOE3_NUM_EXPERTS:-512}"   # 128 for the 128-expert model's squares
 export OLMOE3_EMO="${OLMOE3_EMO:-1}"
 export OLMOE3_TOKENS="$tokens"
 export OLMOE3_NUM_NODES=1

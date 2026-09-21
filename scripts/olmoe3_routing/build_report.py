@@ -228,7 +228,8 @@ VARIANTS = [("A", "EMO 512e, 4 sub-models", "#2563eb", "the main experiment"),
             ("B", "Standard MoE 512e, 4 sub-models", "#dc2626", "same pipeline on the standard-routing model, as a second baseline"),
             ("C", "EMO 512e, 4 sub-models trained without the EMO loss", "#7c3aed", "same partition and start checkpoints as A; the sub-models use plain top-16 routing"),
             ("D", "EMO 512e, 8 sub-models", "#059669", "same as A with k = 8 blocks per layer"),
-            ("E", "EMO 512e with pools {64, 512}, 4 sub-models", "#d97706", "same pipeline as A on the arm whose training pools were a random choice of 64 or 512 experts per document")]
+            ("E", "EMO 512e with pools {64, 512}, 4 sub-models", "#d97706", "same pipeline as A on the arm whose training pools were a random choice of 64 or 512 experts per document"),
+            ("F", "Standard MoE 128e, random controls with 4 and 8 sub-models", "#0d9488", "the random-partition control of block B on a 128-expert model of the same expert size (top-16 of 128), jointly trained to 10B then continued to 130B as the baseline")]
 
 
 def variant(letter, inner):
@@ -363,33 +364,35 @@ def std_window2():
     return out
 
 
-RANDOM_CONTROL = {  # random expert groups + random document split, one per start model
-    "std": dict(sqn="olmoe3_squares_stdrand", hr="runs_heldout300b_stdrand", hrb="runs_heldout300b_std", start="std_step19074", ppl_dirs=("olmoe3_squares_std/ppl_validation",),
-                base_runs=("olmoe3_275m_20b_1node", "olmoe3_275m_30b_1node", "olmoe3_275m_130b"), start_ppl="olmoe3_275m_10b", model="standard-routing",
-                w3=(66481, 116479, 166478, 216477, 247956), take=lambda: STDRAND_TAKE),
-    "emo": dict(sqn="olmoe3_squares_emorand", hr="runs_heldout300b_emorand", hrb="runs_heldout300b_emo", start="emo_step19074", ppl_dirs=("olmoe3_squares/ppl_validation", "olmoe3_squares_emorand/ppl_validation"),
-                base_runs=("olmoe3_275m_emo_20b_1node", "olmoe3_275m_emo_20b", "olmoe3_275m_emo_30b_1node"), start_ppl="olmoe3_275m_emo_10b", model="EMO",
-                w3=(66481, 116479, 166478, 216477, 247956), take=lambda: EMORAND_TAKE),
+RANDOM_CONTROL = {  # random expert groups + random document split; arms = (sub-model count, dirs, colour), one entry per start model
+    "std": dict(hrb="runs_heldout300b_std", start="std_step19074", ppl_dirs=("olmoe3_squares_std/ppl_validation",),
+                base_runs=("olmoe3_275m_20b_1node", "olmoe3_275m_30b_1node", "olmoe3_275m_130b"), start_ppl="olmoe3_275m_10b", model="standard-routing 512e", E=512,
+                arms=[dict(k=4, sqn="olmoe3_squares_stdrand", hr="runs_heldout300b_stdrand", color=None), dict(k=8, sqn="olmoe3_squares_stdrand8", hr="runs_heldout300b_stdrand8", color="#0d9488")],
+                remerge=True, take=lambda: STDRAND_TAKE),
+    "emo": dict(hrb="runs_heldout300b_emo", start="emo_step19074", ppl_dirs=("olmoe3_squares/ppl_validation", "olmoe3_squares_emorand/ppl_validation"),
+                base_runs=("olmoe3_275m_emo_20b_1node", "olmoe3_275m_emo_20b", "olmoe3_275m_emo_30b_1node", "olmoe3_275m_emo_130b"), start_ppl="olmoe3_275m_emo_10b", model="EMO 512e", E=512,
+                arms=[dict(k=4, sqn="olmoe3_squares_emorand", hr="runs_heldout300b_emorand", color=None)], remerge=False, take=lambda: EMORAND_TAKE),
+    "s128": dict(hrb="runs_heldout300b_s128", start="s128_step19074", ppl_dirs=("olmoe3_squares_s128rand4/ppl_validation",),
+                 base_runs=("olmoe3_275m_128e_130b",), start_ppl="olmoe3_275m_128e_10b", model="standard-routing 128e", E=128,
+                 arms=[dict(k=4, sqn="olmoe3_squares_s128rand4", hr="runs_heldout300b_s128rand4", color=None), dict(k=8, sqn="olmoe3_squares_s128rand8", hr="runs_heldout300b_s128rand8", color="#0d9488")],
+                 remerge=False, take=lambda: S128_TAKE),
 }
-EMORAND_TAKE = ("The EMO model behaves like the standard one under a random split, but closer to its baseline: the random merge is 2.427 at 20B and "
-                "2.405 at 30B against 2.403 and 2.376 for the baseline (gap 0.024 &rarr; 0.029; the standard control's is 0.050 &rarr; 0.057), improving "
-                "steadily; on the v3-small sets it stays within 0.02 of the baseline. The squares themselves are far weaker (2.63 &rarr; 2.52 &rarr; 2.49, "
-                "never below the start model's 2.465) and indistinguishable. So the EMO model's large merge loss in the main experiment comes from the "
-                "routing-based split, not from merging as such: with random groups and random documents, merging four EMO squares costs 0.02&ndash;0.03.")
+W3_STEPS = (66481, 116479, 166478, 216477, 247956)
+EMORAND_TAKE = "Square trainings running."
+S128_TAKE = "Baseline and square trainings running."
 
 
 def random_control(which):
-    """Control for a squares block: four random expert groups of equal size and documents split uniformly at random (the same
-    groups and packs for every start model), same 300B-token held-out sample. Squares are scored on ALL held-out documents (a
-    random partition gives a held-out document no 'own' square), so the square line is the mean of the four (plus the best one)."""
-    C = RANDOM_CONTROL[which]; HR = ROOT / "sparse_experts/olmoe3_routing" / C["hr"]; HRB = ROOT / "sparse_experts/olmoe3_routing" / C["hrb"]
-    SQ = ROOT / "sparse_experts" / C["sqn"]; PPL = SQ / "ppl_validation"
-    G = _jload(SQ / "groups.json"); stt = _jload(SQ / "pack/stats.json")
-    if G is None: return ""
-    hv = lambda tag: _ce(HR / f"{tag}/none"); hb = lambda tag: _ce(HRB / f"{tag}/none")
+    """Control for a squares block: K random expert groups of equal size and documents split uniformly at random, same 300B-token
+    held-out sample. Squares are scored on ALL held-out documents (a random partition gives a held-out document no 'own' square),
+    so the square line is the mean of the K (plus the best one). Several arms (K = 4, 8) share the charts."""
+    C = RANDOM_CONTROL[which]; R = ROOT / "sparse_experts/olmoe3_routing"; HRB = R / C["hrb"]
+    arms = [dict(a, HR=R / a["hr"], SQ=ROOT / "sparse_experts" / a["sqn"]) for a in C["arms"] if (ROOT / "sparse_experts" / a["sqn"] / "groups.json").exists()]
+    if not arms: return ""
+    hb = lambda tag: _ce(HRB / f"{tag}/none")
     W1 = [20000, 25000, 30000, 35000, 38148]; W2 = [39073, 44073, 49073, 54073, 57221]
-    has = lambda st: hv(f"merged_match{st}") is not None or any(hv(f"sub{g}_match{st}") is not None for g in range(4))
-    steps = W1 + [st for st in W2 if has(st)] + [st for st in C["w3"] if has(st)]
+    def has(a, st): return _ce(a["HR"] / f"merged_match{st}/none") is not None or any(_ce(a["HR"] / f"sub{g}_match{st}/none") is not None for g in range(a["k"]))
+    steps = W1 + [st for st in W2 if any(has(a, st) for a in arms)] + [st for st in W3_STEPS if any(has(a, st) for a in arms)]
     w2 = len(steps) > 5; w3 = len(steps) > 10
     def bppl(st):
         for d in C["ppl_dirs"]:
@@ -399,45 +402,54 @@ def random_control(which):
         return None
     start = hb(C["start"]); ref_ppl = _ppl(ROOT / f"claude_outputs/debug_validation/ppl_validation/{C['start_ppl']}/step19074.json")
     b_h = [hb(f"baseline_step{st}") for st in steps]; b_p = [bppl(st) for st in steps]
-    mr = [hv(f"merged_match{st}") for st in steps]; sq = [[hv(f"sub{g}_match{st}") for g in range(4)] for st in steps]
-    sqm = [sum(v) / 4 if all(x is not None for x in v) else None for v in sq]
-    sqb = [min(x for x in v if x is not None) if any(x is not None for x in v) else None for v in sq]  # best square at each point
-    mp = [_ppl(PPL / "merged" / f"match{st}.json") for st in steps]
+    for a in arms:  # per-arm series
+        hv = lambda tag, a=a: _ce(a["HR"] / f"{tag}/none")
+        a["mr"] = [hv(f"merged_match{st}") for st in steps]; sq = [[hv(f"sub{g}_match{st}") for g in range(a["k"])] for st in steps]
+        a["sqm"] = [sum(v) / a["k"] if all(x is not None for x in v) else None for v in sq]
+        a["sqb"] = [min(x for x in v if x is not None) if any(x is not None for x in v) else None for v in sq]
+        a["mp"] = [_ppl(a["SQ"] / "ppl_validation" / "merged" / f"match{st}.json") for st in steps]
+        a["lab"] = f", {a['k']} sub-models" if len(arms) > 1 else ""; a["stt"] = _jload(a["SQ"] / "pack/stats.json")
     toks = [st * 524288 / 1e9 for st in steps]; labels = [f"{t:.3g}B" for t in toks]
-    end = "130B" if w3 else ("30B" if w2 else "20B")
+    end = "130B" if w3 else ("30B" if w2 else "20B"); E = C["E"]; ks = " and ".join(str(a["k"]) for a in arms)
+    groups_txt = " / ".join(f"{a['k']} groups of {E // a['k']}" for a in arms)
     setup = (f"Same {C['model']} start model (10B), same window" + (" and the same second window (stream steps 38,147&ndash;57,221, each square continuing from its own window-1 final on a fresh random quarter)" if w2 else "")
-             + (", then a third window of 100B tokens (stream steps 57,221&ndash;247,956) in which each square continues on a contiguous quarter of the stream, "
-                "a uniformly random quarter of the window's documents since the stream is a global shuffle, while the baseline continues to 130B" if w3 else "") + " (stream steps 19,074&ndash;38,147), same held-out sample, but the split has no "
-             "structure: in every layer 2&ndash;9 the 512 experts are shuffled into four groups of 128 (layer 1 whole, as before), and every document "
-             "of the window goes to a uniformly random group, so each square owns a quarter of the experts and a random quarter of the tokens"
-             + (f" ({', '.join(f'{100*x:.1f}%' for x in stt['token_share'])} of the tokens)" if stt else "") + ". Squares are merged with equal weights. "
-             "Because a held-out document has no 'own' square under a random split, the square line is the mean CE of the four squares each scored "
+             + (", then a third window of 100B tokens (stream steps 57,221&ndash;247,956) in which each square continues on a contiguous slice of the stream (1/K of the "
+                "window), a uniformly random share of its documents since the stream is a global shuffle, while the baseline continues to 130B" if w3 else "") + " (stream steps 19,074&ndash;38,147), same held-out sample, but the split has no "
+             f"structure: in every layer 2&ndash;9 the {E} experts are shuffled into {groups_txt} (layer 1 whole, as before), and every document "
+             f"of the window goes to a uniformly random group, so each of the K = {ks} squares owns 1/K of the experts and a random 1/K of the tokens. Squares are merged with equal weights. "
+             "Because a held-out document has no 'own' square under a random split, the square line is the mean CE of the squares each scored "
              "on all held-out documents." + (" The same random groups and the same random document packs are used for every start model." if which != "std" else ""))
     title = f"Control: random expert groups, random document split (10B &rarr; {end})"
-    if not any(v is not None for v in mr + sqm):
+    if not any(v is not None for a in arms for v in a["mr"] + a["sqm"]):
         return section(title, setup, "", C["take"]())
     # re-merge + re-partition at 61.1B (standard control only): the 116,479 merge re-split into new random groups, trained on to 130B
-    rm_h = rm_p = rm_sq = []
-    RM = ROOT / "sparse_experts/olmoe3_routing/runs_heldout300b_stdremerge"; RMP = ROOT / "sparse_experts/olmoe3_squares_stdremerge/ppl_validation"
-    if which == "std" and RM.exists() and 116479 in steps:
+    rm_h = rm_p = rm_sq = None; a0 = arms[0]
+    RM = R / "runs_heldout300b_stdremerge"; RMP = ROOT / "sparse_experts/olmoe3_squares_stdremerge/ppl_validation"
+    if C.get("remerge") and RM.exists() and 116479 in steps:
         rv = lambda tag: _ce(RM / f"{tag}/none"); i0 = steps.index(116479)
-        rm_h = [None] * i0 + [mr[i0]] + [rv(f"merged_match{st}") if st > 116479 else None for st in steps[i0 + 1:]]
-        rm_p = [None] * i0 + [mp[i0]] + [_ppl(RMP / "merged" / f"match{st}.json") if st > 116479 else None for st in steps[i0 + 1:]]
-        rsq = [[rv(f"sub{g}_match{st}") for g in range(4)] if st > 116479 else [None] * 4 for st in steps]
-        rm_sq = [None] * i0 + [sqm[i0]] + [sum(v) / 4 if all(x is not None for x in v) else None for v in rsq[i0 + 1:]]
-    has_rm = any(v is not None for v in rm_h[1:] if rm_h) and any(v is not None for v in (rm_h[len([x for x in rm_h if x is None]) + 1:] if rm_h else []))
-    rml = lambda y, name: [{"name": name, "y": y, "color": "#7c3aed"}] if has_rm else []
-    charts = CHART_CSS + line_chart(toks, [{"name": "baseline (full model, continued)", "y": b_h}, {"name": "merged squares", "y": mr}, *rml(rm_h, "merged squares, re-merged and re-partitioned at 61B"),
+        rm_h = [None] * i0 + [a0["mr"][i0]] + [rv(f"merged_match{st}") for st in steps[i0 + 1:]]
+        rm_p = [None] * i0 + [a0["mp"][i0]] + [_ppl(RMP / "merged" / f"match{st}.json") for st in steps[i0 + 1:]]
+        rsq = [[rv(f"sub{g}_match{st}") for g in range(4)] for st in steps[i0 + 1:]]
+        rm_sq = [None] * i0 + [a0["sqm"][i0]] + [sum(v) / 4 if all(x is not None for x in v) else None for v in rsq]
+        if not any(v is not None for v in rm_h[i0 + 1:]): rm_h = rm_p = rm_sq = None
+    rml = lambda y, name: [{"name": name, "y": y, "color": "#7c3aed"}] if y is not None else []
+    ser_m = lambda key: [{"name": "merged squares" + a["lab"], "y": a[key], **({"color": a["color"]} if a["color"] else {})} for a in arms]
+    charts = CHART_CSS + line_chart(toks, [{"name": "baseline (full model, continued)", "y": b_h}, *ser_m("mr"), *rml(rm_h, "merged squares, re-merged and re-partitioned at 61B"),
                                           {"name": "start model (10B)", "y": [start] * len(toks), "const": True, "dashed": True, "color": "#64748b"}],
                                    title="Held-out CE (300B sample)", xlabels=labels, x_label="tokens trained")
-    if any(v is not None for v in mp):
-        charts += line_chart(toks, [{"name": "baseline (full model, continued)", "y": b_p}, {"name": "merged squares", "y": mp}, *rml(rm_p, "merged squares, re-merged and re-partitioned at 61B"),
+    if any(v is not None for a in arms for v in a["mp"]):
+        charts += line_chart(toks, [{"name": "baseline (full model, continued)", "y": b_p}, *ser_m("mp"), *rml(rm_p, "merged squares, re-merged and re-partitioned at 61B"),
                                     {"name": "start model (10B)", "y": [ref_ppl] * len(toks), "const": True, "dashed": True, "color": "#64748b"}],
                              title="v3-small ppl sets, mean CE", xlabels=labels, x_label="tokens trained")
-    charts += "<p><b>Where the merge stands against the squares</b> (each square scored on all held-out documents, mean of the four):</p>" + line_chart(toks,
-        [{"name": "squares (mean of 4, no merge)", "y": sqm}, {"name": "best square (no merge)", "y": sqb, "color": "#d97706"}, {"name": "merged, free routing", "y": mr},
-         *rml(rm_h, "merged, re-partitioned at 61B"), *([{"name": "squares, re-partitioned at 61B (mean of 4)", "y": rm_sq, "color": "#7c3aed", "dashed": True}] if has_rm else []),
-         {"name": "baseline", "y": b_h, "dashed": True, "color": "#059669"}, {"name": "start model", "y": [start] * len(toks), "const": True, "dashed": True, "color": "#64748b"}],
+    sq_series = []
+    for a in arms:
+        c = {"color": a["color"]} if a["color"] else {}
+        sq_series += [{"name": f"squares (mean of {a['k']}, no merge)", "y": a["sqm"], **({"dashed": True} if a["color"] else {}), **c},
+                      *([{"name": "best square (no merge)", "y": a["sqb"], "color": "#d97706"}] if a is a0 else []),
+                      {"name": "merged, free routing" + a["lab"], "y": a["mr"], **c}]
+    charts += "<p><b>Where the merge stands against the squares</b> (each square scored on all held-out documents, mean of the K):</p>" + line_chart(toks,
+        sq_series + rml(rm_h, "merged, re-partitioned at 61B") + ([{"name": "squares, re-partitioned at 61B (mean of 4)", "y": rm_sq, "color": "#7c3aed", "dashed": True}] if rm_sq is not None else [])
+        + [{"name": "baseline", "y": b_h, "dashed": True, "color": "#059669"}, {"name": "start model", "y": [start] * len(toks), "const": True, "dashed": True, "color": "#64748b"}],
         title="All held-out documents (300B sample)", xlabels=labels, x_label="tokens trained")
     return section(title, setup, charts, C["take"]())
 
@@ -457,7 +469,7 @@ def build_q3():
         "<li><b>Baseline.</b> The original model, continuously trained on all the documents together, without splitting into sub-models. "
         "Both routes see the same 10B tokens; the merged model is compared with the baseline at matching points of that training.</li>"
         "</ol>")
-    present = ["A"] + (["B"] if (SQ.parent / "olmoe3_squares_std" / "groups.json").exists() else []) \
+    present = ["A"] + (["B"] if (SQ.parent / "olmoe3_squares_std" / "groups.json").exists() else []) + (["F"] if (ROOT / "sparse_experts/olmoe3_squares_s128rand4/groups.json").exists() else []) \
               + (["C"] if (ROOT / "sparse_experts/olmoe3_routing/runs_heldout20b_noemo").exists() else []) \
               + (["D"] if (ROOT / "sparse_experts/olmoe3_routing/runs_heldout20b_k8").exists() else []) \
               + (["E"] if (ROOT / "sparse_experts/olmoe3_squares_pool64or512/groups.json").exists() else [])
@@ -538,6 +550,10 @@ def build_q3():
         body += variant("D", inner)
     # ---- E: pool-{64,512} arm, k = 4 ----
     if (ROOT / "sparse_experts/olmoe3_squares_pool64or512/groups.json").exists():
+    if (ROOT / "sparse_experts/olmoe3_squares_s128rand4/groups.json").exists():
+        body += variant("F", card("info", "Setup", "<p>The 128-expert standard-routing model of the expert-count ladder (same expert size as the 512e model, top-16 of 128, "
+                                  "so a quarter of the total parameters): its 10B checkpoint is continued jointly to 130B as the baseline, and split into 4 and into 8 random "
+                                  "sub-models with the same random document groups as the 512e controls, at exactly the 512e controls' matched checkpoints.</p>") + random_control("s128"))
         body += variant("E", squares_block("pool64or512", "olmoe3_275m_emo_pool64or512_10b", "olmoe3_275m_emo_pool64or512_10b", "olmoe3_275m_pool64or512_20b_1node",
             take_main="Same shape as A: the merged model beats the baseline only at 5% (2.425 vs 2.457) and then drifts up while the baseline keeps "
                       "improving, ending 0.14 above it (2.535 vs 2.397), a slightly smaller gap than A's 0.16; finetuning brings it to 2.428 / 2.426.",
