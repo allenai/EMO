@@ -44,7 +44,7 @@ def workspace_twins():
     out = {}
     for e in json.loads(r.stdout):
         n = e.get("name", "")
-        if re.search(r"^olmoe3_275m_.*-(a|u)\d+$", n): out.setdefault(n, (e["id"], status_of(e)))
+        if re.search(r"-(a|u)\d+$", n) and (n.startswith("olmoe3_275m_") or n.startswith("eval_") or n.startswith("ppl_")): out.setdefault(n, (e["id"], status_of(e)))
     return out
 
 
@@ -52,8 +52,25 @@ def get_spec(eid):
     r = sh("beaker", "experiment", "spec", eid); return yaml.safe_load(r.stdout) if r.returncode == 0 else None
 
 
+WEKA = "/weka/oe-training-default/ryanwang/EMO/"
+
+
+def eval_from_spec(spec):
+    """1-GPU evaluation jobs (extract_routing / eval_ppl_validation launched by the drivers): run key + the output that marks completion."""
+    t = spec["tasks"][0]; args = t.get("arguments") or []
+    if t.get("resources", {}).get("gpuCount") != 1 or len(args) < 2: return None
+    def local(p): return Path(p.replace(WEKA, "")) if p.startswith(WEKA) else Path(p)
+    if args[1] == "scripts/sparse_experts/olmoe3_routing/extract_routing.py":
+        out = local(args[args.index("--out-dir") + 1]); return dict(run="eval:" + str(out.parent.parent.parent.name + "/" + out.parent.parent.name), final=0, done_path=str(out / "DONE"))
+    if args[1] == "scripts/debug_validation/eval_ppl_validation.py":
+        ck = local(args[args.index("--checkpoints") + 1]); od = local(args[args.index("--out-dir") + 1])
+        return dict(run="ppl:" + str(od.parent.name + "/" + ck.parent.name + "/" + ck.name), final=0, done_path=str(od / ck.parent.name / f"{ck.name}.json"))
+    return None
+
+
 def job_from_spec(spec):
     t = spec["tasks"][0]
+    if t.get("resources", {}).get("gpuCount") == 1: return eval_from_spec(spec)
     if t.get("replicas", 1) != 1 or t.get("resources", {}).get("gpuCount") != 8: return None
     args = t.get("arguments") or []
     if len(args) < 4 or args[1] != "scripts/sparse_experts/olmoe3_275m.py" or args[2] != "train": return None
@@ -68,6 +85,7 @@ def job_from_spec(spec):
 
 def done(job, alloc_state=None):
     """Final checkpoint present, the run already at its (possibly ceil-era) final, or the tracked job succeeded."""
+    if job.get("done_path"): return Path(job["done_path"]).exists() or (alloc_state is not None and alloc_state[0] in ("finalized", "exited") and alloc_state[2] == 0)
     if (S / job["run"] / f"step{job['final']}" / "train" / "rank0.pt").exists(): return True
     steps = [int(m.group(1)) for d in (S / job["run"]).glob("step*") if (m := re.fullmatch(r"step(\d+)", d.name)) and (d / "train" / "rank0.pt").exists()]
     if steps and max(steps) >= job["final"] - 1: return True
@@ -92,10 +110,16 @@ def stop(eid, why):
     r = sh("beaker", "experiment", "stop", eid); log(f"stop {eid} ({why}): {'ok' if r.returncode == 0 else r.stderr.strip()[:120]}")
 
 
+SP = "/tmp/claude-0/-root-EMO/c7db74f2-bbe3-4a2c-9d37-93c64250d7c6/scratchpad"
+
+
 def discover(state, twins):
-    for marker in glob.glob("sparse_experts/olmoe3_squares_*/logs/*_launched"):
+    markers = glob.glob("sparse_experts/olmoe3_squares_*/logs/*_launched") + [f for f in glob.glob(f"{SP}/launch_*.log") if os.path.getmtime(f) >= CUTOFF]
+    for marker in markers:
         if os.path.getmtime(marker) < CUTOFF or any(v.get("marker") == marker for v in state.values()): continue
-        eid = open(marker).read().strip().split("/")[-1]
+        txt = re.sub(r"\x1b\[[0-9;]*m", "", open(marker, errors="ignore").read()); m = re.search(r"beaker\.org/ex/([A-Z0-9]+)", txt)
+        if not m: continue
+        eid = m.group(1)
         spec = get_spec(eid); job = job_from_spec(spec) if spec else None
         if not job: continue
         st = exp_state(eid)
@@ -104,16 +128,19 @@ def discover(state, twins):
         # the marker's experiment may itself be an adopted unallocated twin
         kind = "unalloc" if spec["tasks"][0].get("context", {}).get("preemptible") else "alloc"; j[kind] = eid
         for name, (tid, tst) in twins.items():  # adopt live twins by name
-            m = re.fullmatch(re.escape(job["run"]) + r"-(a|u)(\d+)", name)
+            m = re.fullmatch(re.escape(re.sub(r"[^A-Za-z0-9_.-]", "_", job["run"])[:100]) + r"-(a|u)(\d+)", name)
             if m and tid != eid and tst[0] not in TERMINAL:
                 k2 = "alloc" if m.group(1) == "a" else "unalloc"; j["n"] = max(j["n"], int(m.group(2)))
                 if not j.get(k2): j[k2] = tid; log(f"{job['run']}: adopted {k2} twin {name} {tid} [{tst[0]}]")
-        state[job["run"]] = j; log(f"tracking {job['run']} (final step {job['final']}) {kind} {eid} [{st[0]}]")
+        j["safe"] = re.sub(r"[^A-Za-z0-9_.-]", "_", job["run"])[:100]
+        state[job["run"]] = j; log(f"tracking {job['run']} {kind} {eid} [{st[0]}]")
 
 
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument("--once", action="store_true"); ap.add_argument("--interval", type=int, default=120); a = ap.parse_args()
-    sf = ST / "state.json"; state = json.load(open(sf)) if sf.exists() else {}
+    sf = ST / "state.json"
+    try: state = json.load(open(sf)) if sf.exists() else {}
+    except Exception as e: log(f"state.json unreadable ({e}); starting from the markers and adopting existing twins"); state = {}
     while True:
         try:
             twins = workspace_twins(); discover(state, twins)
@@ -130,16 +157,16 @@ def main():
                     else: stop(j["alloc"], f"{run}: unallocated started first"); j["alloc"] = None
                     continue
                 if ra and j.get("unalloc") and su[0] not in TERMINAL: stop(j["unalloc"], f"{run}: allocated running"); j["unalloc"] = None; continue
-                if ru and j.get("alloc") and sa[0] not in TERMINAL: stop(j["alloc"], f"{run}: unallocated running"); j["alloc"] = None; open(j["marker"], "w").write(f"beaker.org/ex/{j['unalloc']}\n"); continue
+                if ru and j.get("alloc") and sa[0] not in TERMINAL: stop(j["alloc"], f"{run}: unallocated running"); j["alloc"] = None; (open(j["marker"], "w").write(f"beaker.org/ex/{j['unalloc']}\n") if j["marker"].endswith("_launched") else None); continue
                 if ra or ru: continue
                 # nothing running: (re)submit what is missing or ended (preemption / fault); both kinds compete again
                 if not j.get("alloc") or sa[0] in TERMINAL:
-                    j["n"] += 1; new = submit(j["spec"], f"{run}-a{j['n']}", allocated=True)
-                    if new: log(f"{run}: allocated {j.get('alloc')} [{sa[0]}] -> resubmitted {new}"); j["alloc"] = new; open(j["marker"], "w").write(f"beaker.org/ex/{new}\n")
+                    j["n"] += 1; new = submit(j["spec"], f"{j.get('safe', run)}-a{j['n']}", allocated=True)
+                    if new: log(f"{run}: allocated {j.get('alloc')} [{sa[0]}] -> resubmitted {new}"); j["alloc"] = new; (open(j["marker"], "w").write(f"beaker.org/ex/{new}\n") if j["marker"].endswith("_launched") else None)
                 if not j.get("unalloc") or su[0] in TERMINAL:
-                    j["n"] += 1; new = submit(j["spec"], f"{run}-u{j['n']}", allocated=False)
+                    j["n"] += 1; new = submit(j["spec"], f"{j.get('safe', run)}-u{j['n']}", allocated=False)
                     if new: log(f"{run}: unallocated {j.get('unalloc')} [{su[0]}] -> submitted {new}"); j["unalloc"] = new
-            json.dump(state, open(sf, "w"))
+            tmp = sf.with_suffix(".tmp"); json.dump(state, open(tmp, "w")); os.replace(tmp, sf)  # atomic: a crash mid-write must not corrupt the state
         except Exception as e:
             log(f"ERROR {type(e).__name__}: {e}")
         if a.once: break
