@@ -1,6 +1,6 @@
 window.ICSL_1B_REPACK_UNTIED_EMBEDWD_REVIEWER={
   "policy": "dense_1b_repack_untied_embedwd_reviewer_v1",
-  "updatedAt": "2026-09-21T13:46:43+00:00",
+  "updatedAt": "2026-09-21T19:04:43+00:00",
   "model": "1.5B (repository Dense-1B / 1.279B parameters)",
   "pool": "dclm1b",
   "recipe": {
@@ -68,35 +68,54 @@ window.ICSL_1B_REPACK_UNTIED_EMBEDWD_REVIEWER={
       "minRuntime": "8h",
       "status": "running",
       "experiment": "01M30H9FZ9FCDJXE2ZRQ1Q4BY2",
-      "job": "01M31CW73MWJ57M1HJR5HV89B0",
+      "job": "01M3286HHXDF3X4NW0AHN9277E",
       "jobHistory": [
         {
           "job": "01M30H9G51TNHTMD7Z9YB5D105",
           "status": "preempted by system",
           "endedAt": "2026-09-21T07:11:28.526474+00:00",
           "reason": "preempted after exceeding the protected 8-hour minimum runtime"
+        },
+        {
+          "job": "01M31CW73MWJ57M1HJR5HV89B0",
+          "status": "failed",
+          "endedAt": "2026-09-21T15:05:19.445846+00:00",
+          "reason": "local results volume exhausted while writing the training log"
+        },
+        {
+          "job": "01M32801HB5EP4CXGHSA2HGPCV",
+          "status": "failed",
+          "endedAt": "2026-09-21T15:07:02.647221+00:00",
+          "reason": "automatic retry exited during startup"
+        },
+        {
+          "job": "01M32836C8RJSTB8HFBYWQ0MVP",
+          "status": "failed",
+          "endedAt": "2026-09-21T15:08:52.548977+00:00",
+          "reason": "automatic retry exited during startup"
         }
       ],
       "revision": "e8d4d7d4a739122d2029ec3d9c3e6e2dded6e3ad",
       "progress": {
-        "currentEpoch": 16,
-        "currentStep": 60110,
-        "stageTotalSteps": 68664,
-        "stageTargetEpoch": 20,
+        "currentEpoch": 20,
+        "currentStep": 70216,
+        "stageTotalSteps": 82397,
+        "stageTargetEpoch": 24,
         "phase": "pre_decay_train"
       },
-      "completedPdEpochs": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
-      "resolvedPostEpochs": [8, 12, 16],
-      "completeWorkflowEta": "2026-09-22T08:30:00+00:00",
+      "completedPdEpochs": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
+      "resolvedPostEpochs": [8, 12, 16, 20],
+      "completeWorkflowEta": "2026-09-22T09:08:00+00:00",
       "health": {
-        "status": "healthy; resumed successfully",
-        "checkedAt": "2026-09-21T13:46:43+00:00",
-        "criticalSignals": []
+        "status": "warning: E19 retained, but automatic retry resumed E16",
+        "checkedAt": "2026-09-21T19:04:43+00:00",
+        "criticalSignals": ["resume source regression: retained E19 step65231 was not selected"]
       },
       "postDecayResults": {
         "8": {"status": "complete", "validationExact": 3.02887},
         "12": {"status": "complete", "validationExact": 2.99227},
-        "16": {"status": "complete", "validationExact": 2.97311}
+        "16": {"status": "complete", "validationExact": 2.97311},
+        "20": {"status": "complete", "validationExact": 2.96214}
       }
     },
     {
@@ -113,35 +132,48 @@ window.ICSL_1B_REPACK_UNTIED_EMBEDWD_REVIEWER={
       "minRuntime": "8h",
       "status": "running",
       "experiment": "01M30H9HAPF77KK2V1X31CKPSW",
-      "job": "01M31CW78KHB2MHYYQ7FEEGK1F",
+      "job": "01M3284HMEJDVGWKAWJER1F1NH",
       "jobHistory": [
         {
           "job": "01M30H9HEATE6MP42TEAFW7YQY",
           "status": "preempted by system",
           "endedAt": "2026-09-21T07:11:31.806449+00:00",
           "reason": "preempted after exceeding the protected 8-hour minimum runtime"
+        },
+        {
+          "job": "01M31CW78KHB2MHYYQ7FEEGK1F",
+          "status": "failed",
+          "endedAt": "2026-09-21T15:05:26.800718+00:00",
+          "reason": "local results volume exhausted while writing the training log"
+        },
+        {
+          "job": "01M32808P2FYC9N50ATTQPP8CR",
+          "status": "failed",
+          "endedAt": "2026-09-21T15:07:47.101448+00:00",
+          "reason": "automatic retry exited during startup"
         }
       ],
       "revision": "e8d4d7d4a739122d2029ec3d9c3e6e2dded6e3ad",
       "progress": {
-        "currentEpoch": 16,
-        "currentStep": 7545,
-        "stageTotalSteps": 8582,
-        "stageTargetEpoch": 20,
+        "currentEpoch": 20,
+        "currentStep": 8821,
+        "stageTotalSteps": 10300,
+        "stageTargetEpoch": 24,
         "phase": "pre_decay_train"
       },
-      "completedPdEpochs": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
-      "resolvedPostEpochs": [8, 12, 16],
-      "completeWorkflowEta": "2026-09-22T06:30:00+00:00",
+      "completedPdEpochs": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
+      "resolvedPostEpochs": [8, 12, 16, 20],
+      "completeWorkflowEta": "2026-09-22T08:41:00+00:00",
       "health": {
-        "status": "healthy; resumed successfully",
-        "checkedAt": "2026-09-21T13:46:43+00:00",
-        "criticalSignals": []
+        "status": "warning: E19 retained, but automatic retry resumed E16",
+        "checkedAt": "2026-09-21T19:04:43+00:00",
+        "criticalSignals": ["resume source regression: retained E19 step8153 was not selected"]
       },
       "postDecayResults": {
         "8": {"status": "complete", "validationExact": 3.12794},
         "12": {"status": "complete", "validationExact": 3.09271},
-        "16": {"status": "complete", "validationExact": 3.07214}
+        "16": {"status": "complete", "validationExact": 3.07214},
+        "20": {"status": "complete", "validationExact": 3.06002}
       }
     }
   ]
