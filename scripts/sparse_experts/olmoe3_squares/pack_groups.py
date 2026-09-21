@@ -60,10 +60,13 @@ def main():
         else:
             with open(o["path"], "r+b") as fh: fh.truncate(o["pos"] * 4)
     # stats: what a sub-model would miss = 1 - in-group share
-    mass = R["mass"].astype(np.float64)  # (n, PL, k)
-    own = mass[np.arange(n), :, grp]      # (n, PL)
-    share_layer = own.sum(0) / np.maximum(mass.sum(2).sum(0), 1)
-    share_doc = own.sum(1) / np.maximum(mass.sum((1, 2)), 1)
+    mass = R["mass"].astype(np.float64)  # (n, PL, k_routing): routing mass per routing-based group
+    if mass.shape[2] == k:
+        own = mass[np.arange(n), :, grp]      # (n, PL)
+        share_layer = own.sum(0) / np.maximum(mass.sum(2).sum(0), 1)
+        share_doc = own.sum(1) / np.maximum(mass.sum((1, 2)), 1)
+    else:  # random assignment with a different k (assign_random.py): the in-group share is meaningless, record zeros
+        share_layer = np.zeros(mass.shape[1]); share_doc = np.zeros(n)
     stats = dict(n_docs=int(n), n_tokens=int(length.sum()), docs_per_group=np.bincount(grp, minlength=k).tolist(), tokens_per_group=[int(sizes[g]) for g in range(k)],
                  token_share=(np.array([sizes[g] for g in range(k)]) / sum(sizes.values())).round(4).tolist(),
                  in_group_share_mean=float(share_doc.mean()), in_group_share_token_weighted=float((share_doc * length).sum() / length.sum()),
