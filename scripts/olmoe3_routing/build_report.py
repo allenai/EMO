@@ -369,7 +369,7 @@ RANDOM_CONTROL = {  # random expert groups + random document split, one per star
                 w3=(66481, 116479, 166478, 216477, 247956), take=lambda: STDRAND_TAKE),
     "emo": dict(sqn="olmoe3_squares_emorand", hr="runs_heldout300b_emorand", hrb="runs_heldout300b_emo", start="emo_step19074", ppl_dirs=("olmoe3_squares/ppl_validation", "olmoe3_squares_emorand/ppl_validation"),
                 base_runs=("olmoe3_275m_emo_20b_1node", "olmoe3_275m_emo_20b", "olmoe3_275m_emo_30b_1node"), start_ppl="olmoe3_275m_emo_10b", model="EMO",
-                w3=(), take=lambda: EMORAND_TAKE),
+                w3=(66481, 116479, 166478, 216477, 247956), take=lambda: EMORAND_TAKE),
 }
 EMORAND_TAKE = ("The EMO model behaves like the standard one under a random split, but closer to its baseline: the random merge is 2.427 at 20B and "
                 "2.405 at 30B against 2.403 and 2.376 for the baseline (gap 0.024 &rarr; 0.029; the standard control's is 0.050 &rarr; 0.057), improving "
@@ -416,15 +416,27 @@ def random_control(which):
     title = f"Control: random expert groups, random document split (10B &rarr; {end})"
     if not any(v is not None for v in mr + sqm):
         return section(title, setup, "", C["take"]())
-    charts = CHART_CSS + line_chart(toks, [{"name": "baseline (full model, continued)", "y": b_h}, {"name": "merged squares", "y": mr},
+    # re-merge + re-partition at 61.1B (standard control only): the 116,479 merge re-split into new random groups, trained on to 130B
+    rm_h = rm_p = rm_sq = []
+    RM = ROOT / "sparse_experts/olmoe3_routing/runs_heldout300b_stdremerge"; RMP = ROOT / "sparse_experts/olmoe3_squares_stdremerge/ppl_validation"
+    if which == "std" and RM.exists() and 116479 in steps:
+        rv = lambda tag: _ce(RM / f"{tag}/none"); i0 = steps.index(116479)
+        rm_h = [None] * i0 + [mr[i0]] + [rv(f"merged_match{st}") if st > 116479 else None for st in steps[i0 + 1:]]
+        rm_p = [None] * i0 + [mp[i0]] + [_ppl(RMP / "merged" / f"match{st}.json") if st > 116479 else None for st in steps[i0 + 1:]]
+        rsq = [[rv(f"sub{g}_match{st}") for g in range(4)] if st > 116479 else [None] * 4 for st in steps]
+        rm_sq = [None] * i0 + [sqm[i0]] + [sum(v) / 4 if all(x is not None for x in v) else None for v in rsq[i0 + 1:]]
+    has_rm = any(v is not None for v in rm_h[1:] if rm_h) and any(v is not None for v in (rm_h[len([x for x in rm_h if x is None]) + 1:] if rm_h else []))
+    rml = lambda y, name: [{"name": name, "y": y, "color": "#7c3aed"}] if has_rm else []
+    charts = CHART_CSS + line_chart(toks, [{"name": "baseline (full model, continued)", "y": b_h}, {"name": "merged squares", "y": mr}, *rml(rm_h, "merged squares, re-merged and re-partitioned at 61B"),
                                           {"name": "start model (10B)", "y": [start] * len(toks), "const": True, "dashed": True, "color": "#64748b"}],
                                    title="Held-out CE (300B sample)", xlabels=labels, x_label="tokens trained")
     if any(v is not None for v in mp):
-        charts += line_chart(toks, [{"name": "baseline (full model, continued)", "y": b_p}, {"name": "merged squares", "y": mp},
+        charts += line_chart(toks, [{"name": "baseline (full model, continued)", "y": b_p}, {"name": "merged squares", "y": mp}, *rml(rm_p, "merged squares, re-merged and re-partitioned at 61B"),
                                     {"name": "start model (10B)", "y": [ref_ppl] * len(toks), "const": True, "dashed": True, "color": "#64748b"}],
                              title="v3-small ppl sets, mean CE", xlabels=labels, x_label="tokens trained")
     charts += "<p><b>Where the merge stands against the squares</b> (each square scored on all held-out documents, mean of the four):</p>" + line_chart(toks,
         [{"name": "squares (mean of 4, no merge)", "y": sqm}, {"name": "best square (no merge)", "y": sqb, "color": "#d97706"}, {"name": "merged, free routing", "y": mr},
+         *rml(rm_h, "merged, re-partitioned at 61B"), *([{"name": "squares, re-partitioned at 61B (mean of 4)", "y": rm_sq, "color": "#7c3aed", "dashed": True}] if has_rm else []),
          {"name": "baseline", "y": b_h, "dashed": True, "color": "#059669"}, {"name": "start model", "y": [start] * len(toks), "const": True, "dashed": True, "color": "#64748b"}],
         title="All held-out documents (300B sample)", xlabels=labels, x_label="tokens trained")
     return section(title, setup, charts, C["take"]())

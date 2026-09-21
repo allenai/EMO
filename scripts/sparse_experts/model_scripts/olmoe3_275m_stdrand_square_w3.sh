@@ -13,11 +13,12 @@
 ##############################################################
 : "${SQUARE_GROUP:?set SQUARE_GROUP=0..3}"
 W=/weka/oe-training-default/ryanwang/EMO/sparse_experts
-export OLMOE3_EMO=0
-export OLMOE3_GROUPS="$W/olmoe3_squares_stdrand/groups.json"
+SQN="${SQUARES_NAME:-olmoe3_squares_stdrand}"   # olmoe3_squares_emorand (EMO control) / olmoe3_squares_stdremerge (re-partitioned at 61B)
+export OLMOE3_EMO="${OLMOE3_EMO:-0}"
+export OLMOE3_GROUPS="$W/$SQN/groups.json"
 export OLMOE3_GROUP="$SQUARE_GROUP"
 export FT_STEPS="${FT_STEPS:-47684}"
 export OLMOE3_FIXED_STEPS="${OLMOE3_FIXED_STEPS:-$(python -c "s=$FT_STEPS; b=${FT_START_STEP:?set FT_START_STEP}; print(','.join(str(b + max(1, round(s*f/19074))) for f in (926, 5926, 10926, 15926)) + f',{b + s}')")}"
-export OLMOE3_RUNNAME="${OLMOE3_RUNNAME:-olmoe3_275m_stdrand_square${SQUARE_GROUP}_w3}"
-export OLMOE3_WANDB_TAGS="${OLMOE3_WANDB_TAGS:-olmoe3_squares_stdrand,square,w3}"
+export OLMOE3_RUNNAME="${OLMOE3_RUNNAME:-${RUN_PREFIX:-olmoe3_275m_stdrand_square}${SQUARE_GROUP}_w3}"
+export OLMOE3_WANDB_TAGS="${OLMOE3_WANDB_TAGS:-$SQN,square,w3}"
 source "$(dirname "${BASH_SOURCE[0]}")/olmoe3_275m_ft.sh" "$@"
