@@ -409,6 +409,7 @@ def random_control(which):
         a["sqb"] = [min(x for x in v if x is not None) if any(x is not None for x in v) else None for v in sq]
         a["mp"] = [_ppl(a["SQ"] / "ppl_validation" / "merged" / f"match{st}.json") for st in steps]
         a["lab"] = f", {a['k']} sub-models" if len(arms) > 1 else ""; a["stt"] = _jload(a["SQ"] / "pack/stats.json")
+    arms = [a for i, a in enumerate(arms) if i == 0 or any(v is not None for v in a["mr"] + a["sqm"])]  # arms without any result yet stay out of the charts
     toks = [st * 524288 / 1e9 for st in steps]; labels = [f"{t:.3g}B" for t in toks]
     end = "130B" if w3 else ("30B" if w2 else "20B"); E = C["E"]; ks = " and ".join(str(a["k"]) for a in arms)
     groups_txt = " / ".join(f"{a['k']} groups of {E // a['k']}" for a in arms)
