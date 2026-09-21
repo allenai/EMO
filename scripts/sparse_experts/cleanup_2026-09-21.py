@@ -7,12 +7,11 @@
 Runs still in flight (EMO 130B baseline + window-3 squares, re-merge squares, 8-way and 128e arms, 128e baseline) are never touched.
   python scripts/sparse_experts/cleanup_2026-09-21.py [--delete]
 """
-import glob, json, os, re, shutil, subprocess, sys
+import glob, json, os, re, shutil, subprocess, sys, time
 from pathlib import Path
 
 S = Path("sparse_experts"); DELETE = "--delete" in sys.argv
-IN_FLIGHT = ("olmoe3_275m_emo_130b", "olmoe3_275m_emorand_square1_w3", "olmoe3_275m_emorand_square2_w3", "olmoe3_275m_emorand_square3_w3",
-             "olmoe3_275m_stdremerge_square", "olmoe3_275m_stdrand8_square", "olmoe3_275m_s128rand4_square", "olmoe3_275m_s128rand8_square", "olmoe3_275m_128e_130b")
+IN_FLIGHT = ("olmoe3_275m_emo_130b", "olmoe3_275m_128e_130b")  # multi-node baselines still training; squares are judged finished by their checkpoints
 def in_flight(p): return any(str(p).startswith(str(S / x)) for x in IN_FLIGHT)
 def step_of(d):
     m = re.fullmatch(r"step(\d+)", d.name); return int(m.group(1)) if m else None
@@ -39,9 +38,10 @@ for run in glob.glob("sparse_experts/olmoe3_275m_*_ft") + glob.glob("sparse_expe
         if st % 500 == 0 and st != max(steps): targets.append(("A", Path(run) / f"step{st}"))
 # A4: squares (all variants/windows) that are finished: 500-multiples that are not the last step and not a merge input
 for run in glob.glob("sparse_experts/olmoe3_275m_*square*"):
-    if in_flight(run): continue
     steps = sorted(s for d in Path(run).iterdir() if (s := step_of(d)) is not None)
     if not steps or not (Path(run) / f"step{max(steps)}" / "train" / "rank0.pt").exists(): continue  # not finished
+    # a square is finished when its last checkpoint is not a 500-multiple ephemeral (finals never are) and the run is not being trained now
+    if max(steps) % 500 == 0 or (time.time() - os.path.getmtime(Path(run) / f"step{max(steps)}")) < 1800: continue
     for st in steps:
         d = Path(run) / f"step{st}"
         if st % 500 == 0 and st != max(steps) and os.path.normpath(d) not in protected: targets.append(("A", d))
