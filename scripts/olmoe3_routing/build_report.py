@@ -286,18 +286,19 @@ def std_window2():
     finetunes from both window ends sit in a shaded region at the right; the random-partition control follows."""
     HR = ROOT / "sparse_experts/olmoe3_routing/runs_heldout300b_std"; PPL = ROOT / "sparse_experts/olmoe3_squares_std/ppl_validation"; PW = OUT / "olmoe3_squares_std_w2"
     if not HR.exists(): return ""
-    W1 = [20000, 25000, 30000, 35000, 38148]; W2 = [39073, 44073, 49073, 54073, 57221]; steps = W1 + W2
+    W1 = [19074, 20000, 25000, 30000, 35000, 38148]; W2 = [39073, 44073, 49073, 54073, 57221]; steps = W1 + W2  # 19074 = start model / untrained slices merged
     toks = [round(st * 524288 / 1e9, 1) for st in steps]  # tokens trained (B) at each matched point
     hv = lambda tag: _ce(HR / f"{tag}/none"); pv = lambda f: _ppl(PPL / f)
     start = hv("std_step19074")
     b_h = [hv(f"baseline_step{st}") for st in steps]; m_h = [hv(f"merged_match{st}") for st in steps]
+    ref_ppl = _ppl(ROOT / "claude_outputs/debug_validation/ppl_validation/olmoe3_275m_10b/step19074.json")
     def bppl(st):
+        if st == 19074: return ref_ppl
         for run in ("olmoe3_275m_20b_1node", "olmoe3_275m_30b_1node", "olmoe3_275m_130b"):
             for s_ in (st, st - 1):
                 if (PPL / run / f"step{s_}.json").exists(): return _ppl(PPL / run / f"step{s_}.json")
         return None
     b_p = [bppl(st) for st in steps]; m_p = [_ppl(PPL / "merged" / f"match{st}.json") for st in steps]
-    ref_ppl = _ppl(ROOT / "claude_outputs/debug_validation/ppl_validation/olmoe3_275m_10b/step19074.json")
     if not any(v is not None for v in b_h + m_h): return card("info", "Window 2 (20B &rarr; 30B)", "<p>Evaluations on the 300B-token held-out sample running.</p>")
     # joint finetuning from both window ends: dotted branches right after the 20B and the 30B point (+0.5B, +1B of tokens)
     ft = {t: hv(t) for t in ("merged30_ft", "merged30_ft2", "baseline30_ft", "baseline30_ft2", "merged_ft", "merged_ft2", "baseline_ft", "baseline_ft2")}
@@ -307,7 +308,8 @@ def std_window2():
            "baseline_ft": pv("olmoe3_275m_baseline_ft/step39502.json"), "baseline_ft2": pv("olmoe3_275m_baseline_ft2/step40456.json")}
     has_ft = any(v is not None for v in ft.values())
     toks = [st * 524288 / 1e9 for st in steps]  # exact token counts, so the finetune x positions (20.5 / 21.0 / 30.5 / 31.0) stay distinct
-    ftx = [toks[4] + 0.5, toks[4] + 1.0, toks[9] + 0.5, toks[9] + 1.0] if has_ft else []
+    i20, i30 = steps.index(38148), steps.index(57221)
+    ftx = [toks[i20] + 0.5, toks[i20] + 1.0, toks[i30] + 0.5, toks[i30] + 1.0] if has_ft else []
     xs_all = sorted(toks + ftx); pos = {x: i for i, x in enumerate(xs_all)}
     labels = [f"{x:.3g}B" if x in toks else "" for x in xs_all]
     def ser(b, m, F):
@@ -315,11 +317,11 @@ def std_window2():
         out = [{"name": "baseline (full model, continued)", "y": col(dict(zip(toks, b)))}, {"name": "merged squares", "y": col(dict(zip(toks, m)))}]
         if has_ft:
             out += [{"name": "merged, joint finetuning (+0.5B, +1B)", "color": "#dc2626", "dotted": True,
-                     "y": col({toks[4]: m[4], ftx[0]: F["merged_ft"], ftx[1]: F["merged_ft2"], toks[9]: m[9], ftx[2]: F["merged30_ft"], ftx[3]: F["merged30_ft2"]})},
+                     "y": col({toks[i20]: m[i20], ftx[0]: F["merged_ft"], ftx[1]: F["merged_ft2"], toks[i30]: m[i30], ftx[2]: F["merged30_ft"], ftx[3]: F["merged30_ft2"]})},
                     {"name": "baseline, joint finetuning (+0.5B, +1B)", "color": "#2563eb", "dotted": True,
-                     "y": col({toks[4]: b[4], ftx[0]: F["baseline_ft"], ftx[1]: F["baseline_ft2"], toks[9]: b[9], ftx[2]: F["baseline30_ft"], ftx[3]: F["baseline30_ft2"]})}]
+                     "y": col({toks[i20]: b[i20], ftx[0]: F["baseline_ft"], ftx[1]: F["baseline_ft2"], toks[i30]: b[i30], ftx[2]: F["baseline30_ft"], ftx[3]: F["baseline30_ft2"]})}]
         return out
-    bands = [(toks[4], ftx[1], "joint finetuning"), (toks[9], ftx[3], "joint finetuning")] if has_ft else None
+    bands = [(toks[i20], ftx[1], "joint finetuning"), (toks[i30], ftx[3], "joint finetuning")] if has_ft else None
     charts = CHART_CSS + line_chart(xs_all, ser(b_h, m_h, ft) + [{"name": "start model (10B)", "y": [start] * len(xs_all), "const": True, "dashed": True, "color": "#64748b"}],
                                    title="Held-out CE (sample from 300B tokens into the stream)", xlabels=labels, x_label="tokens trained", shade=bands)
     if any(v is not None for v in b_p + m_p):
@@ -390,17 +392,18 @@ def random_control(which):
     arms = [dict(a, HR=R / a["hr"], SQ=ROOT / "sparse_experts" / a["sqn"]) for a in C["arms"] if (ROOT / "sparse_experts" / a["sqn"] / "groups.json").exists()]
     if not arms: return ""
     hb = lambda tag: _ce(HRB / f"{tag}/none")
-    W1 = [20000, 25000, 30000, 35000, 38148]; W2 = [39073, 44073, 49073, 54073, 57221]
+    W1 = [19074, 20000, 25000, 30000, 35000, 38148]; W2 = [39073, 44073, 49073, 54073, 57221]  # 19074 = start model / untrained slices merged
     def has(a, st): return _ce(a["HR"] / f"merged_match{st}/none") is not None or any(_ce(a["HR"] / f"sub{g}_match{st}/none") is not None for g in range(a["k"]))
     steps = W1 + [st for st in W2 if any(has(a, st) for a in arms)] + [st for st in W3_STEPS if any(has(a, st) for a in arms)]
-    w2 = len(steps) > 5; w3 = len(steps) > 10
+    w2 = len(steps) > 6; w3 = len(steps) > 11
+    start = hb(C["start"]); ref_ppl = _ppl(ROOT / f"claude_outputs/debug_validation/ppl_validation/{C['start_ppl']}/step19074.json")
     def bppl(st):
+        if st == 19074: return ref_ppl
         for d in C["ppl_dirs"]:
             for run in C["base_runs"]:
                 for s_ in (st, st - 1):
                     if (ROOT / "sparse_experts" / d / run / f"step{s_}.json").exists(): return _ppl(ROOT / "sparse_experts" / d / run / f"step{s_}.json")
         return None
-    start = hb(C["start"]); ref_ppl = _ppl(ROOT / f"claude_outputs/debug_validation/ppl_validation/{C['start_ppl']}/step19074.json")
     b_h = [hb(f"baseline_step{st}") for st in steps]; b_p = [bppl(st) for st in steps]
     for a in arms:  # per-arm series
         hv = lambda tag, a=a: _ce(a["HR"] / f"{tag}/none")
@@ -617,7 +620,7 @@ def build_q3():
 
 
 HELD = ROOT / "sparse_experts/olmoe3_routing/runs_heldout20b"; PPL = ROOT / "sparse_experts/olmoe3_squares/ppl_validation"
-MATCH = [(20000, "match20000"), (25000, "match25000"), (30000, "match30000"), (35000, "match35000"), (38148, "match38148")]
+MATCH = [(19074, "match19074"), (20000, "match20000"), (25000, "match25000"), (30000, "match30000"), (35000, "match35000"), (38148, "match38148")]  # 19074 = the untrained slices merged (0%)
 
 
 ROBUST_NOTE = []
@@ -761,7 +764,7 @@ def squares_results(HELD=HELD, PPL=PPL, SQO=SQO, start="emo_step19074", start_pp
     for step, name in MATCH:
         frac = 100 * (step - 19074) / 19074; xs.append(round(frac))
         b_h.append(_ce(HELD / f"baseline_step{step}/none")); m_h.append(_ce(HELD / f"merged_{name}/none"))
-        b_p.append(next((_ppl(PPL / run / f"step{s}.json") for run in base_runs for s in (step, step - 1) if (PPL / run / f"step{s}.json").exists()), None))  # final ckpt is step38147
+        b_p.append(ref_ppl if step == 19074 else next((_ppl(PPL / run / f"step{s}.json") for run in base_runs for s in (step, step - 1) if (PPL / run / f"step{s}.json").exists()), None))  # final ckpt is step38147
         m_p.append(_ppl(PPL / "merged" / f"{name}.json"))
     have = any(v is not None for v in b_h + m_h)
     # post-merge finetuning: +0.5B tokens (steps 38548-39502) for the 100% merge and, for fairness, for the baseline -> right-most point
