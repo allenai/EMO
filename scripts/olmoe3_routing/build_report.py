@@ -451,7 +451,59 @@ def random_control(which):
         sq_series + rml(rm_h, "merged, re-partitioned at 61B") + ([{"name": "squares, re-partitioned at 61B (mean of 4)", "y": rm_sq, "color": "#7c3aed", "dashed": True}] if rm_sq is not None else [])
         + [{"name": "baseline", "y": b_h, "dashed": True, "color": "#059669"}, {"name": "start model", "y": [start] * len(toks), "const": True, "dashed": True, "color": "#64748b"}],
         title="All held-out documents (300B sample)", xlabels=labels, x_label="tokens trained")
-    return section(title, setup, charts, C["take"]())
+    return section(title, setup, charts, C["take"]()) + routing_similarity_section(arms[0]["SQ"], C["model"], arms[0]["k"])
+
+
+ROUTING_SIM_TAKE = {"olmoe3_squares_stdrand": (
+    "The merged model's routing leaves the baseline's at once and then drifts slowly: after the first 0.5B of separate training it keeps 62% of the "
+    "baseline's top-64 experts per document and 85% of its 90%-mass set (KL 0.16); by 130B these are 51% and 81% (KL 0.26), while the raw expert "
+    "sets overlap 96&ndash;97% throughout because a standard-routing document touches almost every expert. And the merged model is not aligned with "
+    "its squares at all, at any checkpoint: the most-used square carries 26% of a document's routing (uniform = 25%, the baseline reads 27% on the "
+    "same random partition), the mean share of a token's 16 experts in the dominant square is 26%, and not a single token routes 13 or more of its "
+    "16 experts into one square. With a random split the squares' experts are interleaved and the merged model spreads its routing across them "
+    "exactly as the full model does, so the merge loss here is not a routing story: it is the slow divergence of the averaged shared parameters, "
+    "the same thing the re-merge test probes.")}
+
+
+def routing_similarity_section(SQ, model, k):
+    """Routing of the merged random-split squares vs the continued baseline on the held-out sample across the matched checkpoints
+    (routing_similarity.py): expert-set overlap (raw / top-64 / 90%-mass), KL, document-level square coverage, token-level square exclusivity."""
+    J = _jload(OUT / SQ.name / "routing_similarity.json")
+    if not J or not J.get("points"): return ""
+    P = J["points"]; xs = [p["tokens_b"] for p in P]; labels = [f"{x:.3g}B" for x in xs]; A = [p["avg"] for p in P]
+    g = lambda key: [a.get(key) for a in A]
+    ch = CHART_CSS
+    ch += line_chart(xs, [{"name": "all experts the baseline uses (&ge; 1 token)", "y": g("recall")}, {"name": "baseline's top-64 experts by routing mass", "y": g("recall_top64")},
+                          {"name": "baseline's smallest set covering 90% of its routing", "y": g("recall_mass90")}],
+                     title="Recall: share of the baseline's expert set that the merged model also uses (per document, mean)", y_label="recall", xlabels=labels, x_label="tokens trained")
+    ch += line_chart(xs, [{"name": f"overlap of the top-64 sets (of 64)", "y": g("overlap_top64")}, {"name": "overlap of the 90%-mass sets", "y": g("overlap_mass90")},
+                          {"name": "size of the baseline's 90%-mass set", "y": g("n_mass90"), "dashed": True, "color": "#64748b"}],
+                     title="Absolute overlap (experts per document per layer, mean)", y_label="experts", xlabels=labels, x_label="tokens trained")
+    ch += line_chart(xs, [{"name": "KL(baseline &#8214; merged), per-document routing distribution", "y": g("kl")}],
+                     title="KL divergence of the routing distributions (nats, mean over documents)", y_label="KL", xlabels=labels, x_label="tokens trained")
+    ch += line_chart(xs, [{"name": "merged squares", "y": g("coverage_merged")}, {"name": "baseline", "y": g("coverage_baseline")},
+                          {"name": f"uniform over {k} squares", "y": [1 / k] * len(xs), "const": True, "dashed": True, "color": "#64748b"}],
+                     title="Document-level share of routing on the document's most-used square (max over squares, mean)", y_label="share", xlabels=labels, x_label="tokens trained")
+    ch += line_chart(xs, [{"name": "merged: mean share of a token's 16 experts in the document's dominant square", "y": g("token_merged_share")},
+                          {"name": "merged: tokens with &ge; 80% (13/16) in the dominant square", "y": g("token_merged_ge80")},
+                          {"name": "merged: tokens with &ge; 90% (15/16)", "y": g("token_merged_ge90")}, {"name": "merged: tokens routed exclusively (16/16)", "y": g("token_merged_exclusive")},
+                          {"name": "baseline: mean share", "y": g("token_baseline_share"), "dashed": True, "color": "#059669"}],
+                     title="Token-level alignment with the squares (first 200 held-out instances)", y_label="fraction", xlabels=labels, x_label="tokens trained")
+    last = P[-1]; pl = last["per_layer"]
+    rows = [[f"layer {l}", f(pl[str(l)]["recall"], 3), f(pl[str(l)]["recall_top64"], 3), f(pl[str(l)]["recall_mass90"], 3), f(pl[str(l)]["kl"], 3), f(pl[str(l)]["coverage_merged"], 3), f(pl[str(l)]["coverage_baseline"], 3),
+             f(last["token"]["merged"][str(l)]["share"], 3)] for l in J["layers"]]
+    tbl = table(["", "recall (all)", "recall (top-64)", "recall (90% mass)", "KL", "coverage merged", "coverage baseline", "token share merged"], rows)
+    what = (f"For every held-out document (&ge; {J['min_tokens']} tokens; {last['n_docs']:,} documents) and every partitioned layer (2&ndash;9, mean over layers in the charts), the "
+            f"routing of the merged squares is compared with the routing of the baseline at the same matched checkpoint; at 10B both are the start model. "
+            "<b>Recall</b>: the fraction of the baseline's expert set for the document that the merged model also uses, for three definitions of the set: every expert "
+            "that receives at least one of the document's tokens (a standard-routing document of ~1,150 tokens touches nearly all 512 experts, so this is weak), the "
+            "baseline's 64 most-used experts, and its smallest set covering 90% of its routing. <b>KL</b>: KL(baseline &#8214; merged) of the per-document distribution of "
+            "expert selections, the merged distribution smoothed by half a count per expert (so the 10B point reads 0.003 rather than 0). <b>Coverage</b>: the share "
+            f"of a document's routing that falls on whichever of the {k} squares it uses most (1/{k} = no alignment). <b>Token level</b> (first 200 instances, "
+            "~1,400 documents): for each token, how many of its 16 experts belong to the document's dominant square; the mean share and the fraction of tokens "
+            "with at least 13, 15 or all 16 of them there.")
+    return section("Routing of the merged squares vs the baseline on the held-out sample", what, ch + "<p><b>Per layer at the last checkpoint</b> (" + f"{last['tokens_b']:.3g}B):</p>" + tbl,
+                   ROUTING_SIM_TAKE.get(SQ.name, "Analysis running."))
 
 
 def build_q3():
