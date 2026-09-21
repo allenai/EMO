@@ -1,6 +1,6 @@
 window.ICSL_1B_REPACK_UNTIED_EMBEDWD_REVIEWER={
   "policy": "dense_1b_repack_untied_embedwd_reviewer_v1",
-  "updatedAt": "2026-09-20T23:09:19.372167+00:00",
+  "updatedAt": "2026-09-21T07:31:53+00:00",
   "model": "1.5B (repository Dense-1B / 1.279B parameters)",
   "pool": "dclm1b",
   "recipe": {
@@ -66,10 +66,32 @@ window.ICSL_1B_REPACK_UNTIED_EMBEDWD_REVIEWER={
       "rankMicrobatchSequences": 8,
       "gradientAccumulation": 1,
       "minRuntime": "8h",
-      "status": "scheduled",
+      "status": "queued",
       "experiment": "01M30H9FZ9FCDJXE2ZRQ1Q4BY2",
-      "job": "01M30H9G51TNHTMD7Z9YB5D105",
+      "job": "01M31CW73MWJ57M1HJR5HV89B0",
+      "jobHistory": [
+        {
+          "job": "01M30H9G51TNHTMD7Z9YB5D105",
+          "status": "preempted by system",
+          "endedAt": "2026-09-21T07:11:28.526474+00:00",
+          "reason": "preempted after exceeding the protected 8-hour minimum runtime"
+        }
+      ],
       "revision": "e8d4d7d4a739122d2029ec3d9c3e6e2dded6e3ad",
+      "progress": {
+        "currentEpoch": 8,
+        "currentStep": 43495,
+        "stageTotalSteps": 45777,
+        "stageTargetEpoch": 8
+      },
+      "completedPdEpochs": [1, 2, 3, 4, 5, 6, 7, 8],
+      "resolvedPostEpochs": [],
+      "completeWorkflowEta": null,
+      "health": {
+        "status": "queued after preemption",
+        "checkedAt": "2026-09-21T07:31:53+00:00",
+        "criticalSignals": []
+      },
       "postDecayResults": {}
     },
     {
@@ -84,10 +106,32 @@ window.ICSL_1B_REPACK_UNTIED_EMBEDWD_REVIEWER={
       "rankMicrobatchSequences": 8,
       "gradientAccumulation": 8,
       "minRuntime": "8h",
-      "status": "scheduled",
+      "status": "queued",
       "experiment": "01M30H9HAPF77KK2V1X31CKPSW",
-      "job": "01M30H9HEATE6MP42TEAFW7YQY",
+      "job": "01M31CW78KHB2MHYYQ7FEEGK1F",
+      "jobHistory": [
+        {
+          "job": "01M30H9HEATE6MP42TEAFW7YQY",
+          "status": "preempted by system",
+          "endedAt": "2026-09-21T07:11:31.806449+00:00",
+          "reason": "preempted after exceeding the protected 8-hour minimum runtime"
+        }
+      ],
       "revision": "e8d4d7d4a739122d2029ec3d9c3e6e2dded6e3ad",
+      "progress": {
+        "currentEpoch": 8,
+        "currentStep": 5585,
+        "stageTotalSteps": 5723,
+        "stageTargetEpoch": 8
+      },
+      "completedPdEpochs": [1, 2, 3, 4, 5, 6, 7, 8],
+      "resolvedPostEpochs": [],
+      "completeWorkflowEta": null,
+      "health": {
+        "status": "queued after preemption",
+        "checkedAt": "2026-09-21T07:31:53+00:00",
+        "criticalSignals": []
+      },
       "postDecayResults": {}
     }
   ]
