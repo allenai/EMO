@@ -1,6 +1,6 @@
 {
   "policy": "dense_1b_repack_untied_embedwd_reviewer_v1",
-  "updatedAt": "2026-09-21T07:31:53+00:00",
+  "updatedAt": "2026-09-21T12:44:38+00:00",
   "model": "1.5B (repository Dense-1B / 1.279B parameters)",
   "pool": "dclm1b",
   "recipe": {
@@ -66,7 +66,7 @@
       "rankMicrobatchSequences": 8,
       "gradientAccumulation": 1,
       "minRuntime": "8h",
-      "status": "queued",
+      "status": "running",
       "experiment": "01M30H9FZ9FCDJXE2ZRQ1Q4BY2",
       "job": "01M31CW73MWJ57M1HJR5HV89B0",
       "jobHistory": [
@@ -79,17 +79,18 @@
       ],
       "revision": "e8d4d7d4a739122d2029ec3d9c3e6e2dded6e3ad",
       "progress": {
-        "currentEpoch": 8,
-        "currentStep": 43495,
-        "stageTotalSteps": 45777,
-        "stageTargetEpoch": 8
+        "currentEpoch": 16,
+        "currentStep": 60225,
+        "stageTotalSteps": 61036,
+        "stageTargetEpoch": 16,
+        "phase": "post_decay_train"
       },
-      "completedPdEpochs": [1, 2, 3, 4, 5, 6, 7, 8],
-      "resolvedPostEpochs": [],
-      "completeWorkflowEta": null,
+      "completedPdEpochs": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+      "resolvedPostEpochs": [8, 12],
+      "completeWorkflowEta": "2026-09-22T08:30:00+00:00",
       "health": {
-        "status": "queued after preemption",
-        "checkedAt": "2026-09-21T07:31:53+00:00",
+        "status": "healthy; resumed successfully",
+        "checkedAt": "2026-09-21T12:44:38+00:00",
         "criticalSignals": []
       },
       "postDecayResults": {}
@@ -106,7 +107,7 @@
       "rankMicrobatchSequences": 8,
       "gradientAccumulation": 8,
       "minRuntime": "8h",
-      "status": "queued",
+      "status": "running",
       "experiment": "01M30H9HAPF77KK2V1X31CKPSW",
       "job": "01M31CW78KHB2MHYYQ7FEEGK1F",
       "jobHistory": [
@@ -119,17 +120,18 @@
       ],
       "revision": "e8d4d7d4a739122d2029ec3d9c3e6e2dded6e3ad",
       "progress": {
-        "currentEpoch": 8,
-        "currentStep": 5585,
-        "stageTotalSteps": 5723,
-        "stageTargetEpoch": 8
+        "currentEpoch": 16,
+        "currentStep": 7555,
+        "stageTotalSteps": 7630,
+        "stageTargetEpoch": 16,
+        "phase": "post_decay_train"
       },
-      "completedPdEpochs": [1, 2, 3, 4, 5, 6, 7, 8],
-      "resolvedPostEpochs": [],
-      "completeWorkflowEta": null,
+      "completedPdEpochs": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+      "resolvedPostEpochs": [8, 12],
+      "completeWorkflowEta": "2026-09-22T06:30:00+00:00",
       "health": {
-        "status": "queued after preemption",
-        "checkedAt": "2026-09-21T07:31:53+00:00",
+        "status": "healthy; resumed successfully",
+        "checkedAt": "2026-09-21T12:44:38+00:00",
         "criticalSignals": []
       },
       "postDecayResults": {}
