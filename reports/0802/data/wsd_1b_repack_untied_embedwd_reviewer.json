@@ -1,6 +1,6 @@
 {
   "policy": "dense_1b_repack_untied_embedwd_reviewer_v1",
-  "updatedAt": "2026-09-21T12:44:38+00:00",
+  "updatedAt": "2026-09-21T13:46:43+00:00",
   "model": "1.5B (repository Dense-1B / 1.279B parameters)",
   "pool": "dclm1b",
   "recipe": {
@@ -80,20 +80,24 @@
       "revision": "e8d4d7d4a739122d2029ec3d9c3e6e2dded6e3ad",
       "progress": {
         "currentEpoch": 16,
-        "currentStep": 60225,
-        "stageTotalSteps": 61036,
-        "stageTargetEpoch": 16,
-        "phase": "post_decay_train"
+        "currentStep": 60110,
+        "stageTotalSteps": 68664,
+        "stageTargetEpoch": 20,
+        "phase": "pre_decay_train"
       },
       "completedPdEpochs": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
-      "resolvedPostEpochs": [8, 12],
+      "resolvedPostEpochs": [8, 12, 16],
       "completeWorkflowEta": "2026-09-22T08:30:00+00:00",
       "health": {
         "status": "healthy; resumed successfully",
-        "checkedAt": "2026-09-21T12:44:38+00:00",
+        "checkedAt": "2026-09-21T13:46:43+00:00",
         "criticalSignals": []
       },
-      "postDecayResults": {}
+      "postDecayResults": {
+        "8": {"status": "complete", "validationExact": 3.02887},
+        "12": {"status": "complete", "validationExact": 2.99227},
+        "16": {"status": "complete", "validationExact": 2.97311}
+      }
     },
     {
       "id": "dense-1b-dclm1b-bs512-lr1e-3-wd1.0-repack-untied-embedwd",
@@ -121,20 +125,24 @@
       "revision": "e8d4d7d4a739122d2029ec3d9c3e6e2dded6e3ad",
       "progress": {
         "currentEpoch": 16,
-        "currentStep": 7555,
-        "stageTotalSteps": 7630,
-        "stageTargetEpoch": 16,
-        "phase": "post_decay_train"
+        "currentStep": 7545,
+        "stageTotalSteps": 8582,
+        "stageTargetEpoch": 20,
+        "phase": "pre_decay_train"
       },
       "completedPdEpochs": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
-      "resolvedPostEpochs": [8, 12],
+      "resolvedPostEpochs": [8, 12, 16],
       "completeWorkflowEta": "2026-09-22T06:30:00+00:00",
       "health": {
         "status": "healthy; resumed successfully",
-        "checkedAt": "2026-09-21T12:44:38+00:00",
+        "checkedAt": "2026-09-21T13:46:43+00:00",
         "criticalSignals": []
       },
-      "postDecayResults": {}
+      "postDecayResults": {
+        "8": {"status": "complete", "validationExact": 3.12794},
+        "12": {"status": "complete", "validationExact": 3.09271},
+        "16": {"status": "complete", "validationExact": 3.07214}
+      }
     }
   ]
 }
