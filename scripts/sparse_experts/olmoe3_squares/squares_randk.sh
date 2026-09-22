@@ -73,18 +73,20 @@ for g in $GS; do st=(${S1[$g]}); S2[$g]=$(steps_of $SQ/pack2/stats.json $g)
   tokens=$(python -c "import json; print(json.load(open('$SQ/pack2/stats.json'))['tokens_per_group'][$g])")
   launch_train $LOG/square${g}_w2_launched $LOG/launch_square${g}_w2.log scripts/sparse_experts/model_scripts/olmoe3_275m_emo_square.sh SQUARE_GROUP=$g SQUARES_NAME=$SQN OLMOE3_EMO=0 OLMOE3_NUM_EXPERTS=$E OLMOE3_TOKENS=$tokens OLMOE3_DATA_PATHS="$W/$SQN/pack2/group$g/*.npy" OLMOE3_INIT_FROM="$W/$SQN/init2/group$g/model_and_optim" OLMOE3_RUNNAME=${RP}${g}_w2 OLMOE3_WANDB_TAGS=$SQN,square,w2
 done
-for i in 0 1 2 3 4; do s=${W2[$i]}; subs=(); for g in $GS; do st=(${S2[$g]}); subs+=("$S/${RP}${g}_w2/step${st[$i]}"); done
-  for d in "${subs[@]}"; do until [ -f "$d/train/rank0.pt" ]; do sleep 300; done; done; say "window-2 point $s: square checkpoints present"
-  merge_k $SQ/merged/match$s "$SH2" "${subs[@]}"; heldout $HR merged_match$s $W/$SQN/merged/match$s; ppl $W/$SQN/merged/match$s merged/match$s.json merged-$s
-  for g in $GS; do st=(${S2[$g]}); heldout $HR sub${g}_match$s $W/${RP}${g}_w2/step${st[$i]}; done
-  [ -n "$BASE" ] && { until [ -f $S/$BW2/step$s/train/rank0.pt ]; do sleep 600; done; heldout $HRB baseline_step$s $W/$BW2/step$s; ppl $W/$BW2/step$s $BW2/step$s.json baseline-$s; }
-done
-# ---- 3. window 3: contiguous stream slices of 1/K of the 100B ----
+# ---- 3. window 3 is launched as soon as the window-2 finals exist (it does not depend on the window-2 merges) ----
+for g in $GS; do st=(${S2[$g]}); until [ -f $S/${RP}${g}_w2/step${st[4]}/train/rank0.pt ]; do sleep 300; done; done; say "window-2 finals present"
 for g in $GS; do st=(${S2[$g]}); start=$((B0 + g * SQ3))
   [ -f $SQ/init3/group$g/model_and_optim/.metadata ] || { PYTHONPATH=external/OLMo-core/src python scripts/sparse_experts/olmoe3_squares/rewrite_checkpoint.py --src $S/${RP}${g}_w2/step${st[4]} --out $SQ/init3/group$g --overwrite 2>&1 | tail -1; say "init3 group$g done"; }
   [ -f $SQ/ft_start/w3_group$g/step$start/train/rank0.pt ] || PYTHONPATH=external/OLMo-core/src python scripts/sparse_experts/olmoe3_squares/make_finetune_start.py --model $SQ/init3/group$g --train-from $S/olmoe3_275m_30b_1node/step57221 --start-step $start --out $SQ/ft_start/w3_group$g 2>&1 | tail -1
   S3[$g]=$(python -c "s=$SQ3; b=$start; print(' '.join(str(b + max(1, round(s*f/19074))) for f in (926, 5926, 10926, 15926)) + f' {b + s}')")
   launch_train $LOG/square${g}_w3_launched $LOG/launch_square${g}_w3.log scripts/sparse_experts/model_scripts/olmoe3_275m_stdrand_square_w3.sh SQUARE_GROUP=$g SQUARES_NAME=$SQN RUN_PREFIX=$RP OLMOE3_EMO=0 OLMOE3_NUM_EXPERTS=$E FT_START=$W/$SQN/ft_start/w3_group$g FT_START_STEP=$start FT_STEPS=$SQ3
+done
+# ---- 2b. window-2 matched points: merge + evals ----
+for i in 0 1 2 3 4; do s=${W2[$i]}; subs=(); for g in $GS; do st=(${S2[$g]}); subs+=("$S/${RP}${g}_w2/step${st[$i]}"); done
+  for d in "${subs[@]}"; do until [ -f "$d/train/rank0.pt" ]; do sleep 300; done; done; say "window-2 point $s: square checkpoints present"
+  merge_k $SQ/merged/match$s "$SH2" "${subs[@]}"; heldout $HR merged_match$s $W/$SQN/merged/match$s; ppl $W/$SQN/merged/match$s merged/match$s.json merged-$s
+  for g in $GS; do st=(${S2[$g]}); heldout $HR sub${g}_match$s $W/${RP}${g}_w2/step${st[$i]}; done
+  [ -n "$BASE" ] && { until [ -f $S/$BW2/step$s/train/rank0.pt ]; do sleep 600; done; heldout $HRB baseline_step$s $W/$BW2/step$s; ppl $W/$BW2/step$s $BW2/step$s.json baseline-$s; }
 done
 say "window-3 steps: $(for g in $GS; do echo -n "g$g [${S3[$g]}] "; done)"
 for i in 0 1 2 3 4; do s=${W3[$i]}; subs=(); for g in $GS; do st=(${S3[$g]}); subs+=("$S/${RP}${g}_w3/step${st[$i]}"); done
