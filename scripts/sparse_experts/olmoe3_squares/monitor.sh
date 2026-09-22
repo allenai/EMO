@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Standing monitor for the random-control experiments (user request 2026-09-22): every 30 min
 #   1. keep the drivers and the twin scheduler alive (restart any that died; they are idempotent)
-#   2. launch every missing evaluation (ensure_passes.py: covers dropped launches and dead jobs)
+#   2. launch every missing evaluation (ensure_passes.py) and every missing/dead square training (ensure_squares.py)
 #   3. collect finished held-out passes, rebuild + publish the report when new results landed
 #   4. record every real failure (exit code not 0/143) of the last 3 h with its last error line in failures.log
 #   bash scripts/sparse_experts/olmoe3_squares/monitor.sh   (detach it; log: sparse_experts/olmoe3_routing/monitor.log)
@@ -20,6 +20,7 @@ while true; do
   alive '^bash scripts/sparse_experts/olmoe3_squares/init_point_evals\.sh' || grep -q "init-point evals done" $R/init_point_evals.log 2>/dev/null || { setsid nohup bash $D/init_point_evals.sh >> $R/init_point_evals.log 2>&1 < /dev/null & say "restarted init-point evals"; }
   # 2. missing evaluations
   python $D/ensure_passes.py 2>&1 | tail -n 1
+  python $D/ensure_squares.py 2>&1 | grep -v '^  would' | tail -n 3
   # 3. collect + publish
   new=0; for d in $R/runs_heldout*/*/none; do [ -f $d/rank0/DONE ] && [ ! -f $d/meta.json ] && { python scripts/sparse_experts/olmoe3_routing/merge_routing.py $d > /dev/null 2>&1; new=$((new+1)); }; done
   if [ $new -gt 0 ] || [ -n "$(find $S/olmoe3_squares*/ppl_validation -name '*.json' -newer $R/monitor.stamp 2>/dev/null | head -1)" ]; then
