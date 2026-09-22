@@ -11,7 +11,7 @@ say() { echo "$(date -u +%m-%d\ %H:%M) $*"; }
 alive() { pgrep -f "$1" > /dev/null; }
 while true; do
   # 1. processes
-  alive '^bash scripts/sparse_experts/olmoe3_squares/squares_control_w3\.sh emo$' || { setsid nohup bash $D/squares_control_w3.sh emo >> $S/olmoe3_squares_emorand/logs_driver_w3.log 2>&1 < /dev/null & say "restarted driver emo w3"; }
+  grep -q 'window 3 done' $S/olmoe3_squares_emorand/logs_driver_w3.log 2>/dev/null || alive '^bash scripts/sparse_experts/olmoe3_squares/squares_control_w3\.sh emo$' || { setsid nohup bash $D/squares_control_w3.sh emo >> $S/olmoe3_squares_emorand/logs_driver_w3.log 2>&1 < /dev/null & say "restarted driver emo w3"; }
   for v in std_k8 s128_k4 s128_k8 emo_k8; do sq=$([ $v = std_k8 ] && echo olmoe3_squares_stdrand8 || ([ $v = s128_k4 ] && echo olmoe3_squares_s128rand4 || ([ $v = s128_k8 ] && echo olmoe3_squares_s128rand8 || echo olmoe3_squares_emorand8)))
     grep -q "done" $S/$sq/logs_driver.log 2>/dev/null && grep -q "^.*\] done" $S/$sq/logs_driver.log 2>/dev/null && continue
     alive "^bash scripts/sparse_experts/olmoe3_squares/squares_randk\.sh $v$" || { setsid nohup bash $D/squares_randk.sh $v >> $S/$sq/logs_driver.log 2>&1 < /dev/null & say "restarted driver $v"; }
