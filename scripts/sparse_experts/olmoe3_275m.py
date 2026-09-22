@@ -46,6 +46,13 @@ Env knobs (all forwarded to the Beaker worker, which rebuilds the config):
     OLMOE3_EMO            1 -> EMO document-pool routing on the same model (the ladder's own EMO
                           setting: per-document pool drawn uniformly from [top_k=16, 512] experts,
                           eval pool 512, local-batch LB loss with global load balancing). Default 0.
+    OLMOE3_EMO_POOL_SELECT which experts make up a training document's pool of size d: relevance
+                          (default, the ladder's EMO: the d experts with the largest summed router
+                          score over the document's tokens) | random (a uniformly random set of d
+                          experts per document, so the pool size distribution is kept but the pool
+                          content ignores the router). Applied by patching the document-score input
+                          of the pool mask in EmoRouterV2.forward, training branch only; eval pools
+                          (eval_document_expert_pool, default all experts) are selected as before.
     OLMOE3_EMO_POOL_DIST  how each training document draws its pool size d from
                           [OLMOE3_EMO_MIN_POOL, OLMOE3_EMO_MAX_POOL]: uniform (default, the ladder's
                           setting) | beta:<alpha> -> d = round(min + (max - min) * u ** (1/alpha)),
@@ -202,6 +209,9 @@ EMO_MIN_POOL = int(os.environ.get("OLMOE3_EMO_MIN_POOL", str(TOP_K)))
 EMO_MAX_POOL = int(os.environ.get("OLMOE3_EMO_MAX_POOL", str(NUM_ROUTED_EXPERTS)))
 EMO_EVAL_POOL = int(os.environ.get("OLMOE3_EMO_EVAL_POOL", str(NUM_ROUTED_EXPERTS)))
 EMO_POOL_DIST = os.environ.get("OLMOE3_EMO_POOL_DIST", "uniform").strip().lower()
+EMO_POOL_SELECT = os.environ.get("OLMOE3_EMO_POOL_SELECT", "relevance").strip().lower()
+if EMO_POOL_SELECT not in ("relevance", "random"):
+    raise ValueError(f"OLMOE3_EMO_POOL_SELECT must be relevance or random, got {EMO_POOL_SELECT!r}")
 # Learned per-document pool size (scripts/sparse_experts/emo_learned_d.py): d_head predicts each document's
 # pool in [min_pool, max_pool]; STE mask; size penalty lambda_d; optional warm-up that phases the restriction in.
 LEARNED_D = _env_bool("OLMOE3_EMO_LEARNED_D", False)
@@ -303,9 +313,51 @@ def install_pool_dist_patch(alpha) -> None:
     EmoRouterV2._pool_dist_alpha = alpha  # type: ignore[attr-defined]
 
 
+def install_random_pool_select_patch() -> None:
+    """Make every training document's expert pool a uniformly random set of d experts (d from the
+    pool-size sampler as before) instead of the d experts with the largest summed router score.
+
+    EmoRouterV2.forward computes ``document_scores = ops.doc_sum_scatter(scores, segment_ids)`` and
+    keeps each document's top-d experts of it. This patch gives the router module its own view of
+    ``ops`` whose ``doc_sum_scatter`` returns, in training mode, the per-document sum of i.i.d.
+    uniform noise instead: the sum is constant within a document and exchangeable across experts,
+    so the top-d of it is a uniformly random d-subset per document. Nothing else in the forward
+    (gates, top-k within the pool, LB loss inputs) changes, and eval-mode calls use the real scores."""
+    import types
+
+    import olmo_core.nn.moe.v2.emo_router as emo_router_mod
+    import olmo_core.ops.moe as ops_mod
+    from olmo_core.nn.moe.v2.emo_router import EmoRouterV2
+
+    state = {"training": False}
+    real_doc_sum_scatter = ops_mod.doc_sum_scatter
+
+    def doc_sum_scatter(per_token: torch.Tensor, segment_ids: torch.Tensor) -> torch.Tensor:
+        if state["training"]:
+            per_token = torch.rand_like(per_token)
+        return real_doc_sum_scatter(per_token, segment_ids)
+
+    view = types.SimpleNamespace(**{k: v for k, v in vars(ops_mod).items() if not k.startswith("__")})
+    view.doc_sum_scatter = doc_sum_scatter
+    emo_router_mod.ops = view  # only the EMO router sees the patched function
+    orig_forward = EmoRouterV2.forward
+
+    def forward(self, *args, **kwargs):
+        state["training"] = bool(self.training)
+        try:
+            return orig_forward(self, *args, **kwargs)
+        finally:
+            state["training"] = False
+
+    EmoRouterV2.forward = forward  # type: ignore[method-assign]
+    EmoRouterV2._pool_select = "random"  # type: ignore[attr-defined]
+
+
 EMO_POOL_ALPHA = _parse_pool_dist(EMO_POOL_DIST)
 if EMO_ENABLED:
     install_pool_dist_patch(EMO_POOL_ALPHA)
+    if EMO_POOL_SELECT == "random":
+        install_random_pool_select_patch()
 ATTN_BACKEND = AttentionBackendName(os.environ.get("OLMOE3_ATTN_BACKEND", "flash_3"))
 
 
@@ -566,7 +618,7 @@ FORWARDED_ENV = (
     "OLMOE3_ATTN_BACKEND", "OLMOE3_USE_CUTE_KDA", "OLMOE3_PREEMPTIBLE", "OLMOE3_DATA_ROOT",
     "OLMOE3_SAVE_ROOT", "OLMOE3_WORK_DIR", "OLMOE3_WANDB_TAGS", "OLMOE3_IMAGE", "OLMOE3_SAVE_INTERVAL",
     "OLMOE3_EMO", "OLMOE3_EMO_MIN_POOL", "OLMOE3_EMO_MAX_POOL", "OLMOE3_EMO_EVAL_POOL", "OLMOE3_NUM_EXPERTS",
-    "OLMOE3_EMO_POOL_DIST", "OLMOE3_EXPERIMENT", "OLMOE3_PPL_EVAL_INTERVAL",
+    "OLMOE3_EMO_POOL_DIST", "OLMOE3_EMO_POOL_SELECT", "OLMOE3_EXPERIMENT", "OLMOE3_PPL_EVAL_INTERVAL",
     "OLMOE3_EMO_LEARNED_D", "OLMOE3_LD_TEMP", "OLMOE3_LD_LAMBDA", "OLMOE3_LD_WARMUP", "OLMOE3_LD_FLOOR_WARMUP",
     "OLMOE3_LD_LAMBDA_WARMUP", "OLMOE3_LD_INIT", "OLMOE3_LD_EVAL", "OLMOE3_LD_DETACH", "OLMOE3_LD_LR_MULT",
     "OLMOE3_LD_SIGNAL", "OLMOE3_LD_LAMBDA_COV", "OLMOE3_ROUTER_ONLY_LR",
@@ -866,6 +918,7 @@ def build_trainer_config(common: CommonComponents, cluster: str) -> TrainerConfi
                 tags=["pretraining", EXPERIMENT_TAG, "olmoe3_275m", f"{NUM_ROUTED_EXPERTS}e", *([f"group{SQUARES_GROUP}"] if SQUARES_GROUP is not None else []),
                       "emo" if EMO_ENABLED else "noemo",
                       *([f"pool_{EMO_POOL_DIST.replace(':', '').replace(',', 'or')}"] if EMO_ENABLED and EMO_POOL_ALPHA is not None else []),
+                      *(["pool_select_random", f"pool_min{EMO_MIN_POOL}"] if EMO_ENABLED and EMO_POOL_SELECT == "random" else []),
                       *(["learned_d", f"ld_T{LD_TEMP:g}_l{LD_LAMBDA:g}_w{LD_WARMUP}_m{LD_LR_MULT:g}", f"ld_signal_{LD_SIGNAL}"] if LEARNED_D else []),
                       *(["router_only"] if ROUTER_ONLY_LR is not None else []),
                       cluster.rsplit("/", 1)[-1], *EXTRA_WANDB_TAGS],
