@@ -13,7 +13,7 @@ from pathlib import Path
 import yaml
 
 S = Path("sparse_experts"); ST = S / "olmoe3_routing" / "twin_scheduler"; ST.mkdir(parents=True, exist_ok=True)
-WORKSPACE = "ai2/flex2"; TERMINAL = ("exited", "finalized", "canceled", "failed"); CUTOFF = time.mktime(time.strptime("2026-09-20 00:00", "%Y-%m-%d %H:%M"))
+MAX_SUBMITS = 4; WORKSPACE = "ai2/flex2"; TERMINAL = ("exited", "finalized", "canceled", "failed"); CUTOFF = time.mktime(time.strptime("2026-09-20 00:00", "%Y-%m-%d %H:%M"))
 
 
 def sh(*cmd): return subprocess.run(cmd, capture_output=True, text=True)
@@ -159,6 +159,9 @@ def main():
                 if ra and j.get("unalloc") and su[0] not in TERMINAL: stop(j["unalloc"], f"{run}: allocated running"); j["unalloc"] = None; continue
                 if ru and j.get("alloc") and sa[0] not in TERMINAL: stop(j["alloc"], f"{run}: unallocated running"); j["alloc"] = None; (open(j["marker"], "w").write(f"beaker.org/ex/{j['unalloc']}\n") if j["marker"].endswith("_launched") else None); continue
                 if ra or ru: continue
+                if j["n"] >= MAX_SUBMITS:  # a job that keeps failing must not be resubmitted forever
+                    if not j.get("gave_up"): log(f"{run}: {j['n']} submissions, giving up (fix the job and delete it from state.json to retry)"); j["gave_up"] = True
+                    continue
                 # nothing running: (re)submit what is missing or ended (preemption / fault); both kinds compete again
                 if not j.get("alloc") or sa[0] in TERMINAL:
                     j["n"] += 1; new = submit(j["spec"], f"{j.get('safe', run)}-a{j['n']}", allocated=True)
