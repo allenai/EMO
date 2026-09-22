@@ -79,4 +79,8 @@ def main():
 
 
 if __name__ == "__main__":
+    import fcntl
+    _LOCK = open(f"/tmp/olmoe3_ensure_squares.lock", "w")   # one instance at a time: two overlapping runs would launch the same jobs twice
+    try: fcntl.flock(_LOCK, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError: print(f"ensure_squares: another instance is running, skipping"); sys.exit(0)
     main()
