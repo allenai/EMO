@@ -1,6 +1,6 @@
 window.ICSL_1B_REPACK_UNTIED_EMBEDWD_REVIEWER={
   "policy": "dense_1b_repack_untied_embedwd_reviewer_v1",
-  "updatedAt": "2026-09-22T15:12:11+00:00",
+  "updatedAt": "2026-09-22T15:25:53+00:00",
   "model": "1.5B (repository Dense-1B / 1.279B parameters)",
   "pool": "dclm1b",
   "recipe": {
@@ -152,7 +152,7 @@ window.ICSL_1B_REPACK_UNTIED_EMBEDWD_REVIEWER={
       "rankMicrobatchSequences": 8,
       "gradientAccumulation": 8,
       "minRuntime": "8h",
-      "status": "running",
+      "status": "complete",
       "experiment": "01M30H9HAPF77KK2V1X31CKPSW",
       "job": "01M333NBNFBFM445TVW08R6RTS",
       "jobHistory": [
@@ -184,17 +184,17 @@ window.ICSL_1B_REPACK_UNTIED_EMBEDWD_REVIEWER={
       "revision": "e8d4d7d4a739122d2029ec3d9c3e6e2dded6e3ad",
       "progress": {
         "currentEpoch": 32,
-        "currentStep": 14950,
+        "currentStep": 15259,
         "stageTotalSteps": 15259,
         "stageTargetEpoch": 32,
-        "phase": "post_decay_train"
+        "phase": "complete"
       },
       "completedPdEpochs": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32],
-      "resolvedPostEpochs": [8, 12, 16, 20, 24, 28],
-      "completeWorkflowEta": "2026-09-22T15:25:00+00:00",
+      "resolvedPostEpochs": [8, 12, 16, 20, 24, 28, 32],
+      "completeWorkflowEta": "2026-09-22T15:25:52+00:00",
       "health": {
-        "status": "healthy: E32 POST running",
-        "checkedAt": "2026-09-22T15:00:59+00:00",
+        "status": "complete: saturated at E32; selected E28",
+        "checkedAt": "2026-09-22T15:25:53+00:00",
         "criticalSignals": ["resume source regression: retained E19 step8153 was not selected", "system preemption after protected runtime"]
       },
       "postDecayResults": {
@@ -203,7 +203,8 @@ window.ICSL_1B_REPACK_UNTIED_EMBEDWD_REVIEWER={
         "16": {"status": "complete", "validationExact": 3.07214},
         "20": {"status": "complete", "validationExact": 3.06002},
         "24": {"status": "complete", "validationExact": 3.05335},
-        "28": {"status": "complete", "validationExact": 3.05046}
+        "28": {"status": "complete", "validationExact": 3.05046},
+        "32": {"status": "complete", "validationExact": 3.05052}
       }
     }
   ]
