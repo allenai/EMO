@@ -13,7 +13,7 @@
   ],
   "initialTargets": [8],
   "epochIncrement": 4,
-  "maxEpoch": 32,
+  "maxEpoch": 36,
   "outputRoot": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b_repack_untied_embedwd_reviewer_v1",
   "runSuffix": "reviewer-repack-untied-embedwd-bs64-v1",
   "variant": "DR+EmbedWD",
@@ -26,6 +26,7 @@
   "postDecaySaturationCriterion": "strict_non_improvement",
   "checkpointEveryEpoch": true,
   "hardStopAtMaxEpoch": true,
+  "allowHardCeilingExtension": true,
   "dataOrder": "dynamic_repacking",
   "weightTying": false,
   "decayEmbeddings": true

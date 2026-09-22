@@ -1,6 +1,8 @@
 import importlib.util
 import json
+import tempfile
 from pathlib import Path
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -39,3 +41,39 @@ def test_predecay_saves_every_epoch_and_repacks():
     assert f"--trainer.callbacks.checkpointer.fixed_steps=[{','.join(map(str, expected))}]" in args
     assert "--dynamic-repacking" in args
     assert config["hardStopAtMaxEpoch"] is True
+    assert config["maxEpoch"] == 36
+    assert config["allowHardCeilingExtension"] is True
+
+
+def test_explicit_extension_can_continue_a_prior_hard_ceiling():
+    config = load(64)
+    with tempfile.TemporaryDirectory() as directory:
+        config["coordinates"][0]["output"] = directory
+        selection = MODULE.base.selection_path(config, "1e-3", "0.3")
+        selection.parent.mkdir(parents=True, exist_ok=True)
+        selection.write_text(
+            json.dumps(
+                {
+                    "status": "complete",
+                    "trigger": "hard_ceiling",
+                    "triggerEpoch": 32,
+                }
+            )
+        )
+        with (
+            mock.patch.object(MODULE.base, "recover_predecay_results", return_value={32: {}}),
+            mock.patch.object(MODULE.base, "recover_postdecay_results", return_value={
+                24: {"validationExact": 3.0},
+                28: {"validationExact": 2.9},
+                32: {"validationExact": 2.8},
+            }),
+            mock.patch.object(MODULE.base, "finish_postdecay", return_value=False) as finish,
+            mock.patch.object(MODULE.base, "train_predecay", side_effect=RuntimeError("continued")),
+        ):
+            try:
+                MODULE.run(config, "1e-3", "0.3", finalize_only=False)
+            except RuntimeError as error:
+                assert str(error) == "continued"
+            else:
+                raise AssertionError("expected extension to enter E36 training")
+        finish.assert_called_once()

@@ -816,12 +816,28 @@ def run(config: dict[str, Any], lr: str, wd: str, *, finalize_only: bool) -> Non
     if existing_selection.is_file():
         selection_state = json.loads(existing_selection.read_text())
         if selection_state.get("status") in {"complete", "pruned"}:
-            print(
-                f"DENSE1B_PDPOST_ALREADY_TERMINAL bs={config['globalSequences']} "
-                f"lr={lr} wd={wd} status={selection_state['status']}",
-                flush=True,
+            previous_ceiling = int(selection_state.get("triggerEpoch", -1))
+            extends_hard_ceiling = (
+                config.get("allowHardCeilingExtension") is True
+                and selection_state.get("status") == "complete"
+                and selection_state.get("trigger") == "hard_ceiling"
+                and previous_ceiling < int(config["maxEpoch"])
             )
-            return
+            if extends_hard_ceiling:
+                print(
+                    f"DENSE1B_PDPOST_EXTEND_HARD_CEILING bs={config['globalSequences']} "
+                    f"lr={lr} wd={wd} previous_ceiling={previous_ceiling} "
+                    f"new_ceiling={config['maxEpoch']}",
+                    flush=True,
+                )
+                selection_state = None
+            else:
+                print(
+                    f"DENSE1B_PDPOST_ALREADY_TERMINAL bs={config['globalSequences']} "
+                    f"lr={lr} wd={wd} status={selection_state['status']}",
+                    flush=True,
+                )
+                return
     predecay_results = recover_predecay_results(config, lr, wd)
     postdecay_results = recover_postdecay_results(config, lr, wd)
     if finalize_only:
