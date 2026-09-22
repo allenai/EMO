@@ -3,7 +3,7 @@
 #   1. keep the drivers and the twin scheduler alive (restart any that died; they are idempotent)
 #   2. launch every missing evaluation (ensure_passes.py) and every missing/dead square training (ensure_squares.py)
 #   3. collect finished held-out passes, rebuild + publish the report when new results landed
-#   4. record every real failure (exit code not 0/143) of the last 3 h with its last error line in failures.log
+#   4. record every real failure (exit code not 0/143, not a twin-scheduler stop) of the last 3 h with its last error line in failures.log
 #   bash scripts/sparse_experts/olmoe3_squares/monitor.sh   (detach it; log: sparse_experts/olmoe3_routing/monitor.log)
 set -u; cd "$(git rev-parse --show-toplevel)"; export PATH=/root/.conda/envs/emo/bin:$PATH; export PYTHONPATH=external/OLMo-core/src
 S=sparse_experts; R=$S/olmoe3_routing; D=scripts/sparse_experts/olmoe3_squares; FL=$R/failures.log; touch $FL
@@ -31,13 +31,14 @@ while true; do
   beaker workspace experiments ai2/flex2 --format=json 2>/dev/null | python -c "
 import json,sys,datetime,subprocess,re
 now=datetime.datetime.utcnow(); seen=set(open('$FL').read().split())
+import pathlib; stopped=set(re.findall(r'stop ([A-Z0-9]{26})', pathlib.Path('$R/twin_scheduler/loop.log').read_text())) if pathlib.Path('$R/twin_scheduler/loop.log').exists() else set()   # jobs the twin scheduler stopped exit 1: not failures
 for e in json.load(sys.stdin):
     c=e.get('created','')[:19]
     try: age=(now-datetime.datetime.strptime(c,'%Y-%m-%dT%H:%M:%S')).total_seconds()
     except Exception: continue
     if age>3*3600: continue
     js=e.get('jobs') or []; st=(js[-1] if js else {}).get('status',{})
-    if st.get('exitCode') in (None,0,143) or e['id'] in seen: continue
+    if st.get('exitCode') in (None,0,143) or e['id'] in seen or e['id'] in stopped: continue
     log=subprocess.run(['beaker','experiment','logs',e['id']],capture_output=True,text=True).stdout
     err=[l for l in re.sub(r'\x1b\[[0-9;]*m','',log).split('\n') if re.search(r'Error|No space|Killed|Traceback',l) and 'INFO' not in l]
     line=f\"{e['id']} {e.get('name','')[:70]} exit={st.get('exitCode')} :: {(err[-1] if err else 'no error line')[:160]}\"
