@@ -1,6 +1,6 @@
 {
   "policy": "dense_1b_repack_untied_embedwd_reviewer_v1",
-  "updatedAt": "2026-09-22T15:25:53+00:00",
+  "updatedAt": "2026-09-22T16:29:52+00:00",
   "model": "1.5B (repository Dense-1B / 1.279B parameters)",
   "pool": "dclm1b",
   "recipe": {
@@ -72,14 +72,19 @@
       "gradientAccumulation": 1,
       "minRuntime": "8h",
       "status": "queued",
-      "experiment": "01M34TSAV6QTB62B7G3M79V2CZ",
-      "job": "01M34TSB2201SKM4KMCCQBJERQ",
+      "experiment": "01M34Z7JACGYZ0XY7QZ9WZZH09",
+      "job": "01M34Z7JE2FZQT0J2AKMCT74DS",
       "experimentHistory": [
         {
           "experiment": "01M30H9FZ9FCDJXE2ZRQ1Q4BY2",
           "status": "complete",
           "terminalEpoch": 32,
           "reason": "E32 hard ceiling completed while POST was still improving"
+        },
+        {
+          "experiment": "01M34TSAV6QTB62B7G3M79V2CZ",
+          "status": "failed",
+          "reason": "all attempts failed during source fetch because the submitted revision hash was invalid"
         }
       ],
       "jobHistory": [
@@ -114,7 +119,7 @@
           "reason": "preempted after exceeding the protected 8-hour minimum runtime"
         }
       ],
-      "revision": "c40c0abbbd32a40e85724f7b95bbdc6a4bb1672a",
+      "revision": "c40c0abbb1f1425240c99f6f8bf9c711be55527b",
       "progress": {
         "currentEpoch": 32,
         "currentStep": 109863,
@@ -126,8 +131,8 @@
       "resolvedPostEpochs": [8, 12, 16, 20, 24, 28, 32],
       "completeWorkflowEta": null,
       "health": {
-        "status": "queued: guarded E32-to-E36 extension",
-        "checkedAt": "2026-09-22T15:12:11+00:00",
+        "status": "queued: corrected-revision E32-to-E36 replacement",
+        "checkedAt": "2026-09-22T16:29:52+00:00",
         "criticalSignals": ["resume source regression: retained E19 step65231 was not selected", "system preemption after protected runtime"]
       },
       "postDecayResults": {
