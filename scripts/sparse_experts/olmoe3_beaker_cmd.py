@@ -58,7 +58,11 @@ def main():
     )
     if a.dry_run:
         print(launch); return
-    launch.launch()
+    # gantry's local git check breaks (GitPython BrokenPipe) when several launches run at once: serialise launches on this host
+    import fcntl
+    with open("/tmp/olmoe3_beaker_launch.lock", "w") as lk:
+        fcntl.flock(lk, fcntl.LOCK_EX)
+        launch.launch()
 
 
 if __name__ == "__main__":
