@@ -6,7 +6,7 @@
 set -u; cd "$(git rev-parse --show-toplevel)"; export PATH=/root/.conda/envs/emo/bin:$PATH
 S=sparse_experts; W=/weka/oe-training-default/ryanwang/EMO/sparse_experts; SP=/tmp/claude-0/-root-EMO/c7db74f2-bbe3-4a2c-9d37-93c64250d7c6/scratchpad; mkdir -p $SP
 # name | SQN | run prefix | K | full start run | held-out dir | sample | start tag (dir holding it) | piecewise out dir (- = none)
-V_ALL="emo std noemo k8 pool learnedd stdrand emorand stdrand8 s128rand4 s128rand8"
+V_ALL="emo std noemo k8 pool learnedd stdrand emorand stdrand8 s128rand4 s128rand8 emorand8"
 spec() { case $1 in
   emo)      echo "olmoe3_squares|olmoe3_275m_emo_square|4|olmoe3_275m_emo_10b|runs_heldout20b|sample_8k_20b.npz|runs_heldout20b/emo_step19074|squares";;
   std)      echo "olmoe3_squares_std|olmoe3_275m_square|4|olmoe3_275m_10b|runs_heldout300b_std|sample_8k_300b.npz|runs_heldout300b_std/std_step19074|olmoe3_squares_std_w2";;
@@ -16,6 +16,7 @@ spec() { case $1 in
   learnedd) echo "olmoe3_squares_learnedd|olmoe3_275m_learnedd_square|4|olmoe3_275m_emo_learnedd_10b|runs_heldout20b_learnedd|sample_8k_20b.npz|runs_heldout20b_learnedd/learnedd_step19074|olmoe3_squares_learnedd";;
   stdrand)  echo "olmoe3_squares_stdrand|olmoe3_275m_stdrand_square|4|olmoe3_275m_10b|runs_heldout300b_stdrand|sample_8k_300b.npz|runs_heldout300b_std/std_step19074|-";;
   emorand)  echo "olmoe3_squares_emorand|olmoe3_275m_emorand_square|4|olmoe3_275m_emo_10b|runs_heldout300b_emorand|sample_8k_300b.npz|runs_heldout300b_emo/emo_step19074|-";;
+  emorand8) echo "olmoe3_squares_emorand8|olmoe3_275m_emorand8_square|8|olmoe3_275m_emo_10b|runs_heldout300b_emorand8|sample_8k_300b.npz|runs_heldout300b_emo/emo_step19074|-";;
   stdrand8) echo "olmoe3_squares_stdrand8|olmoe3_275m_stdrand8_square|8|olmoe3_275m_10b|runs_heldout300b_stdrand8|sample_8k_300b.npz|runs_heldout300b_std/std_step19074|-";;
   s128rand4) echo "olmoe3_squares_s128rand4|olmoe3_275m_s128rand4_square|4|olmoe3_275m_128e_10b|runs_heldout300b_s128rand4|sample_8k_300b.npz|runs_heldout300b_s128/s128_step19074|-";;
   s128rand8) echo "olmoe3_squares_s128rand8|olmoe3_275m_s128rand8_square|8|olmoe3_275m_128e_10b|runs_heldout300b_s128rand8|sample_8k_300b.npz|runs_heldout300b_s128/s128_step19074|-";;

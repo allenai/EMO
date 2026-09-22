@@ -373,7 +373,7 @@ RANDOM_CONTROL = {  # random expert groups + random document split; arms = (sub-
                 remerge=True, take=lambda: STDRAND_TAKE),
     "emo": dict(hrb="runs_heldout300b_emo", start="emo_step19074", ppl_dirs=("olmoe3_squares/ppl_validation", "olmoe3_squares_emorand/ppl_validation"),
                 base_runs=("olmoe3_275m_emo_20b_1node", "olmoe3_275m_emo_20b", "olmoe3_275m_emo_30b_1node", "olmoe3_275m_emo_130b"), start_ppl="olmoe3_275m_emo_10b", model="EMO 512e", E=512,
-                arms=[dict(k=4, sqn="olmoe3_squares_emorand", hr="runs_heldout300b_emorand", color=None)], remerge=False, take=lambda: EMORAND_TAKE),
+                arms=[dict(k=4, sqn="olmoe3_squares_emorand", hr="runs_heldout300b_emorand", color=None), dict(k=8, sqn="olmoe3_squares_emorand8", hr="runs_heldout300b_emorand8", color="#0d9488")], remerge=False, take=lambda: EMORAND_TAKE),
     "s128": dict(hrb="runs_heldout300b_s128", start="s128_step19074", ppl_dirs=("olmoe3_squares_s128rand4/ppl_validation",),
                  base_runs=("olmoe3_275m_128e_130b",), start_ppl="olmoe3_275m_128e_10b", model="standard-routing 128e", E=128,
                  arms=[dict(k=4, sqn="olmoe3_squares_s128rand4", hr="runs_heldout300b_s128rand4", color=None), dict(k=8, sqn="olmoe3_squares_s128rand8", hr="runs_heldout300b_s128rand8", color="#0d9488")],
