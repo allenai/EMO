@@ -38,6 +38,7 @@ launch_train() { local marker=$1 log=$2 script=$3; shift 3; [ -f "$marker" ] && 
     u=$(sed 's/\x1b\[[0-9;]*m//g' "$log" | grep -aoE 'beaker.org/ex/[A-Z0-9]+' | head -1); [ -n "$u" ] && break; sleep 60; done
   say "$(basename $marker): ${u:-LAUNCH FAILED}"; [ -n "$u" ] && echo "$u" > "$marker"; }
 have() { [ -f "$1/meta.json" ] || [ -f "$1/rank0/DONE" ]; }
+bdone() { have $S/olmoe3_routing/$HRB/baseline_step$2/none && [ -f $SQ/ppl_validation/$1/step$2.json ]; }   # baseline point fully evaluated (its checkpoint may since have been pruned: never wait for it again)
 heldout() { local hr=$1 tag=$2 ckpt=$3; have $S/olmoe3_routing/$hr/$tag/none || launch "$SQN-eval-$tag" python scripts/sparse_experts/olmoe3_routing/extract_routing.py --checkpoint "$ckpt" --instances "$W/olmoe3_routing/$SAMPLE" --out-dir "$W/olmoe3_routing/$hr/$tag/none/rank0" --restrict none --batch-size 8 --log-every 100; }
 ppl() { local ckpt=$1 json=$2 name=$3; [ -f $SQ/ppl_validation/$json ] || launch "$SQN-ppl-$name" python scripts/debug_validation/eval_ppl_validation.py --checkpoints "$ckpt" --out-dir "$W/$SQN/ppl_validation" --batch-size 8; }
 steps_of() { python -c "import json; t=json.load(open('$1'))['tokens_per_group'][$2]; s=t//524288; print(' '.join(str(max(1, round(s*f/19074))) for f in (926, 5926, 10926, 15926)) + f' {s}')"; }
@@ -74,7 +75,7 @@ for i in 0 1 2 3 4; do s=${W1[$i]}
   [ -f $SQ/merged/match$s/merge_info.json ] && [ -f $SQ/ppl_validation/merged/match$s.json ] || SQUARES_NAME=$SQN SQUARE_RUN_PREFIX=$RP FULL_RUN=$FULL HELDOUT_DIR=$HR MERGE_WEIGHTS=$SH1 SKIP_ORACLE=1 SAMPLE=$SAMPLE K=$K bash scripts/sparse_experts/olmoe3_squares/merge_point.sh $i > $LOG/merge_point$i.log 2>&1 &
 done
 for i in 0 1 2 3 4; do s=${W1[$i]}; for g in $GS; do st=(${S1[$g]}); until [ -f $S/${RP}$g/step${st[$i]}/train/rank0.pt ]; do sleep 300; done; heldout $HR sub${g}_match$s $W/${RP}$g/step${st[$i]}; done
-  [ -n "$BASE" ] && { until [ -f $S/$BW1/step$s/train/rank0.pt ] || { [ $s = 38148 ] && [ -f $S/$BW1/step38147/train/rank0.pt ]; }; do sleep 600; done   # older 20B baselines saved 38147 instead of 38148; decide AFTER the wait, not before (a too-early check waited forever for 38147)
+  [ -n "$BASE" ] && ! bdone $BW1 $s && { until [ -f $S/$BW1/step$s/train/rank0.pt ] || { [ $s = 38148 ] && [ -f $S/$BW1/step38147/train/rank0.pt ]; }; do sleep 600; done   # older 20B baselines saved 38147 instead of 38148; decide AFTER the wait, not before (a too-early check waited forever for 38147)
     bs=$s; [ -f $S/$BW1/step$s/train/rank0.pt ] || bs=38147; heldout $HRB baseline_step$s $W/$BW1/step$bs; ppl $W/$BW1/step$bs $BW1/step$bs.json baseline-$s; }
 done
 wait; say "window 1 merged"
@@ -105,7 +106,7 @@ for i in 0 1 2 3 4; do s=${W2[$i]}; subs=(); for g in $GS; do st=(${S2[$g]}); su
   for d in "${subs[@]}"; do until [ -f "$d/train/rank0.pt" ]; do sleep 300; done; done; say "window-2 point $s: square checkpoints present"
   merge_k $SQ/merged/match$s "$SH2" "${subs[@]}"; heldout $HR merged_match$s $W/$SQN/merged/match$s; ppl $W/$SQN/merged/match$s merged/match$s.json merged-$s
   for g in $GS; do st=(${S2[$g]}); heldout $HR sub${g}_match$s $W/${RP}${g}_w2/step${st[$i]}; done
-  [ -n "$BASE" ] && { until [ -f $S/$BW2/step$s/train/rank0.pt ]; do sleep 600; done; heldout $HRB baseline_step$s $W/$BW2/step$s; ppl $W/$BW2/step$s $BW2/step$s.json baseline-$s; }
+  [ -n "$BASE" ] && ! bdone $BW2 $s && { until [ -f $S/$BW2/step$s/train/rank0.pt ]; do sleep 600; done; heldout $HRB baseline_step$s $W/$BW2/step$s; ppl $W/$BW2/step$s $BW2/step$s.json baseline-$s; }
 done
 if [ $MAXW -ge 3 ]; then
 say "window-3 steps: $(for g in $GS; do echo -n "g$g [${S3[$g]}] "; done)"
@@ -113,7 +114,7 @@ for i in 0 1 2 3 4; do s=${W3[$i]}; subs=(); for g in $GS; do st=(${S3[$g]}); su
   for d in "${subs[@]}"; do until [ -f "$d/train/rank0.pt" ]; do sleep 600; done; done; say "window-3 point $s: square checkpoints present"
   merge_k $SQ/merged/match$s "$SH3" "${subs[@]}"; heldout $HR merged_match$s $W/$SQN/merged/match$s; ppl $W/$SQN/merged/match$s merged/match$s.json merged-$s
   for g in $GS; do st=(${S3[$g]}); heldout $HR sub${g}_match$s $W/${RP}${g}_w3/step${st[$i]}; done
-  [ -n "$BASE" ] && { until [ -f $S/$BW3/step$s/train/rank0.pt ]; do sleep 600; done; heldout $HRB baseline_step$s $W/$BW3/step$s; ppl $W/$BW3/step$s $BW3/step$s.json baseline-$s; }
+  [ -n "$BASE" ] && ! bdone $BW3 $s && { until [ -f $S/$BW3/step$s/train/rank0.pt ]; do sleep 600; done; heldout $HRB baseline_step$s $W/$BW3/step$s; ppl $W/$BW3/step$s $BW3/step$s.json baseline-$s; }
 done
 fi
 # ---- 4. collect ----
