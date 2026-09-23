@@ -277,8 +277,9 @@ STDRAND_TAKE = ("With no structure in the split the merge does <i>better</i> tha
                 "merge stops improving at 2.37 (87B) and drifts back up to 2.38 at 130B while the squares keep improving (2.47 &rarr; 2.39) and the baseline "
                 "pulls away (2.28 at 130B, a gap of 0.10), so by 130B a single random square is within 0.015 of the merge. Merging helps while the squares are alike; with "
                 "enough separate training even random squares diverge until averaging their shared parameters stops paying, and the merged standard model "
-                "stays behind the baseline throughout. Eight random squares instead of four (teal) are far more expensive: the merge sits at 2.522 at 20B, a gap of 0.14 to the "
-                "baseline against 0.05 for four squares, and the squares at 2.58 (windows 2 and 3 running).")
+                "stays behind the baseline throughout. Eight random squares instead of four (teal) are far more expensive and never catch up: the merge goes 2.522 (20B) "
+                "&rarr; 2.505 (30B) &rarr; 2.458 (130B), a gap to the baseline of 0.14 that grows to 0.18 (four squares: 0.05 &rarr; 0.10), and by 130B the merge "
+                "is exactly as good as the best single eighth-size square (2.458), i.e. averaging the shared parameters of eight squares has stopped adding anything.")
 
 
 def std_window2():
@@ -389,11 +390,10 @@ EMORAND_TAKE = ("Same story as the standard model, with a slightly smaller gap. 
                 "best square is still 0.04 behind the merge at 130B. Eight random squares instead of four (same random groups and packs as the standard k=8 arm) cost "
                 "about four times as much at 20B: the merge reaches 2.500 (gap 0.10 to the baseline against 0.024 for four squares) and the eight squares sit at "
                 "2.58&ndash;2.59, mirroring the standard model's k=8 penalty (gap 0.14 vs 0.05).")
-S128_TAKE = ("First window (10B &rarr; 20B) only so far. With the same expert size but a quarter as many experts, four random squares merge to 2.506 at 20B "
-             "against 2.452 for the 128-expert baseline (a gap of 0.05, the same as the 512-expert control's 0.05), and the squares sit at 2.573. Eight squares are "
-             "much worse: the merge reaches 2.582 (gap 0.13) and the squares 2.64, i.e. cutting the model into eighths costs about three times what cutting it into "
-             "quarters does, for both the 128- and the 512-expert model. Windows 2 and 3 are training.")
-
+S128_TAKE = ("Fewer, same-sized experts change little: the cost of splitting is set by the number of squares, not by the number of experts. With 128 "
+             "experts, four random squares merge to 2.506 at 20B against 2.452 for the 128-expert baseline (gap 0.055, vs 0.05 for the 512-expert control) and "
+             "2.489 at 35B (gap 0.076, vs 0.06); eight squares merge to 2.582 at 20B (gap 0.13) and 2.541 at 130B (gap 0.19, vs 0.18 for the 512-expert k=8 arm), "
+             "with the merge again ending exactly at the best square (2.541). The four-square arm's last window (35B &rarr; 130B) is training.")
 
 def random_control(which):
     """Control for a squares block: K random expert groups of equal size and documents split uniformly at random, same 300B-token
