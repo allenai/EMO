@@ -386,7 +386,9 @@ EMORAND_TAKE = ("Same story as the standard model, with a slightly smaller gap. 
                 "windows (2.427 vs 2.403 at 20B, 2.405 vs 2.376 at 30B). Over the next 100B it improves to 2.367 at 113B and ticks up to 2.373 at 130B while the "
                 "baseline keeps going (2.295 at 130B), so the gap widens from 0.03 to 0.08 &mdash; against 0.10 for the standard control, whose merge stalled 25B "
                 "earlier. The squares are indistinguishable from each other (2.62 &rarr; 2.52 &rarr; 2.49 &rarr; 2.41 at 130B) and, unlike the standard control, the "
-                "best square is still 0.04 behind the merge at 130B. The eight-square variant (same random groups and packs as the standard k=8 arm) is training.")
+                "best square is still 0.04 behind the merge at 130B. Eight random squares instead of four (same random groups and packs as the standard k=8 arm) cost "
+                "about four times as much at 20B: the merge reaches 2.500 (gap 0.10 to the baseline against 0.024 for four squares) and the eight squares sit at "
+                "2.58&ndash;2.59, mirroring the standard model's k=8 penalty (gap 0.14 vs 0.05).")
 S128_TAKE = ("First window (10B &rarr; 20B) only so far. With the same expert size but a quarter as many experts, four random squares merge to 2.506 at 20B "
              "against 2.452 for the 128-expert baseline (a gap of 0.05, the same as the 512-expert control's 0.05), and the squares sit at 2.573. Eight squares are "
              "much worse: the merge reaches 2.582 (gap 0.13) and the squares 2.64, i.e. cutting the model into eighths costs about three times what cutting it into "
