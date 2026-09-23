@@ -39,6 +39,7 @@ for e in json.load(sys.stdin):
     if age>3*3600: continue
     js=e.get('jobs') or []; st=(js[-1] if js else {}).get('status',{})
     if 'olmoe3' not in e.get('name',''): continue   # other people's jobs share the workspace
+    if re.search(r'-u\d+$', e.get('name','')): continue   # preemptible twins die by design (SIGTERM); the keepers relaunch
     if st.get('exitCode') in (None,0,143) or e['id'] in seen or e['id'] in stopped: continue
     log=subprocess.run(['beaker','experiment','logs',e['id']],capture_output=True,text=True).stdout
     err=[l for l in re.sub(r'\x1b\[[0-9;]*m','',log).split('\n') if re.search(r'Error|No space|Killed|Traceback',l) and 'INFO' not in l]
