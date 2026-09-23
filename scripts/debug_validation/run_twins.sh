@@ -15,6 +15,12 @@ twin() { local a=$1 name=$2; python - "$a" "$name" "$SP" <<'PY'
 import subprocess, sys, yaml
 a, name, sp = sys.argv[1:]
 spec = yaml.safe_load(subprocess.run(["beaker", "experiment", "spec", a], capture_output=True, text=True).stdout)
+# `beaker experiment spec` flattens a replicated task into train-replica-<i> tasks that Beaker refuses to re-create
+# (synchronized start needs >1 replica): fold them back into one task with replicas=N (only the names differ).
+ts = spec["tasks"]; t0 = ts[0]
+if len(ts) > 1:
+    assert all(k == "name" for i in range(1, len(ts)) for k in set(t0) | set(ts[i]) if t0.get(k) != ts[i].get(k)), "replicas differ"
+    t0["name"] = "train"; t0["replicas"] = len(ts); spec["tasks"] = [t0]
 for t in spec["tasks"]:
     ctx = t.setdefault("context", {}); ctx.pop("minRuntime", None); ctx.pop("autoResume", None); ctx["preemptible"] = True
 f = f"{sp}/spec_{name}.yaml"; yaml.safe_dump(spec, open(f, "w"))
