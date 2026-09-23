@@ -53,6 +53,8 @@ ARMS = [
     ("uniform", "EMO, uniform pool [16, 512]", "olmoe3_275m_emo_10b"),
     ("beta2", "EMO, Beta(2,1) pool", "olmoe3_275m_emo_beta2_10b"),
     ("beta4", "EMO, Beta(4,1) pool", "olmoe3_275m_emo_beta4_10b"),
+    ("randsel", "EMO, random pool [16, 512]", "olmoe3_275m_emo_randsel_10b"),
+    ("randsel64", "EMO, random pool [64, 512]", "olmoe3_275m_emo_randsel64_10b"),
 ]
 CKPTS = [5000, 10000, 15000, 19000, 19074]
 TOK = 524_288
@@ -72,8 +74,9 @@ def load_series():
                 int(st): {s: d["per_set"][f"{s}-validation"]["CE loss"] for s in SETS}
                 for st, d in summary[run].items()
             }
-        else:
+        elif run in inloop and inloop[run]:
             ser[arm] = {int(st): d for st, d in inloop[run].items() if len(d) == len(SETS)}
+    ARMS[:] = [t for t in ARMS if t[0] in ser]   # arms still training (no curve yet) are left out of every table
     return ser
 
 
@@ -104,14 +107,14 @@ def build_overview(ser):
             [f"{st} ({st * TOK / 1e9:.2f}B)"]
             + [f"{mean(ser[a][st]):.3f}" if st in ser[a] else "&mdash;" for a, _, _ in ARMS]
             + [
-                f"{mean(ser[a][st]) - mean(ser['standard'][st]):+.3f}"
-                for a in ("uniform", "beta2", "beta4")
+                f"{mean(ser[a][st]) - mean(ser['standard'][st]):+.3f}" if st in ser[a] else "&mdash;"
+                for a, _, _ in ARMS[1:]
             ]
         )
     tbl = table(
         ["step (tokens)"]
         + [lab for _, lab, _ in ARMS]
-        + ["&Delta; uniform", "&Delta; Beta(2,1)", "&Delta; Beta(4,1)"],
+        + [f"&Delta; {lab.replace('EMO, ', '')}" for _, lab, _ in ARMS[1:]],
         rows,
     )
     findings = (
@@ -126,6 +129,11 @@ def build_overview(ser):
         "&minus;0.004 / &minus;0.008 for uniform / Beta(2,1) / Beta(4,1). The train CE of an EMO arm is computed under its sampled "
         "training pools (restricted routing), so it is not the same quantity as the standard router's train CE; the validation "
         "numbers (full routing, held-out) are the like-for-like comparison.</li>"
+        "<li><b>Random pools (added 2026-09-23):</b> keeping the uniform pool-size draw but filling each training document's pool with a "
+        "<i>random</i> set of d experts instead of the d most relevant ones costs 3.036 at step 19,074 against 3.000 for uniform EMO and "
+        "2.974 for the standard router: +0.036 over uniform EMO, so about 60% of the total EMO cost comes from the pool restriction itself "
+        "and the rest from the pools being random rather than relevance-chosen. The [64, 512] variant (no pools smaller than an "
+        "eighth of the experts) is still training.</li>"
         "<li><b>Not measured here:</b> what the Beta arms give up in selective (small-pool) routing, which is EMO's purpose. "
         "Uniform training sees pools of 16&ndash;64 in ~10% of documents, Beta(2,1) in ~1%, Beta(4,1) in ~0%.</li>"
         "</ul>"
@@ -263,12 +271,12 @@ def main():
     ]
     nav = "".join(f'<button data-target="{tid}">{name}</button>' for tid, name, _ in tabs)
     sections = "".join(f'<section class="tab" id="{tid}">{body}</section>' for tid, _, body in tabs)
-    title = "debug_validation: v3-small ppl validation of the OLMoE3 512e arms (standard vs EMO uniform / Beta(2,1) / Beta(4,1) pools)"
+    title = "debug_validation: v3-small ppl validation of the OLMoE3 512e arms (standard vs EMO uniform / Beta(2,1) / Beta(4,1) / random pools)"
     page = f"""<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{html.escape(title)}</title><style>{CSS}</style></head>
 <body><header><a class="home-link" href="/">&larr; all reports</a><h1>{html.escape(title)}</h1>
-<p>Four 512-expert OLMoE3-ladder 275M runs, 10B tokens each, same data &middot; per-set CE on the 11 v3-small validation sets across training
-&middot; pretraining CE loss &middot; the Beta arms skew each document's training pool toward large pools</p></header>
+<p>512-expert OLMoE3-ladder 275M runs, 10B tokens each, same data &middot; per-set CE on the 11 v3-small validation sets across training
+&middot; pretraining CE loss &middot; the Beta arms skew each document's training pool toward large pools; the random-pool arms fill the pool with random experts</p></header>
 <div class="topbar"><nav>{nav}</nav><div id="subnav"></div></div>
 <main>{sections}</main><script>{JS}</script></body></html>"""
     (OUT / "report.html").write_text(page)

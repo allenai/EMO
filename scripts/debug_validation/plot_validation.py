@@ -46,8 +46,13 @@ ARMS = {
     "uniform": dict(label="EMO, uniform pool [16, 512]", color="#2a78d6", ls="-"),
     "beta2": dict(label="EMO, Beta(2,1) pool", color="#eb6834", ls="-"),
     "beta4": dict(label="EMO, Beta(4,1) pool", color="#1baf7a", ls="-"),
+    "randsel": dict(label="EMO, random pool, d in [16, 512]", color="#8e44ad", ls="-"),
+    "randsel64": dict(label="EMO, random pool, d in [64, 512]", color="#c0392b", ls="-"),
     "standard": dict(label="standard router (reference)", color="#52514e", ls="--"),
 }
+ARM_ORDER = ("standard", "uniform", "beta2", "beta4", "randsel", "randsel64")   # arms without data are skipped
+INLOOP_RUNS = (("beta2", "olmoe3_275m_emo_beta2_10b"), ("beta4", "olmoe3_275m_emo_beta4_10b"),
+               ("randsel", "olmoe3_275m_emo_randsel_10b"), ("randsel64", "olmoe3_275m_emo_randsel64_10b"))
 SURFACE, GRID, TEXT, MUTED = "#fcfcfb", "#e6e5e1", "#0b0b0b", "#52514e"
 
 plt.rcParams.update(
@@ -87,10 +92,9 @@ def load():
             )
             for s in SETS
         }
-    for arm, run in (
-        ("beta2", "olmoe3_275m_emo_beta2_10b"),
-        ("beta4", "olmoe3_275m_emo_beta4_10b"),
-    ):
+    for arm, run in INLOOP_RUNS:
+        if run not in inloop or not inloop[run]:
+            continue
         series[arm] = {
             s: sorted((int(st), d[s]) for st, d in inloop[run].items() if s in d) for s in SETS
         }
@@ -144,7 +148,7 @@ MIN_STEP = 4000  # the early steep descent (CE 4.4 -> 3.3 by step 4000) would hi
 def plot_set(series, key, title, fname, ylabel="CE loss (nats/token)"):
     fig, ax = plt.subplots(figsize=(6.4, 4.3), dpi=110)
     finals = []
-    for arm in ("standard", "uniform", "beta2", "beta4"):
+    for arm in [a for a in ARM_ORDER if a in series]:
         pts = [(st, ce) for st, ce in series[arm][key] if st >= MIN_STEP]
         if not pts:
             continue
@@ -178,7 +182,7 @@ def plot_delta(series):
     fig, ax = plt.subplots(figsize=(6.4, 4.3), dpi=110)
     base = dict(series["standard"]["mean"])
     finals = []
-    for arm in ("uniform", "beta2", "beta4"):
+    for arm in [a for a in ARM_ORDER if a in series and a != "standard"]:
         pts = [(st, ce - base[st]) for st, ce in series[arm]["mean"] if st in base]
         x = np.array([st for st, _ in pts]) * TOKENS_PER_STEP / 1e9
         y = np.array([d for _, d in pts])
@@ -222,7 +226,7 @@ def plot_train(curves):
     ):
         fig, ax = plt.subplots(figsize=(6.4, 4.3), dpi=110)
         finals = []
-        for arm in ("standard", "uniform", "beta2", "beta4"):
+        for arm in [a for a in ARM_ORDER if a in curves and curves[a].get("train_ce")]:
             st, ce = zip(*curves[arm]["train_ce"])
             xs, ys = smooth(st, ce, window)
             x = xs * TOKENS_PER_STEP / 1e9
@@ -248,8 +252,10 @@ def plot_train(curves):
     base_steps, base_ce = zip(*curves["standard"]["train_ce"])
     base = dict(zip(base_steps, base_ce))
     finals = []
-    for arm in ("uniform", "beta2", "beta4"):
+    for arm in [a for a in ARM_ORDER if a in curves and a != "standard" and curves[a].get("train_ce")]:
         pts = [(st, ce - base[st]) for st, ce in curves[arm]["train_ce"] if st in base]
+        if len(pts) < 2:
+            continue
         st, d = zip(*pts)
         xs, ys = smooth(st, d, window)
         x = xs * TOKENS_PER_STEP / 1e9
