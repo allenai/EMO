@@ -391,10 +391,10 @@ EMORAND_TAKE = ("Same story as the standard model, with a slightly smaller gap. 
                 "about four times as much at 20B: the merge reaches 2.500 (gap 0.10 to the baseline against 0.024 for four squares) and the eight squares sit at "
                 "2.58&ndash;2.59, mirroring the standard model's k=8 penalty (gap 0.14 vs 0.05).")
 S128_TAKE = ("Fewer, same-sized experts change little: the cost of splitting is set by the number of squares, not by the number of experts. With 128 "
-             "experts, four random squares merge to 2.506 at 20B against 2.452 for the 128-expert baseline (gap 0.055, vs 0.05 for the 512-expert control) and "
-             "2.489 at 35B (gap 0.076, vs 0.06); eight squares merge to 2.582 at 20B (gap 0.13) and 2.541 at 130B (gap 0.19, vs 0.18 for the 512-expert k=8 arm), "
-             "with the merge again ending exactly at the best square (2.541). The four-square arm's last window (35B &rarr; 130B) is training.")
-
+             "experts, four random squares merge to 2.506 at 20B against 2.452 for the 128-expert baseline (gap 0.055, vs 0.05 for the 512-expert control), "
+             "improve to 2.471 at 87B and then drift back up to 2.479 at 130B while the baseline reaches 2.349 (gap 0.13, vs 0.10 for 512 experts), the "
+             "same stall-then-drift as the 512-expert control and again ending level with the best single square (2.478). Eight squares merge to 2.582 at "
+             "20B (gap 0.13) and 2.541 at 130B (gap 0.19, vs 0.18 for the 512-expert k=8 arm), also ending exactly at the best square (2.541).")
 def random_control(which):
     """Control for a squares block: K random expert groups of equal size and documents split uniformly at random, same 300B-token
     held-out sample. Squares are scored on ALL held-out documents (a random partition gives a held-out document no 'own' square),
