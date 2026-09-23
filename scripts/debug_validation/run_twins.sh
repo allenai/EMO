@@ -2,7 +2,7 @@
 # Unallocated twins for the debug_validation 4-node runs while their allocated experiments queue (allocated 4-node jobs have queued
 # for hours; unallocated ones start in minutes, see beaker-allocated-vs-preemptible memory). For each run in JOBS whose keeper URL
 # is still queued and that has no twin yet: clone its spec (drop minRuntime/autoResume, set preemptible) and submit it as <run>-u1.
-# Then every 5 min: whichever of the pair starts first wins, the other is stopped; a winning twin becomes the keeper's current URL
+# Twin names carry a -u<ddHHMM> suffix (Beaker rejects reused names). Then every 5 min: whichever of the pair starts first wins, the other is stopped; a winning twin becomes the keeper's current URL
 # (run_keeper.sh relaunches allocated if it later ends without the final checkpoint).
 #   bash scripts/debug_validation/run_twins.sh   (detach it; log: debug_validation/run_twins.log)
 set -u; cd "$(git rev-parse --show-toplevel)"; export PATH=/root/.conda/envs/emo/bin:$PATH
@@ -36,7 +36,7 @@ while true; do
     if [ ! -f $K/$name.twin.url ]; then
       [ "$sa" = started ] && continue   # allocated already running: no twin needed
       [ "$sa" = exited ] || [ "$sa" = finalized ] || [ "$sa" = canceled ] && continue   # keeper's job
-      u=$(twin $a $run-u$(date -u +%d%H%M));   # experiment names must be unique in the workspace [ -n "$u" ] && { echo "$u" > $K/$name.twin.url; say "$name: allocated $a $sa -> twin submitted $u"; } || say "$name: twin submission failed"
+      u=$(twin $a $run-u$(date -u +%d%H%M)); [ -n "$u" ] && { echo "$u" > $K/$name.twin.url; say "$name: allocated $a $sa -> twin submitted $u"; } || say "$name: twin submission failed"
       left=1; continue
     fi
     t=$(sed 's|.*/||' $K/$name.twin.url); st=$(state $t); left=1
