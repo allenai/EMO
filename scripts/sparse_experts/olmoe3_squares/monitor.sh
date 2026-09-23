@@ -2,7 +2,8 @@
 # Standing monitor for the random-control experiments (user request 2026-09-22): every 30 min
 #   1. keep the drivers and the twin scheduler alive (restart any that died; they are idempotent)
 #   2. launch every missing evaluation (ensure_passes.py) and every missing/dead square training (ensure_squares.py)
-#   3. collect finished held-out passes, rebuild + publish the report when new results landed
+#   3. collect finished held-out passes, rebuild + publish the report when new results landed; delete the per-document arrays of merged
+#      passes and the evaluated random-pool baseline checkpoints beyond ~5 (user approval 2026-09-23)
 #   4. record every real failure (exit code not 0/143, not a twin-scheduler stop) of the last 3 h with its last error line in failures.log
 #   bash scripts/sparse_experts/olmoe3_squares/monitor.sh   (detach it; log: sparse_experts/olmoe3_routing/monitor.log)
 set -u; cd "$(git rev-parse --show-toplevel)"; export PATH=/root/.conda/envs/emo/bin:$PATH; export PYTHONPATH=external/OLMo-core/src
@@ -26,6 +27,7 @@ while true; do
   if [ $new -gt 0 ] || [ -n "$(find $S/olmoe3_squares*/ppl_validation -name '*.json' -newer $R/monitor.stamp 2>/dev/null | head -1)" ]; then
     python scripts/olmoe3_routing/build_report.py > /dev/null 2>&1 && bash scripts/publish_reports.sh --no-build > /dev/null 2>&1 && say "collected $new passes, report republished"
   fi
+  python $D/cleanup_heldout_arrays.py 2>&1 | grep -v 'deleted 0 files'; python $D/prune_baseline_ckpts.py 2>&1 | grep -v 'freed 0 GB'   # user-approved 2026-09-23: arrays of merged passes, evaluated baseline ckpts beyond ~5
   touch $R/monitor.stamp
   # 4. failures
   beaker workspace experiments ai2/flex2 --format=json 2>/dev/null | python -c "
