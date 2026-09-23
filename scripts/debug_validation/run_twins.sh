@@ -36,7 +36,7 @@ while true; do
     if [ ! -f $K/$name.twin.url ]; then
       [ "$sa" = started ] && continue   # allocated already running: no twin needed
       [ "$sa" = exited ] || [ "$sa" = finalized ] || [ "$sa" = canceled ] && continue   # keeper's job
-      u=$(twin $a $run-u1); [ -n "$u" ] && { echo "$u" > $K/$name.twin.url; say "$name: allocated $a $sa -> twin submitted $u"; } || say "$name: twin submission failed"
+      u=$(twin $a $run-u$(date -u +%d%H%M));   # experiment names must be unique in the workspace [ -n "$u" ] && { echo "$u" > $K/$name.twin.url; say "$name: allocated $a $sa -> twin submitted $u"; } || say "$name: twin submission failed"
       left=1; continue
     fi
     t=$(sed 's|.*/||' $K/$name.twin.url); st=$(state $t); left=1
