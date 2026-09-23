@@ -17,7 +17,7 @@ import json,sys; d=json.load(sys.stdin)[0]; js=d.get('jobs') or []; s=(js[-1] if
 while true; do
   alldone=1
   for spec in "${JOBS[@]}"; do IFS='|' read -r run final script urlf <<< "$spec"
-    [ -f $S/$run/step$final/train/rank0.pt ] && continue; [ -f $urlf ] || continue; alldone=0   # not launched yet: nothing to keep
+    [ -f $S/$run/step$final/train/rank0.pt ] && continue; alldone=0; [ -f $urlf ] || continue   # not launched yet: nothing to keep (but not done either)
     id=$(sed 's|.*/||' $urlf); st=$(state $id)
     if [ "$st" = exited ] || [ "$st" = finalized ] || [ "$st" = canceled ]; then
       rm -rf $S/$run/*-tmp 2>/dev/null; u=""
