@@ -384,6 +384,10 @@ RANDOM_CONTROL = {  # random expert groups + random document split; arms = (sub-
                     base_runs=("olmoe3_275m_randsel_30b",), start_ppl="olmoe3_275m_emo_randsel_10b", model="random-pool EMO 512e", E=512,
                     arms=[dict(k=4, sqn="olmoe3_squares_randsel4", hr="runs_heldout300b_randsel4", color=None), dict(k=8, sqn="olmoe3_squares_randsel8", hr="runs_heldout300b_randsel8", color="#0d9488")],
                     remerge=False, take=lambda: RANDSEL_TAKE),
+    "randsel64": dict(hrb="runs_heldout300b_randsel64", start="baseline_step19074", ppl_dirs=("olmoe3_squares_randsel64k4/ppl_validation",),
+                      base_runs=("olmoe3_275m_randsel64_30b",), start_ppl="olmoe3_275m_emo_randsel64_10b", model="random-pool EMO 512e, pools of at least 64", E=512,
+                      arms=[dict(k=4, sqn="olmoe3_squares_randsel64k4", hr="runs_heldout300b_randsel64k4", color=None), dict(k=8, sqn="olmoe3_squares_randsel64k8", hr="runs_heldout300b_randsel64k8", color="#0d9488")],
+                      remerge=False, take=lambda: RANDSEL64_TAKE),
 }
 W3_STEPS = (66481, 116479, 166478, 216477, 247956)
 EMORAND_TAKE = ("Same story as the standard model, with a slightly smaller gap. Merging the four untrained slices gives back the start model exactly "
@@ -395,6 +399,7 @@ EMORAND_TAKE = ("Same story as the standard model, with a slightly smaller gap. 
                 "about four times as much at 20B: the merge reaches 2.500 (gap 0.10 to the baseline against 0.024 for four squares) and the eight squares sit at "
                 "2.58&ndash;2.59, mirroring the standard model's k=8 penalty (gap 0.14 vs 0.05).")
 RANDSEL_TAKE = "Baseline and square trainings running."
+RANDSEL64_TAKE = "Baseline and square trainings running."
 S128_TAKE = ("Fewer, same-sized experts change little: the cost of splitting is set by the number of squares, not by the number of experts. With 128 "
              "experts, four random squares merge to 2.506 at 20B against 2.452 for the 128-expert baseline (gap 0.055, vs 0.05 for the 512-expert control), "
              "improve to 2.471 at 87B and then drift back up to 2.479 at 130B while the baseline reaches 2.349 (gap 0.13, vs 0.10 for 512 experts), the "
@@ -439,7 +444,7 @@ def random_control(which):
              f"of the window goes to a uniformly random group, so each of the K = {ks} squares owns 1/K of the experts and a random 1/K of the tokens. Squares are merged with equal weights. "
              "Because a held-out document has no 'own' square under a random split, the square line is the mean CE of the squares each scored "
              "on all held-out documents." + (" The same random groups and the same random document packs are used for every start model." if which != "std" else ""))
-    title = f"Control: random expert groups, random document split (10B &rarr; {end})"
+    title = f"Control: random expert groups, random document split (10B &rarr; {end})" + (f" &mdash; {C['model']}" if which.startswith("randsel") else "")
     if not any(v is not None for a in arms for v in a["mr"] + a["sqm"]):
         return section(title, setup, "", C["take"]())
     # re-merge + re-partition at 61.1B (standard control only): the 116,479 merge re-split into new random groups, trained on to 130B
@@ -637,7 +642,8 @@ def build_q3():
                                   "[16, 512] as in EMO, but the pool is a random set of experts instead of the most relevant ones; 3.036 vs 3.000 in-loop CE at 10B): its 10B "
                                   "checkpoint is continued jointly to 30B as the baseline (same random-pool recipe), and split into 4 and into 8 random sub-models with the "
                                   "same random expert groups and document packs as the 512e controls, trained with the same random-pool recipe, at exactly the 512e "
-                                  "controls' matched checkpoints of windows 1 and 2.</p>") + random_control("randsel"))
+                                  "controls' matched checkpoints of windows 1 and 2. The same is done for the [64, 512]-pool variant (no pool smaller than an eighth of the "
+                                  "experts; 3.019 in-loop CE at 10B), with its own baseline.</p>") + random_control("randsel") + random_control("randsel64"))
     return body
 
 

@@ -4,15 +4,15 @@
 #   s128_k4  standard 128e (same expert size, top-16 of 128), 4 groups of 32, the 512e control's random document packs
 #   s128_k8  standard 128e, 8 groups of 16, the std_k8 packs
 #   emo_k8   EMO 512e, the std_k8 random groups and packs, window 1 only (10B -> 20B; user request 2026-09-22)
-#   randsel_k4 / randsel_k8   EMO 512e trained with RANDOM per-document pools (debug_validation/olmoe3_275m_emo_randsel_10b), the 512e controls'
+#   randsel_k4 / randsel_k8 (and randsel64_k4 / randsel64_k8 for the [64, 512]-pool model)   EMO 512e trained with RANDOM per-document pools (debug_validation/olmoe3_275m_emo_randsel_10b), the 512e controls'
 #            random groups and packs, windows 1-2 (10B -> 30B), own 2-node baseline; squares keep OLMOE3_EMO_POOL_SELECT=random (user request 2026-09-23)
 # Windows 1-2: document-level random packs (like the 4-square control); window 3: contiguous stream slices of 1/K of the 100B.
 # Same matched checkpoints as the 512e control (20000 ... 38148 | 39073 ... 57221 | 66481 ... 247956). Baselines: the std ones exist;
 # the 128e baseline (olmoe3_275m_128e_130b, 10B -> 130B jointly) is launched by s128_k4 and evaluated at every matched point.
 #   bash scripts/sparse_experts/olmoe3_squares/squares_randk.sh std_k8|s128_k4|s128_k8   (idempotent; detach; commit + push first)
 set -u; cd "$(git rev-parse --show-toplevel)"; export PATH=/root/.conda/envs/emo/bin:$PATH
-V="${1:?std_k8|s128_k4|s128_k8|emo_k8|randsel_k4|randsel_k8}"; S=sparse_experts; W=/weka/oe-training-default/ryanwang/EMO/sparse_experts; SAMPLE=sample_8k_300b.npz; SRCSTD=$S/olmoe3_squares_std
-EMO=0; MAXW=3; PSEL=relevance   # EMO loss on the squares; number of windows to train (1 = stop after 10B -> 20B); pool selection of the EMO squares
+V="${1:?std_k8|s128_k4|s128_k8|emo_k8|randsel_k4|randsel_k8|randsel64_k4|randsel64_k8}"; S=sparse_experts; W=/weka/oe-training-default/ryanwang/EMO/sparse_experts; SAMPLE=sample_8k_300b.npz; SRCSTD=$S/olmoe3_squares_std
+EMO=0; MAXW=3; PSEL=relevance; MINPOOL=16   # EMO loss on the squares; number of windows to train (1 = stop after 10B -> 20B); pool selection of the EMO squares
 case $V in
   emo_k8)  SQN=olmoe3_squares_emorand8;  K=8; E=512; FULL=olmoe3_275m_emo_10b;  RP=olmoe3_275m_emorand8_square;  HR=runs_heldout300b_emorand8;  HRB=runs_heldout300b_emo;  START=emo_step19074;  PACKS=olmoe3_squares_stdrand8; BASE=""; BW1=olmoe3_275m_emo_20b_1node; BW2=""; BW3=""; SEED=2; EMO=1; MAXW=1;;
   std_k8)  SQN=olmoe3_squares_stdrand8;  K=8; E=512; FULL=olmoe3_275m_10b;      RP=olmoe3_275m_stdrand8_square;  HR=runs_heldout300b_stdrand8;  HRB=runs_heldout300b_std;  START=std_step19074;  PACKS=build;                  BASE=""; BW1=olmoe3_275m_20b_1node; BW2=olmoe3_275m_30b_1node; BW3=olmoe3_275m_130b; SEED=2;;
@@ -20,7 +20,9 @@ case $V in
   s128_k8) SQN=olmoe3_squares_s128rand8; K=8; E=128; FULL=olmoe3_275m_128e_10b; RP=olmoe3_275m_s128rand8_square; HR=runs_heldout300b_s128rand8; HRB=runs_heldout300b_s128; START=s128_step19074; PACKS=olmoe3_squares_stdrand8; BASE="";                                 BW1=olmoe3_275m_128e_130b; BW2=$BW1; BW3=$BW1; SEED=4;;
   randsel_k4) SQN=olmoe3_squares_randsel4; K=4; E=512; FULL=olmoe3_275m_emo_randsel_10b; RP=olmoe3_275m_randsel4_square; HR=runs_heldout300b_randsel4; HRB=runs_heldout300b_randsel; START=baseline_step19074; PACKS=olmoe3_squares_stdrand;  BASE=olmoe3_275m_randsel_30b_baseline.sh; BW1=olmoe3_275m_randsel_30b; BW2=$BW1; BW3=""; SEED=2; EMO=1; MAXW=2; PSEL=random;;
   randsel_k8) SQN=olmoe3_squares_randsel8; K=8; E=512; FULL=olmoe3_275m_emo_randsel_10b; RP=olmoe3_275m_randsel8_square; HR=runs_heldout300b_randsel8; HRB=runs_heldout300b_randsel; START=baseline_step19074; PACKS=olmoe3_squares_stdrand8; BASE="";                                    BW1=olmoe3_275m_randsel_30b; BW2=$BW1; BW3=""; SEED=2; EMO=1; MAXW=2; PSEL=random;;
-  *) echo "std_k8|s128_k4|s128_k8|emo_k8|randsel_k4|randsel_k8"; exit 1;;
+  randsel64_k4) SQN=olmoe3_squares_randsel64k4; K=4; E=512; FULL=olmoe3_275m_emo_randsel64_10b; RP=olmoe3_275m_randsel64k4_square; HR=runs_heldout300b_randsel64k4; HRB=runs_heldout300b_randsel64; START=baseline_step19074; PACKS=olmoe3_squares_stdrand;  BASE=olmoe3_275m_randsel64_30b_baseline.sh; BW1=olmoe3_275m_randsel64_30b; BW2=$BW1; BW3=""; SEED=2; EMO=1; MAXW=2; PSEL=random; MINPOOL=64;;
+  randsel64_k8) SQN=olmoe3_squares_randsel64k8; K=8; E=512; FULL=olmoe3_275m_emo_randsel64_10b; RP=olmoe3_275m_randsel64k8_square; HR=runs_heldout300b_randsel64k8; HRB=runs_heldout300b_randsel64; START=baseline_step19074; PACKS=olmoe3_squares_stdrand8; BASE="";                                      BW1=olmoe3_275m_randsel64_30b; BW2=$BW1; BW3=""; SEED=2; EMO=1; MAXW=2; PSEL=random; MINPOOL=64;;
+  *) echo "std_k8|s128_k4|s128_k8|emo_k8|randsel_k4|randsel_k8|randsel64_k4|randsel64_k8"; exit 1;;
 esac
 SQ=$S/$SQN; W1=(20000 25000 30000 35000 38148); W2=(39073 44073 49073 54073 57221); W3=(66481 116479 166478 216477 247956); B0=57221; SQ3=$(( (190735 + K - 1) / K ))
 LOG=$SQ/logs; SP=/tmp/claude-0/-root-EMO/c7db74f2-bbe3-4a2c-9d37-93c64250d7c6/scratchpad; mkdir -p $SQ $LOG $SP $S/olmoe3_routing/$HR $S/olmoe3_routing/$HRB
@@ -63,7 +65,7 @@ SH1=$(shares_of $SQ/pack/stats.json); SH2=$(shares_of $SQ/pack2/stats.json); SH3
 # ---- 1. window 1 ----
 declare -a S1 S2 S3
 for g in $GS; do S1[$g]=$(steps_of $SQ/pack/stats.json $g)
-  launch_train $LOG/square${g}_launched $LOG/launch_square$g.log scripts/sparse_experts/model_scripts/olmoe3_275m_emo_square.sh SQUARE_GROUP=$g SQUARES_NAME=$SQN OLMOE3_EMO=$EMO OLMOE3_EMO_POOL_SELECT=$PSEL OLMOE3_NUM_EXPERTS=$E OLMOE3_RUNNAME=${RP}$g OLMOE3_WANDB_TAGS=$SQN,square
+  launch_train $LOG/square${g}_launched $LOG/launch_square$g.log scripts/sparse_experts/model_scripts/olmoe3_275m_emo_square.sh SQUARE_GROUP=$g SQUARES_NAME=$SQN OLMOE3_EMO=$EMO OLMOE3_EMO_POOL_SELECT=$PSEL OLMOE3_EMO_MIN_POOL=$MINPOOL OLMOE3_NUM_EXPERTS=$E OLMOE3_RUNNAME=${RP}$g OLMOE3_WANDB_TAGS=$SQN,square
 done
 say "window-1 steps: $(for g in $GS; do echo -n "g$g [${S1[$g]}] "; done); shares $SH1"
 # (merge_point.sh takes STEPS_G<g> as space-separated lists; export them explicitly)
@@ -85,7 +87,7 @@ fi
 for g in $GS; do st=(${S1[$g]}); S2[$g]=$(steps_of $SQ/pack2/stats.json $g)
   [ -f $SQ/init2/group$g/model_and_optim/.metadata ] || { PYTHONPATH=external/OLMo-core/src python scripts/sparse_experts/olmoe3_squares/rewrite_checkpoint.py --src $S/${RP}$g/step${st[4]} --out $SQ/init2/group$g --overwrite 2>&1 | tail -1; say "init2 group$g done"; }
   tokens=$(python -c "import json; print(json.load(open('$SQ/pack2/stats.json'))['tokens_per_group'][$g])")
-  launch_train $LOG/square${g}_w2_launched $LOG/launch_square${g}_w2.log scripts/sparse_experts/model_scripts/olmoe3_275m_emo_square.sh SQUARE_GROUP=$g SQUARES_NAME=$SQN OLMOE3_EMO=$EMO OLMOE3_EMO_POOL_SELECT=$PSEL OLMOE3_NUM_EXPERTS=$E OLMOE3_TOKENS=$tokens OLMOE3_DATA_PATHS="$W/$SQN/pack2/group$g/*.npy" OLMOE3_INIT_FROM="$W/$SQN/init2/group$g/model_and_optim" OLMOE3_RUNNAME=${RP}${g}_w2 OLMOE3_WANDB_TAGS=$SQN,square,w2
+  launch_train $LOG/square${g}_w2_launched $LOG/launch_square${g}_w2.log scripts/sparse_experts/model_scripts/olmoe3_275m_emo_square.sh SQUARE_GROUP=$g SQUARES_NAME=$SQN OLMOE3_EMO=$EMO OLMOE3_EMO_POOL_SELECT=$PSEL OLMOE3_EMO_MIN_POOL=$MINPOOL OLMOE3_NUM_EXPERTS=$E OLMOE3_TOKENS=$tokens OLMOE3_DATA_PATHS="$W/$SQN/pack2/group$g/*.npy" OLMOE3_INIT_FROM="$W/$SQN/init2/group$g/model_and_optim" OLMOE3_RUNNAME=${RP}${g}_w2 OLMOE3_WANDB_TAGS=$SQN,square,w2
 done
 # ---- 3. window 3 is launched as soon as the window-2 finals exist (it does not depend on the window-2 merges) ----
 if [ $MAXW -ge 3 ]; then
@@ -94,7 +96,7 @@ for g in $GS; do st=(${S2[$g]}); start=$((B0 + g * SQ3))
   [ -f $SQ/init3/group$g/model_and_optim/.metadata ] || { PYTHONPATH=external/OLMo-core/src python scripts/sparse_experts/olmoe3_squares/rewrite_checkpoint.py --src $S/${RP}${g}_w2/step${st[4]} --out $SQ/init3/group$g --overwrite 2>&1 | tail -1; say "init3 group$g done"; }
   [ -f $SQ/ft_start/w3_group$g/step$start/train/rank0.pt ] || PYTHONPATH=external/OLMo-core/src python scripts/sparse_experts/olmoe3_squares/make_finetune_start.py --model $SQ/init3/group$g --train-from $S/olmoe3_275m_30b_1node/step57221 --start-step $start --out $SQ/ft_start/w3_group$g 2>&1 | tail -1
   S3[$g]=$(python -c "s=$SQ3; b=$start; print(' '.join(str(b + max(1, round(s*f/19074))) for f in (926, 5926, 10926, 15926)) + f' {b + s}')")
-  launch_train $LOG/square${g}_w3_launched $LOG/launch_square${g}_w3.log scripts/sparse_experts/model_scripts/olmoe3_275m_stdrand_square_w3.sh SQUARE_GROUP=$g SQUARES_NAME=$SQN RUN_PREFIX=$RP OLMOE3_EMO=$EMO OLMOE3_EMO_POOL_SELECT=$PSEL OLMOE3_NUM_EXPERTS=$E FT_START=$W/$SQN/ft_start/w3_group$g FT_START_STEP=$start FT_STEPS=$SQ3
+  launch_train $LOG/square${g}_w3_launched $LOG/launch_square${g}_w3.log scripts/sparse_experts/model_scripts/olmoe3_275m_stdrand_square_w3.sh SQUARE_GROUP=$g SQUARES_NAME=$SQN RUN_PREFIX=$RP OLMOE3_EMO=$EMO OLMOE3_EMO_POOL_SELECT=$PSEL OLMOE3_EMO_MIN_POOL=$MINPOOL OLMOE3_NUM_EXPERTS=$E FT_START=$W/$SQN/ft_start/w3_group$g FT_START_STEP=$start FT_STEPS=$SQ3
 done
 fi
 # ---- 2b. window-2 matched points: merge + evals ----

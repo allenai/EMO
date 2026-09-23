@@ -8,7 +8,8 @@ S=sparse_experts; SP=/tmp/claude-0/-root-EMO/c7db74f2-bbe3-4a2c-9d37-93c64250d7c
 # run dir | final step | launch script | file holding the current experiment URL
 JOBS=("olmoe3_275m_emo_130b|247956|olmoe3_275m_emo_130b_baseline.sh|$KEEP/emo_130b.url"
       "olmoe3_275m_128e_130b|247956|olmoe3_275m_128e_130b_baseline.sh|$KEEP/128e_130b.url"
-      "olmoe3_275m_randsel_30b|57221|olmoe3_275m_randsel_30b_baseline.sh|$S/olmoe3_squares_randsel4/logs/baseline_launched")
+      "olmoe3_275m_randsel_30b|57221|olmoe3_275m_randsel_30b_baseline.sh|$S/olmoe3_squares_randsel4/logs/baseline_launched"
+      "olmoe3_275m_randsel64_30b|57221|olmoe3_275m_randsel64_30b_baseline.sh|$S/olmoe3_squares_randsel64k4/logs/baseline_launched")
 [ -f $KEEP/emo_130b.url ] || echo "beaker.org/ex/01M31MR55FQVJC7CTRVFBBZ0WW" > $KEEP/emo_130b.url
 [ -f $KEEP/128e_130b.url ] || cp $S/olmoe3_squares_s128rand4/logs/baseline_launched $KEEP/128e_130b.url
 say() { echo "$(date -u +%m-%d\ %H:%M) $*"; }

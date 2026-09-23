@@ -6,7 +6,7 @@
 set -u; cd "$(git rev-parse --show-toplevel)"; export PATH=/root/.conda/envs/emo/bin:$PATH
 S=sparse_experts; W=/weka/oe-training-default/ryanwang/EMO/sparse_experts; SP=/tmp/claude-0/-root-EMO/c7db74f2-bbe3-4a2c-9d37-93c64250d7c6/scratchpad; mkdir -p $SP
 # name | SQN | run prefix | K | full start run | held-out dir | sample | start tag (dir holding it) | piecewise out dir (- = none)
-V_ALL="emo std noemo k8 pool learnedd stdrand emorand stdrand8 s128rand4 s128rand8 emorand8 randsel4 randsel8"
+V_ALL="emo std noemo k8 pool learnedd stdrand emorand stdrand8 s128rand4 s128rand8 emorand8 randsel4 randsel8 randsel64k4 randsel64k8"
 spec() { case $1 in
   emo)      echo "olmoe3_squares|olmoe3_275m_emo_square|4|olmoe3_275m_emo_10b|runs_heldout20b|sample_8k_20b.npz|runs_heldout20b/emo_step19074|squares";;
   std)      echo "olmoe3_squares_std|olmoe3_275m_square|4|olmoe3_275m_10b|runs_heldout300b_std|sample_8k_300b.npz|runs_heldout300b_std/std_step19074|olmoe3_squares_std_w2";;
@@ -22,6 +22,8 @@ spec() { case $1 in
   s128rand8) echo "olmoe3_squares_s128rand8|olmoe3_275m_s128rand8_square|8|olmoe3_275m_128e_10b|runs_heldout300b_s128rand8|sample_8k_300b.npz|runs_heldout300b_s128/s128_step19074|-";;
   randsel4) echo "olmoe3_squares_randsel4|olmoe3_275m_randsel4_square|4|olmoe3_275m_emo_randsel_10b|runs_heldout300b_randsel4|sample_8k_300b.npz|runs_heldout300b_randsel/baseline_step19074|-";;
   randsel8) echo "olmoe3_squares_randsel8|olmoe3_275m_randsel8_square|8|olmoe3_275m_emo_randsel_10b|runs_heldout300b_randsel8|sample_8k_300b.npz|runs_heldout300b_randsel/baseline_step19074|-";;
+  randsel64k4) echo "olmoe3_squares_randsel64k4|olmoe3_275m_randsel64k4_square|4|olmoe3_275m_emo_randsel64_10b|runs_heldout300b_randsel64k4|sample_8k_300b.npz|runs_heldout300b_randsel64/baseline_step19074|-";;
+  randsel64k8) echo "olmoe3_squares_randsel64k8|olmoe3_275m_randsel64k8_square|8|olmoe3_275m_emo_randsel64_10b|runs_heldout300b_randsel64k8|sample_8k_300b.npz|runs_heldout300b_randsel64/baseline_step19074|-";;
   *) return 1;; esac; }
 say() { echo "$(date -u +%m-%d\ %H:%M) [$V] $*"; }
 launch() { local name=$1; shift; local log=$SP/launch_$name.log; local u=""
