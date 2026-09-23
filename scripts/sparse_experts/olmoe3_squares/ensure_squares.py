@@ -10,7 +10,9 @@ S = Path("sparse_experts"); W = "/weka/oe-training-default/ryanwang/EMO/sparse_e
 ARMS = [dict(v="emo_k8", sqn="olmoe3_squares_emorand8", rp="olmoe3_275m_emorand8_square", k=8, E=512, emo=1, windows=1),
         dict(v="std_k8", sqn="olmoe3_squares_stdrand8", rp="olmoe3_275m_stdrand8_square", k=8, E=512, emo=0, windows=3),
         dict(v="s128_k4", sqn="olmoe3_squares_s128rand4", rp="olmoe3_275m_s128rand4_square", k=4, E=128, emo=0, windows=3),
-        dict(v="s128_k8", sqn="olmoe3_squares_s128rand8", rp="olmoe3_275m_s128rand8_square", k=8, E=128, emo=0, windows=3)]
+        dict(v="s128_k8", sqn="olmoe3_squares_s128rand8", rp="olmoe3_275m_s128rand8_square", k=8, E=128, emo=0, windows=3),
+        dict(v="randsel_k4", sqn="olmoe3_squares_randsel4", rp="olmoe3_275m_randsel4_square", k=4, E=512, emo=1, windows=2, psel="random"),
+        dict(v="randsel_k8", sqn="olmoe3_squares_randsel8", rp="olmoe3_275m_randsel8_square", k=8, E=512, emo=1, windows=2, psel="random")]
 
 
 def sh(*cmd, env=None): return subprocess.run(cmd, capture_output=True, text=True, env=env)
@@ -56,7 +58,7 @@ def main():
     for a in ARMS:
         SQ = S / a["sqn"]; LOG = SQ / "logs"; rp, k = a["rp"], a["k"]
         if not (SQ / "groups.json").exists() or not (SQ / "pack/stats.json").exists(): continue
-        base = dict(SQUARE_GROUP="", SQUARES_NAME=a["sqn"], OLMOE3_EMO=str(a["emo"]), OLMOE3_NUM_EXPERTS=str(a["E"]))
+        base = dict(SQUARE_GROUP="", SQUARES_NAME=a["sqn"], OLMOE3_EMO=str(a["emo"]), OLMOE3_NUM_EXPERTS=str(a["E"]), OLMOE3_EMO_POOL_SELECT=a.get("psel", "relevance"))
         tok1 = json.load(open(SQ / "pack/stats.json"))["tokens_per_group"]
         for g in range(k):  # window 1 (the driver launches all k at once after slicing every init)
             run = f"{rp}{g}"; final = tok1[g] // 524288

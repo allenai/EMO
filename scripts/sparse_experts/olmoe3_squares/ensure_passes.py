@@ -15,6 +15,8 @@ ARMS = [  # sqn, run prefix, K, held-out dir, baseline held-out dir, start tag, 
     dict(sqn="olmoe3_squares_stdrand8", rp="olmoe3_275m_stdrand8_square", k=8, hr="runs_heldout300b_stdrand8", hrb="runs_heldout300b_std", windows=3, base={}),
     dict(sqn="olmoe3_squares_s128rand4", rp="olmoe3_275m_s128rand4_square", k=4, hr="runs_heldout300b_s128rand4", hrb="runs_heldout300b_s128", windows=3, base={1: "olmoe3_275m_128e_130b", 2: "olmoe3_275m_128e_130b", 3: "olmoe3_275m_128e_130b"}),
     dict(sqn="olmoe3_squares_s128rand8", rp="olmoe3_275m_s128rand8_square", k=8, hr="runs_heldout300b_s128rand8", hrb="runs_heldout300b_s128", windows=3, base={}),
+    dict(sqn="olmoe3_squares_randsel4", rp="olmoe3_275m_randsel4_square", k=4, hr="runs_heldout300b_randsel4", hrb="runs_heldout300b_randsel", windows=2, base={1: "olmoe3_275m_randsel_30b", 2: "olmoe3_275m_randsel_30b"}),
+    dict(sqn="olmoe3_squares_randsel8", rp="olmoe3_275m_randsel8_square", k=8, hr="runs_heldout300b_randsel8", hrb="runs_heldout300b_randsel", windows=2, base={}),
 ]
 
 
