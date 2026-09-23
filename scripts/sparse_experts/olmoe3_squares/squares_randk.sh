@@ -74,7 +74,8 @@ for i in 0 1 2 3 4; do s=${W1[$i]}
   [ -f $SQ/merged/match$s/merge_info.json ] && [ -f $SQ/ppl_validation/merged/match$s.json ] || SQUARES_NAME=$SQN SQUARE_RUN_PREFIX=$RP FULL_RUN=$FULL HELDOUT_DIR=$HR MERGE_WEIGHTS=$SH1 SKIP_ORACLE=1 SAMPLE=$SAMPLE K=$K bash scripts/sparse_experts/olmoe3_squares/merge_point.sh $i > $LOG/merge_point$i.log 2>&1 &
 done
 for i in 0 1 2 3 4; do s=${W1[$i]}; for g in $GS; do st=(${S1[$g]}); until [ -f $S/${RP}$g/step${st[$i]}/train/rank0.pt ]; do sleep 300; done; heldout $HR sub${g}_match$s $W/${RP}$g/step${st[$i]}; done
-  [ -n "$BASE" ] && { bs=$s; [ $s = 38148 ] && [ ! -f $S/$BW1/step$s/train/rank0.pt ] && bs=38147; until [ -f $S/$BW1/step$bs/train/rank0.pt ]; do sleep 600; done; heldout $HRB baseline_step$s $W/$BW1/step$bs; ppl $W/$BW1/step$bs $BW1/step$bs.json baseline-$s; }
+  [ -n "$BASE" ] && { until [ -f $S/$BW1/step$s/train/rank0.pt ] || { [ $s = 38148 ] && [ -f $S/$BW1/step38147/train/rank0.pt ]; }; do sleep 600; done   # older 20B baselines saved 38147 instead of 38148; decide AFTER the wait, not before (a too-early check waited forever for 38147)
+    bs=$s; [ -f $S/$BW1/step$s/train/rank0.pt ] || bs=38147; heldout $HRB baseline_step$s $W/$BW1/step$bs; ppl $W/$BW1/step$bs $BW1/step$bs.json baseline-$s; }
 done
 wait; say "window 1 merged"
 if [ $MAXW = 1 ]; then
