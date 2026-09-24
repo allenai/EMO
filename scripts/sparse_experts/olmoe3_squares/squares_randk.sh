@@ -3,7 +3,7 @@
 #   std_k8   standard 512e, 8 random expert groups of 64, 8 random document groups (packs built here from the std assignment records)
 #   s128_k4  standard 128e (same expert size, top-16 of 128), 4 groups of 32, the 512e control's random document packs
 #   s128_k8  standard 128e, 8 groups of 16, the std_k8 packs
-#   emo_k8   EMO 512e, the std_k8 random groups and packs, window 1 only (10B -> 20B; user request 2026-09-22)
+#   emo_k8   EMO 512e, the std_k8 random groups and packs; window 1 (user request 2026-09-22), extended to windows 2-3 -> 130B (user request 2026-09-24)
 #   randsel_k4 / randsel_k8 (and randsel64_k4 / randsel64_k8 for the [64, 512]-pool model)   EMO 512e trained with RANDOM per-document pools (debug_validation/olmoe3_275m_emo_randsel_10b), the 512e controls'
 #            random groups and packs, windows 1-2 (10B -> 30B), own 2-node baseline; squares keep OLMOE3_EMO_POOL_SELECT=random (user request 2026-09-23)
 # Windows 1-2: document-level random packs (like the 4-square control); window 3: contiguous stream slices of 1/K of the 100B.
@@ -14,7 +14,7 @@ set -u; cd "$(git rev-parse --show-toplevel)"; export PATH=/root/.conda/envs/emo
 V="${1:?std_k8|s128_k4|s128_k8|emo_k8|randsel_k4|randsel_k8|randsel64_k4|randsel64_k8}"; S=sparse_experts; W=/weka/oe-training-default/ryanwang/EMO/sparse_experts; SAMPLE=sample_8k_300b.npz; SRCSTD=$S/olmoe3_squares_std
 EMO=0; MAXW=3; PSEL=relevance; MINPOOL=16   # EMO loss on the squares; number of windows to train (1 = stop after 10B -> 20B); pool selection of the EMO squares
 case $V in
-  emo_k8)  SQN=olmoe3_squares_emorand8;  K=8; E=512; FULL=olmoe3_275m_emo_10b;  RP=olmoe3_275m_emorand8_square;  HR=runs_heldout300b_emorand8;  HRB=runs_heldout300b_emo;  START=emo_step19074;  PACKS=olmoe3_squares_stdrand8; BASE=""; BW1=olmoe3_275m_emo_20b_1node; BW2=""; BW3=""; SEED=2; EMO=1; MAXW=1;;
+  emo_k8)  SQN=olmoe3_squares_emorand8;  K=8; E=512; FULL=olmoe3_275m_emo_10b;  RP=olmoe3_275m_emorand8_square;  HR=runs_heldout300b_emorand8;  HRB=runs_heldout300b_emo;  START=emo_step19074;  PACKS=olmoe3_squares_stdrand8; BASE=""; BW1=olmoe3_275m_emo_20b_1node; BW2=olmoe3_275m_emo_30b_1node; BW3=olmoe3_275m_emo_130b; SEED=2; EMO=1; MAXW=3;;   # extended to 130B 2026-09-24 (user request); EMO baselines already evaluated by the k=4 control
   std_k8)  SQN=olmoe3_squares_stdrand8;  K=8; E=512; FULL=olmoe3_275m_10b;      RP=olmoe3_275m_stdrand8_square;  HR=runs_heldout300b_stdrand8;  HRB=runs_heldout300b_std;  START=std_step19074;  PACKS=build;                  BASE=""; BW1=olmoe3_275m_20b_1node; BW2=olmoe3_275m_30b_1node; BW3=olmoe3_275m_130b; SEED=2;;
   s128_k4) SQN=olmoe3_squares_s128rand4; K=4; E=128; FULL=olmoe3_275m_128e_10b; RP=olmoe3_275m_s128rand4_square; HR=runs_heldout300b_s128rand4; HRB=runs_heldout300b_s128; START=s128_step19074; PACKS=olmoe3_squares_stdrand;  BASE=olmoe3_275m_128e_130b_baseline.sh; BW1=olmoe3_275m_128e_130b; BW2=$BW1; BW3=$BW1; SEED=3;;
   s128_k8) SQN=olmoe3_squares_s128rand8; K=8; E=128; FULL=olmoe3_275m_128e_10b; RP=olmoe3_275m_s128rand8_square; HR=runs_heldout300b_s128rand8; HRB=runs_heldout300b_s128; START=s128_step19074; PACKS=olmoe3_squares_stdrand8; BASE="";                                 BW1=olmoe3_275m_128e_130b; BW2=$BW1; BW3=$BW1; SEED=4;;

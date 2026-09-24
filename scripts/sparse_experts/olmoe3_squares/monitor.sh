@@ -14,7 +14,7 @@ while true; do
   # 1. processes
   grep -q 'window 3 done' $S/olmoe3_squares_emorand/logs_driver_w3.log 2>/dev/null || alive '^bash scripts/sparse_experts/olmoe3_squares/squares_control_w3\.sh emo$' || { setsid nohup bash $D/squares_control_w3.sh emo >> $S/olmoe3_squares_emorand/logs_driver_w3.log 2>&1 < /dev/null & say "restarted driver emo w3"; }
   for v in std_k8 s128_k4 s128_k8 emo_k8 randsel_k4 randsel_k8 randsel64_k4 randsel64_k8; do case $v in randsel64_k4) sq=olmoe3_squares_randsel64k4;; randsel64_k8) sq=olmoe3_squares_randsel64k8;; std_k8) sq=olmoe3_squares_stdrand8;; s128_k4) sq=olmoe3_squares_s128rand4;; s128_k8) sq=olmoe3_squares_s128rand8;; emo_k8) sq=olmoe3_squares_emorand8;; randsel_k4) sq=olmoe3_squares_randsel4;; randsel_k8) sq=olmoe3_squares_randsel8;; esac
-    grep -q "done" $S/$sq/logs_driver.log 2>/dev/null && grep -q "^.*\] done" $S/$sq/logs_driver.log 2>/dev/null && continue
+    grep -q "\] done$" $S/$sq/logs_driver.log 2>/dev/null && continue   # a driver that finished all its windows ("done (window 1 only)" does not count)
     alive "^bash scripts/sparse_experts/olmoe3_squares/squares_randk\.sh $v$" || { setsid nohup bash $D/squares_randk.sh $v >> $S/$sq/logs_driver.log 2>&1 < /dev/null & say "restarted driver $v"; }
   done
   alive '^python scripts/sparse_experts/olmoe3_squares/twin_scheduler\.py' || { setsid nohup python $D/twin_scheduler.py --interval 120 >> $R/twin_scheduler/loop.log 2>&1 < /dev/null & say "restarted twin scheduler"; }

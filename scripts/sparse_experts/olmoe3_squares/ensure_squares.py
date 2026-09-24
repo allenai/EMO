@@ -7,7 +7,7 @@ import json, math, re, subprocess, sys, time
 from pathlib import Path
 
 S = Path("sparse_experts"); W = "/weka/oe-training-default/ryanwang/EMO/sparse_experts"; DRY = "--dry-run" in sys.argv
-ARMS = [dict(v="emo_k8", sqn="olmoe3_squares_emorand8", rp="olmoe3_275m_emorand8_square", k=8, E=512, emo=1, windows=1),
+ARMS = [dict(v="emo_k8", sqn="olmoe3_squares_emorand8", rp="olmoe3_275m_emorand8_square", k=8, E=512, emo=1, windows=3),
         dict(v="std_k8", sqn="olmoe3_squares_stdrand8", rp="olmoe3_275m_stdrand8_square", k=8, E=512, emo=0, windows=3),
         dict(v="s128_k4", sqn="olmoe3_squares_s128rand4", rp="olmoe3_275m_s128rand4_square", k=4, E=128, emo=0, windows=3),
         dict(v="s128_k8", sqn="olmoe3_squares_s128rand8", rp="olmoe3_275m_s128rand8_square", k=8, E=128, emo=0, windows=3),

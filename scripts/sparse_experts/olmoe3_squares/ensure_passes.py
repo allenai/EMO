@@ -11,7 +11,7 @@ W1 = [20000, 25000, 30000, 35000, 38148]; W2 = [39073, 44073, 49073, 54073, 5722
 DRY = "--dry-run" in sys.argv; SP.mkdir(parents=True, exist_ok=True)
 ARMS = [  # sqn, run prefix, K, held-out dir, baseline held-out dir, start tag, windows, baseline run per window (None = evaluated elsewhere)
     dict(sqn="olmoe3_squares_emorand", rp="olmoe3_275m_emorand_square", k=4, hr="runs_heldout300b_emorand", hrb="runs_heldout300b_emo", windows=3, base={3: "olmoe3_275m_emo_130b"}),
-    dict(sqn="olmoe3_squares_emorand8", rp="olmoe3_275m_emorand8_square", k=8, hr="runs_heldout300b_emorand8", hrb="runs_heldout300b_emo", windows=1, base={}),
+    dict(sqn="olmoe3_squares_emorand8", rp="olmoe3_275m_emorand8_square", k=8, hr="runs_heldout300b_emorand8", hrb="runs_heldout300b_emo", windows=3, base={}),
     dict(sqn="olmoe3_squares_stdrand8", rp="olmoe3_275m_stdrand8_square", k=8, hr="runs_heldout300b_stdrand8", hrb="runs_heldout300b_std", windows=3, base={}),
     dict(sqn="olmoe3_squares_s128rand4", rp="olmoe3_275m_s128rand4_square", k=4, hr="runs_heldout300b_s128rand4", hrb="runs_heldout300b_s128", windows=3, base={1: "olmoe3_275m_128e_130b", 2: "olmoe3_275m_128e_130b", 3: "olmoe3_275m_128e_130b"}),
     dict(sqn="olmoe3_squares_s128rand8", rp="olmoe3_275m_s128rand8_square", k=8, hr="runs_heldout300b_s128rand8", hrb="runs_heldout300b_s128", windows=3, base={}),
