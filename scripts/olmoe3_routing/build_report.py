@@ -49,6 +49,9 @@ QUESTIONS = [
      "Can EMO 512e be split into four block-group sub-models (k = 4, layers 2&ndash;9), each trained on its own documents for the next 10B tokens, and merged back into a model that matches simply continuing the full model?"),
     ("q4", "Q4 · Learn the pool size per document",
      "Instead of sampling each document's expert-pool size d at random, can the model learn d?"),
+    ("q5", "Q5 · Random partition of experts and documents",
+     "Split the experts into random groups and the documents at random (no routing structure at all), train the pieces separately and merge them: "
+     "how far is the merged model from joint training, for which start models, and for how long?"),
 ]
 
 
@@ -222,20 +225,22 @@ SQ = ROOT / "sparse_experts/olmoe3_squares"; SQO = OUT / "squares"
 
 
 VARIANT_CSS = ("<style>.variant{margin:34px 0 10px;padding:0 0 4px 16px;border-left:6px solid var(--vc)}.variant>h2{margin:0 0 4px;font-size:20px;color:var(--vc)}"
-               ".variant>h2 .vb{display:inline-block;width:28px;height:28px;line-height:28px;border-radius:6px;background:var(--vc);color:#fff;text-align:center;margin-right:10px;font-size:15px}"
+               ".variant>h2 .vb{display:inline-block;min-width:28px;padding:0 5px;height:28px;line-height:28px;border-radius:6px;background:var(--vc);color:#fff;text-align:center;margin-right:10px;font-size:15px}"
                ".variant>p.lead{margin:0 0 12px;color:#475569}.q3index li{margin:3px 0}</style>")
 VARIANTS = [("A", "EMO 512e, 4 sub-models", "#2563eb", "the main experiment"),
             ("B", "Standard MoE 512e, 4 sub-models", "#dc2626", "same pipeline on the standard-routing model, as a second baseline"),
             ("C", "EMO 512e, 4 sub-models trained without the EMO loss", "#7c3aed", "same partition and start checkpoints as A; the sub-models use plain top-16 routing"),
             ("D", "EMO 512e, 8 sub-models", "#059669", "same as A with k = 8 blocks per layer"),
             ("E", "EMO 512e with pools {64, 512}, 4 sub-models", "#d97706", "same pipeline as A on the arm whose training pools were a random choice of 64 or 512 experts per document"),
-            ("F", "Standard MoE 128e, random controls with 4 and 8 sub-models", "#0d9488", "the random-partition control of block B on a 128-expert model of the same expert size (top-16 of 128), jointly trained to 10B then continued to 130B as the baseline"),
-            ("G", "Random-pool EMO 512e models, random controls with 4 and 8 sub-models", "#7c3aed", "the random-partition control of block B on the two EMO 512e models pretrained with random per-document expert pools ([16, 512] and [64, 512] pool sizes), each continued to 30B as its own baseline")]
+            ("5A", "EMO 512e", "#2563eb", "the uniform-pool EMO model of block A, split into 4 and into 8 random sub-models, 10B &rarr; 130B"),
+            ("5B", "Standard MoE 512e", "#dc2626", "the standard-routing model of block B, 4 and 8 random sub-models, 10B &rarr; 130B, plus the re-merge / re-partition at 61B and the routing analysis"),
+            ("5C", "Standard MoE 128e", "#0d9488", "the 128-expert standard-routing model of the expert-count ladder (same expert size, top-16 of 128), 4 and 8 random sub-models, 10B &rarr; 130B"),
+            ("5D", "Random-pool EMO 512e", "#7c3aed", "the two EMO 512e models pretrained with random per-document expert pools ([16, 512] and [64, 512]), 4 and 8 random sub-models, 10B &rarr; 30B")]
 
 
-def variant(letter, inner):
+def variant(letter, inner, tab="q3"):
     _, title, color, blurb = next(v for v in VARIANTS if v[0] == letter)
-    return (f'<div class="variant" id="q3-{letter}" style="--vc:{color}"><h2><span class="vb">{letter}</span>{title}</h2>'
+    return (f'<div class="variant" id="{tab}-{letter}" style="--vc:{color}"><h2><span class="vb">{letter}</span>{title}</h2>'
             f'<p class="lead">{blurb}.</p>{inner}</div>')
 
 
@@ -365,7 +370,6 @@ def std_window2():
             "The standard squares on their own keep improving through window 2 (2.448 at 20B &rarr; 2.411 at 30B) but never reach the baseline "
             "(2.351 at 30B); the merged model sits above them at 2.46. So for the standard model both parts cost: each square is weaker than the "
             "full model on its own documents, and merging adds another 0.05 on top, both roughly constant over the second window.")
-    out += random_control("std")
     return out
 
 
@@ -558,7 +562,7 @@ def build_q3():
         "<li><b>Baseline.</b> The original model, continuously trained on all the documents together, without splitting into sub-models. "
         "Both routes see the same 10B tokens; the merged model is compared with the baseline at matching points of that training.</li>"
         "</ol>")
-    present = ["A"] + (["B"] if (SQ.parent / "olmoe3_squares_std" / "groups.json").exists() else []) + (["F"] if (ROOT / "sparse_experts/olmoe3_squares_s128rand4/groups.json").exists() else []) \
+    present = ["A"] + (["B"] if (SQ.parent / "olmoe3_squares_std" / "groups.json").exists() else []) \
               + (["C"] if (ROOT / "sparse_experts/olmoe3_routing/runs_heldout20b_noemo").exists() else []) \
               + (["D"] if (ROOT / "sparse_experts/olmoe3_routing/runs_heldout20b_k8").exists() else []) \
               + (["E"] if (ROOT / "sparse_experts/olmoe3_squares_pool64or512/groups.json").exists() else [])
@@ -584,7 +588,6 @@ def build_q3():
     else:
         inner += card("warn", "Stage 1", "<p>Assignment pass running.</p>")
     inner += squares_results()
-    inner += random_control("emo")
     body += variant("A", inner)
     # ---- B: standard MoE, k = 4 ----
     Gs = SQ.parent / "olmoe3_squares_std" / "groups.json"; Ss = OUT / "olmoe3_squares_std" / "stats.json"
@@ -645,17 +648,8 @@ def build_q3():
             take_pw="As in A, the squares on their own track and then beat the baseline (2.376 vs 2.397 at 100%), so the loss is in averaging the "
                     "diverged shared parameters, not in the partition or the sub-models.",
             stage1_take="46% of the selections a sub-model's documents make fall inside its own group (52% for the uniform-pool model in A)."))
-    if (ROOT / "sparse_experts/olmoe3_squares_s128rand4/groups.json").exists():
-        body += variant("F", card("info", "Setup", "<p>The 128-expert standard-routing model of the expert-count ladder (same expert size as the 512e model, top-16 of 128, "
-                                  "so a quarter of the total parameters): its 10B checkpoint is continued jointly to 130B as the baseline, and split into 4 and into 8 random "
-                                  "sub-models with the same random document groups as the 512e controls, at exactly the 512e controls' matched checkpoints.</p>") + random_control("s128"))
-    if (ROOT / "sparse_experts/olmoe3_squares_randsel4/groups.json").exists():
-        body += variant("G", card("info", "Setup", "<p>The EMO 512e model pretrained with <i>random</i> per-document expert pools (debug_validation arm: pool size uniform in "
-                                  "[16, 512] as in EMO, but the pool is a random set of experts instead of the most relevant ones; 3.036 vs 3.000 in-loop CE at 10B): its 10B "
-                                  "checkpoint is continued jointly to 30B as the baseline (same random-pool recipe), and split into 4 and into 8 random sub-models with the "
-                                  "same random expert groups and document packs as the 512e controls, trained with the same random-pool recipe, at exactly the 512e "
-                                  "controls' matched checkpoints of windows 1 and 2. The same is done for the [64, 512]-pool variant (no pool smaller than an eighth of the "
-                                  "experts; 3.019 in-loop CE at 10B), with its own baseline.</p>") + random_control("randsel") + random_control("randsel64"))
+    body += card("info", "Random-partition controls", "<p>The random-expert-group / random-document-split controls of these models (and of the 128-expert and "
+                "random-pool models) have moved to <b>Q5</b>.</p>")
     return body
 
 
@@ -918,6 +912,39 @@ def _q4_sweep_rows(T, keys, parse, with_cov):
     return rows
 
 
+def build_q5_controls():
+    """Q5: the random-partition controls, one box per start model (moved out of Q3 on 2026-09-24)."""
+    body = question_card("q5")
+    body += card("info", "Method",
+        "<ol><li><b>Split at random.</b> In every layer 2&ndash;9 the experts are shuffled into K equal groups (layer 1 is kept whole in every "
+        "sub-model), and every document of the training window goes to a uniformly random group, so each of the K sub-models owns 1/K of the "
+        "experts and a random 1/K of the tokens. No routing information is used anywhere.</li>"
+        "<li><b>Train.</b> Each sub-model trains on its own documents (windows 1 and 2: document-level random packs of 10B each; window 3: a "
+        "contiguous 1/K slice of the next 100B, a random share of documents since the stream is a global shuffle).</li>"
+        "<li><b>Merge.</b> Experts side by side, shared parameters averaged with equal weights; the untrained slices merge back to exactly the "
+        "start model (the 10B point on every chart).</li>"
+        "<li><b>Compare.</b> Against the same start model continued jointly on all documents, at matched checkpoints, on the 300B-token held-out "
+        "sample and the v3-small ppl sets. The squares are also scored alone (mean of the K and the best one).</li></ol>"
+        "<p>The same random expert groups and document packs are used for every 512-expert start model, so the boxes differ only in the start model.</p>")
+    boxes = [L for L in ("5A", "5B", "5C", "5D")]
+    body += VARIANT_CSS + card("info", "Start models",
+        '<ul class="q3index">' + "".join(f'<li><a href="#q5-{L}"><b>{L}</b> &middot; {t}</a> &mdash; {bl}</li>' for L, t, _, bl in VARIANTS if L in boxes) + "</ul>")
+    body += variant("5A", random_control("emo"), tab="q5")
+    body += variant("5B", random_control("std"), tab="q5")
+    if (ROOT / "sparse_experts/olmoe3_squares_s128rand4/groups.json").exists():
+        body += variant("5C", card("info", "Setup", "<p>The 128-expert standard-routing model of the expert-count ladder (same expert size as the 512e model, top-16 of 128, "
+                                   "so a quarter of the total parameters): its 10B checkpoint is continued jointly to 130B as the baseline, and split into 4 and into 8 random "
+                                   "sub-models with the same random document groups as the 512e controls, at exactly the 512e controls' matched checkpoints.</p>") + random_control("s128"), tab="q5")
+    if (ROOT / "sparse_experts/olmoe3_squares_randsel4/groups.json").exists():
+        body += variant("5D", card("info", "Setup", "<p>The EMO 512e model pretrained with <i>random</i> per-document expert pools (debug_validation arm: pool size uniform in "
+                                   "[16, 512] as in EMO, but the pool is a random set of experts instead of the most relevant ones; 3.036 vs 3.000 in-loop CE at 10B): its 10B "
+                                   "checkpoint is continued jointly to 30B as the baseline (same random-pool recipe), and split into 4 and into 8 random sub-models with the "
+                                   "same random expert groups and document packs as the 512e controls, trained with the same random-pool recipe, at exactly the 512e "
+                                   "controls' matched checkpoints of windows 1 and 2. The same is done for the [64, 512]-pool variant (no pool smaller than an eighth of the "
+                                   "experts; 3.019 in-loop CE at 10B), with its own baseline.</p>") + random_control("randsel") + random_control("randsel64"), tab="q5")
+    return body
+
+
 def build_q4():
     body = question_card("q4")
     body += card("info", "Setup shared by everything below",
@@ -1153,6 +1180,7 @@ def main():
         ("q2", QUESTIONS[1][1], build_q6()),
         ("q3", QUESTIONS[2][1], build_q3()),
         ("q4", QUESTIONS[3][1], build_q4()),
+        ("q5", QUESTIONS[4][1], build_q5_controls()),
         ("explorer", "Explorer", build_explorer()),
         ("next", "Next steps", build_next()),
     ]
