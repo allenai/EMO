@@ -481,36 +481,74 @@ ROUTING_SIM_TAKE = {"olmoe3_squares_stdrand": (
 
 def routing_similarity_section(SQ, model, k):
     """Routing of the merged random-split squares vs the continued baseline on the held-out sample across the matched checkpoints
-    (routing_similarity.py): expert-set recall, KL, document-level square coverage, token-level square share."""
+    (routing_similarity.py): expert-set recall, KL, document-level square coverage, token-level square share. Interactive: a slider picks
+    a layer (or the mean over layers) and the four panels redraw from the per-layer values stored at every checkpoint."""
     J = _jload(OUT / SQ.name / "routing_similarity.json")
     if not J or not J.get("points"): return ""
-    P = J["points"]; xs = [p["tokens_b"] for p in P]; labels = [f"{x:.3g}B" for x in xs]; A = [p["avg"] for p in P]
-    g = lambda key: [a.get(key) for a in A]
-    ch = CHART_CSS
-    ch += line_chart(xs, [{"name": "all experts the baseline uses (&ge; 1 token)", "y": g("recall")}],
-                     title="Recall: share of the baseline's expert set that the merged model also uses (per document, mean)", y_label="recall", xlabels=labels, x_label="tokens trained")
-    ch += line_chart(xs, [{"name": "KL(baseline &#8214; merged), per-document routing distribution", "y": g("kl")}],
-                     title="KL divergence of the routing distributions (nats, mean over documents)", y_label="KL", xlabels=labels, x_label="tokens trained")
-    ch += line_chart(xs, [{"name": "merged squares", "y": g("coverage_merged")}, {"name": "baseline", "y": g("coverage_baseline")},
-                          {"name": f"uniform over {k} squares", "y": [1 / k] * len(xs), "const": True, "dashed": True, "color": "#64748b"}],
-                     title="Document-level share of routing on the document's most-used square (max over squares, mean)", y_label="share", xlabels=labels, x_label="tokens trained")
-    ch += line_chart(xs, [{"name": "merged squares: mean share of a token's 16 experts in the document's dominant square", "y": g("token_merged_share"), "color": _LC_COLORS[0]},
-                          {"name": "baseline: mean share", "y": g("token_baseline_share"), "color": _LC_COLORS[1]}],
-                     title="Token-level alignment with the squares (first 200 held-out instances)", y_label="fraction", xlabels=labels, x_label="tokens trained")
-    last = P[-1]; pl = last["per_layer"]
-    rows = [[f"layer {l}", f(pl[str(l)]["recall"], 3), f(pl[str(l)]["kl"], 3), f(pl[str(l)]["coverage_merged"], 3), f(pl[str(l)]["coverage_baseline"], 3),
+    P = J["points"]; xs = [p["tokens_b"] for p in P]; layers = [str(l) for l in J["layers"]]
+    def per(getter):  # {"avg": [...], "2": [...], ...} across checkpoints
+        return {lv: [getter(p, lv) for p in P] for lv in ["avg"] + layers}
+    pl = lambda key: per(lambda p, lv: p["avg"][key] if lv == "avg" else p["per_layer"][lv][key])
+    tok = lambda who: per(lambda p, lv: p["avg"][f"token_{who}_share"] if lv == "avg" else p["token"][who][lv]["share"])
+    C0, C1, CG = _LC_COLORS[0], _LC_COLORS[1], "#64748b"
+    panels = [
+        dict(title="Recall: share of the baseline's expert set that the merged model also uses", ylab="recall",
+             series=[dict(lab="all experts the baseline uses (&ge; 1 token)", c=C0, y=pl("recall"))]),
+        dict(title="KL(baseline &#8214; merged) of the per-document routing distribution", ylab="KL (nats)",
+             series=[dict(lab="KL(baseline &#8214; merged)", c=C0, y=pl("kl"))]),
+        dict(title="Document-level share of routing on the document's most-used square", ylab="share",
+             series=[dict(lab="merged squares", c=C0, y=pl("coverage_merged")), dict(lab="baseline", c=C1, y=pl("coverage_baseline")),
+                     dict(lab=f"uniform over {k} squares", c=CG, dsh=True, const=True, y={lv: [1 / k] * len(xs) for lv in ["avg"] + layers})]),
+        dict(title="Token-level share of a token's 16 experts in the document's dominant square", ylab="share",
+             series=[dict(lab="merged squares", c=C0, y=tok("merged")), dict(lab="baseline", c=C1, y=tok("baseline")),
+                     dict(lab=f"uniform over {k} squares", c=CG, dsh=True, const=True, y={lv: [1 / k] * len(xs) for lv in ["avg"] + layers})])]
+    spec = json.dumps({"toks": [round(x, 3) for x in xs], "layers": layers, "panels": panels})
+    uid = "rs-" + SQ.name.replace("olmoe3_squares_", "")
+    widget = (f'<div class="rs" id="{uid}"><div class="rs-ctl"><b>Layer</b> <input type="range" min="0" max="{len(layers)}" value="0" step="1"> '
+              f'<span class="rs-lab"></span> <label style="margin-left:18px"><input type="checkbox" class="rs-fixy" checked> same y-range for every layer</label></div>'
+              f'<div class="rs-panels"></div><div class="cx-tip"></div><script type="application/json">{spec}</script></div>')
+    last = P[-1]; pll = last["per_layer"]
+    rows = [[f"layer {l}", f(pll[str(l)]["recall"], 3), f(pll[str(l)]["kl"], 3), f(pll[str(l)]["coverage_merged"], 3), f(pll[str(l)]["coverage_baseline"], 3),
              f(last["token"]["merged"][str(l)]["share"], 3)] for l in J["layers"]]
     tbl = table(["", "recall", "KL", "coverage merged", "coverage baseline", "token share merged"], rows)
-    what = (f"For every held-out document (&ge; {J['min_tokens']} tokens; {last['n_docs']:,} documents) and every partitioned layer (2&ndash;9, mean over layers in the charts), the "
+    what = (f"For every held-out document (&ge; {J['min_tokens']} tokens; {last['n_docs']:,} documents) and every partitioned layer (2&ndash;9), the "
             f"routing of the merged squares is compared with the routing of the baseline at the same matched checkpoint; at 10B both are the start model. "
+            "Drag the slider to a layer, or to <i>mean</i> for the average over layers 2&ndash;9. "
             "<b>Recall</b>: the fraction of the baseline's expert set for the document (every expert "
             "that receives at least one of the document's tokens; a standard-routing document of ~1,150 tokens touches nearly all 512 experts, so this is weak) "
             "that the merged model also uses. <b>KL</b>: KL(baseline &#8214; merged) of the per-document distribution of "
-            "expert selections, the merged distribution smoothed by half a count per expert (so the 10B point reads 0.003 rather than 0). <b>Coverage</b>: the share "
+            "expert selections, the merged distribution smoothed by half a count per expert (so the 10B point reads 0.003 rather than 0). <b>Document level</b>: the share "
             f"of a document's routing that falls on whichever of the {k} squares it uses most (1/{k} = no alignment). <b>Token level</b> (first 200 instances, "
             "~1,400 documents): for each token, the share of its 16 experts that belong to the document's dominant square (mean over tokens).")
-    return section("Routing of the merged squares vs the baseline on the held-out sample", what, ch + "<p><b>Per layer at the last checkpoint</b> (" + f"{last['tokens_b']:.3g}B):</p>" + tbl,
+    return section("Routing of the merged squares vs the baseline on the held-out sample", what,
+                   RS_CSS + widget + RS_JS + "<p><b>Per layer at the last checkpoint</b> (" + f"{last['tokens_b']:.3g}B):</p>" + tbl,
                    ROUTING_SIM_TAKE.get(SQ.name, "Analysis running."))
+
+
+RS_CSS = ("<style>.rs-ctl{font-size:13px;margin:4px 0 10px}.rs-ctl input[type=range]{width:260px;vertical-align:middle}.rs-ctl .rs-lab{display:inline-block;min-width:70px;font-weight:600}"
+          ".rs-panels{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start}.rs-panel{flex:1 1 320px;min-width:300px;max-width:520px}"
+          ".rs-panel h4{margin:0 0 2px;font-size:13px;color:#334155;font-weight:600}.rs-panel svg{width:100%;height:auto;display:block}"
+          ".rs-leg{font-size:12px;color:#475569;margin:0 0 4px}.rs-leg .sw{display:inline-block;width:18px;height:0;border-top:3px solid;vertical-align:middle;margin:0 4px 0 8px}</style>")
+RS_JS = """<script>(function(){document.querySelectorAll('.rs').forEach(box=>{if(box.dataset.init)return;box.dataset.init=1;const D=JSON.parse(box.querySelector('script').textContent);
+const rng=box.querySelector('input[type=range]'),lab=box.querySelector('.rs-lab'),fixy=box.querySelector('.rs-fixy'),panels=box.querySelector('.rs-panels'),tip=box.querySelector('.cx-tip');
+const W=480,H=250,x0=50,y0=14,pw=W-64,ph=H-52;const xs=D.toks,xmn=xs[0],xmx=xs[xs.length-1];const X=v=>x0+(v-xmn)/(xmx-xmn||1)*pw;
+function render(){const lv=rng.value==='0'?'avg':D.layers[rng.value-1];lab.textContent=lv==='avg'?'mean of 2\u20139':'layer '+lv;panels.innerHTML='';
+D.panels.forEach(pn=>{let ymin=1e9,ymax=-1e9;const lvs=fixy.checked?Object.keys(pn.series[0].y):[lv];pn.series.forEach(s=>lvs.forEach(l=>s.y[l].forEach(v=>{if(v!=null){ymin=Math.min(ymin,v);ymax=Math.max(ymax,v)}})));
+const pad=Math.max(0.005,0.08*(ymax-ymin));ymin-=pad;ymax+=pad;const Y=v=>y0+(ymax-v)/(ymax-ymin)*ph;let g='<svg viewBox="0 0 '+W+' '+H+'">';
+const step0=(ymax-ymin)/4,mag=Math.pow(10,Math.floor(Math.log10(step0))),st=Math.ceil(step0/mag)*mag;const dec=st<0.01?3:2;
+for(let t=Math.ceil(ymin/st)*st;t<=ymax;t+=st)g+='<line x1="'+x0+'" x2="'+(x0+pw)+'" y1="'+Y(t).toFixed(1)+'" y2="'+Y(t).toFixed(1)+'" stroke="#e5e7eb"/><text x="'+(x0-6)+'" y="'+(Y(t)+4).toFixed(1)+'" font-size="11" text-anchor="end" fill="#475569">'+t.toFixed(dec)+'</text>';
+xs.forEach(v=>{if(v<15&&v>10.2)return;g+='<text x="'+X(v).toFixed(1)+'" y="'+(y0+ph+16)+'" font-size="10" text-anchor="middle" fill="#475569">'+Math.round(v)+'B</text>'});
+g+='<line x1="'+x0+'" x2="'+(x0+pw)+'" y1="'+(y0+ph)+'" y2="'+(y0+ph)+'" stroke="#94a3b8"/><line x1="'+x0+'" x2="'+x0+'" y1="'+y0+'" y2="'+(y0+ph)+'" stroke="#94a3b8"/>';
+g+='<text x="'+(x0+pw/2)+'" y="'+(H-4)+'" font-size="11" text-anchor="middle" fill="#475569">tokens trained</text><text transform="translate(12,'+(y0+ph/2)+') rotate(-90)" font-size="11" text-anchor="middle" fill="#475569">'+pn.ylab+'</text>';
+pn.series.forEach(s=>{const y=s.y[lv];const pts=xs.map((x,i)=>y[i]==null?null:[X(x),Y(y[i])]);let d='',pen=false;pts.forEach(p=>{if(!p){pen=false;return}d+=(pen?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1);pen=true});
+g+='<path d="'+d+'" fill="none" stroke="'+s.c+'" stroke-width="2"'+(s.dsh?' stroke-dasharray="5,4"':'')+'/>';if(!s.const)pts.forEach(p=>{if(p)g+='<circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="2.6" fill="'+s.c+'"/>'})});
+g+='<line class="vl" x1="0" x2="0" y1="'+y0+'" y2="'+(y0+ph)+'" stroke="#94a3b8" stroke-dasharray="3,3" style="display:none"/></svg>';
+const div=document.createElement('div');div.className='rs-panel';div.innerHTML='<h4>'+pn.title+'</h4><div class="rs-leg">'+pn.series.map(s=>'<span class="sw" style="border-color:'+s.c+';border-style:'+(s.dsh?'dashed':'solid')+'"></span>'+s.lab).join('')+'</div>'+g;panels.appendChild(div);
+const svg=div.querySelector('svg'),vl=svg.querySelector('.vl');svg.addEventListener('mousemove',e=>{const r=svg.getBoundingClientRect();const mx=(e.clientX-r.left)*(W/r.width);let best=0,bd=1e9;xs.forEach((x,i)=>{const dd=Math.abs(X(x)-mx);if(dd<bd){bd=dd;best=i}});
+vl.setAttribute('x1',X(xs[best]));vl.setAttribute('x2',X(xs[best]));vl.style.display='block';tip.style.display='block';tip.innerHTML='<b>'+(lv==='avg'?'mean of layers 2\u20139':'layer '+lv)+' &middot; '+xs[best]+'B</b><br>'+pn.series.filter(s=>!s.const).map(s=>{const v=s.y[lv][best];return v==null?'':'<span style="color:'+s.c+'">&#9632;</span> '+s.lab+': '+v.toFixed(3)}).filter(Boolean).join('<br>');
+tip.style.left=(e.clientX+14)+'px';tip.style.top=(e.clientY-10)+'px'});svg.addEventListener('mouseleave',()=>{tip.style.display='none';vl.style.display='none'})})}
+rng.addEventListener('input',render);fixy.addEventListener('change',render);render()})})();</script>"""
+
 
 
 def build_q3():
