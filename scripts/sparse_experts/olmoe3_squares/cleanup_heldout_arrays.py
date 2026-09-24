@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 R = Path("sparse_experts/olmoe3_routing"); DRY = "--dry-run" in sys.argv
-KEEP_DIRS = {"runs_heldout300b_std", "runs_heldout300b_stdrand"}   # routing_similarity.py inputs (std k=4 control + its baseline)
+KEEP_DIRS = {"runs_heldout300b_std", "runs_heldout300b_stdrand", "runs_heldout300b_stdrand8"}   # routing_similarity.py / routing_drift.py inputs (std k=4 and k=8 controls + their baseline)
 ARRAYS = ("doc_scores.npy", "doc_usage.npy", "raw_topk.npy", "cross.npy")
 
 freed = n = 0

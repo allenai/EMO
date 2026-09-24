@@ -502,6 +502,14 @@ def routing_similarity_section(SQ, model, k):
         dict(title="Token-level share of a token's 16 experts in the document's dominant square", ylab="share",
              series=[dict(lab="merged squares", c=C0, y=tok("merged")), dict(lab="baseline", c=C1, y=tok("baseline")),
                      dict(lab=f"uniform over {k} squares", c=CG, dsh=True, const=True, y={lv: [1 / k] * len(xs) for lv in ["avg"] + layers})])]
+    DR = _jload(OUT / SQ.name / "routing_drift.json")
+    if DR and DR.get("points"):  # KL from the 10B start model (routing_drift.py), per model, matched to this widget's checkpoints by step
+        by_step = {q["step"]: q["kl"] for q in DR["points"]}
+        def drift(key):
+            return {lv: [(by_step.get(p["step"], {}).get(key) or {}).get(lv) for p in P] for lv in ["avg"] + layers}
+        panels.append(dict(title="KL from the 10B start model: KL(start &#8214; model) of the per-document routing distribution", ylab="KL (nats)",
+                           series=[dict(lab="merged, 4 squares", c="#2563eb", y=drift("m4")), dict(lab="merged, 8 squares", c="#ea580c", y=drift("m8")),
+                                   dict(lab="baseline (joint training)", c="#059669", y=drift("baseline"))]))
     spec = json.dumps({"toks": [round(x, 3) for x in xs], "layers": layers, "panels": panels})
     uid = "rs-" + SQ.name.replace("olmoe3_squares_", "")
     widget = (f'<div class="rs" id="{uid}"><div class="rs-ctl"><b>Layer</b> <input type="range" min="0" max="{len(layers)}" value="0" step="1"> '
@@ -519,7 +527,9 @@ def routing_similarity_section(SQ, model, k):
             "that the merged model also uses. <b>KL</b>: KL(baseline &#8214; merged) of the per-document distribution of "
             "expert selections, the merged distribution smoothed by half a count per expert (so the 10B point reads 0.003 rather than 0). <b>Document level</b>: the share "
             f"of a document's routing that falls on whichever of the {k} squares it uses most (1/{k} = no alignment). <b>Token level</b> (first 200 instances, "
-            "~1,400 documents): for each token, the share of its 16 experts that belong to the document's dominant square (mean over tokens).")
+            "~1,400 documents): for each token, the share of its 16 experts that belong to the document's dominant square (mean over tokens). "
+            "<b>KL from the start model</b>: KL(start &#8214; model) of the same per-document routing distribution, for the merged 4 squares, the merged "
+            "8 squares and the jointly trained baseline, all of which begin at the 10B checkpoint (so the 10B point is the smoothing floor, 0.003).")
     return section("Routing of the merged squares vs the baseline on the held-out sample", what,
                    RS_CSS + widget + RS_JS + "<p><b>Per layer at the last checkpoint</b> (" + f"{last['tokens_b']:.3g}B):</p>" + tbl,
                    ROUTING_SIM_TAKE.get(SQ.name, "Analysis running."))
