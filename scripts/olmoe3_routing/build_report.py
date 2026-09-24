@@ -388,8 +388,9 @@ RANDOM_CONTROL = {  # random expert groups + random document split; arms = (sub-
                       remerge=False, take=lambda: RANDSEL64_TAKE),
 }
 W3_STEPS = (66481, 116479, 166478, 216477, 247956)
-EMORAND_TAKE = ("Same picture as the standard model with a smaller gap: 0.03 at 20B, 0.08 at 130B (2.373 vs 2.295). Eight squares: 0.10 at 20B, "
-                "0.11 at 30B (window 3 running).")
+EMORAND_TAKE = ("Same picture as the standard model with a smaller gap: 0.03 at 20B, 0.08 at 130B (2.373 vs 2.295). Eight squares cost about "
+                "twice as much (gap 0.10 at 20B, 0.15 at 130B: 2.442 vs 2.295) and, unlike the standard model's, the eight-square merge stays ahead of "
+                "its best single square (2.473) at 130B.")
 RANDSEL_TAKE = ("A model trained with random pools merges almost for free: four squares stay ahead of joint training until 16B and end 0.014 behind "
                 "at 30B (standard model: 0.057); eight squares cost 0.046 (standard: 0.15).")
 RANDSEL64_TAKE = ("With pools of at least 64 experts the four-square merge beats joint training at every point (2.402 vs 2.406 at 30B), the only "
