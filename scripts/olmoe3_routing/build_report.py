@@ -379,11 +379,11 @@ RANDOM_CONTROL = {  # random expert groups + random document split; arms = (sub-
                  arms=[dict(k=4, sqn="olmoe3_squares_s128rand4", hr="runs_heldout300b_s128rand4", color="#2563eb"), dict(k=8, sqn="olmoe3_squares_s128rand8", hr="runs_heldout300b_s128rand8", color="#ea580c")],
                  remerge=False, take=lambda: S128_TAKE),
     "randsel": dict(hrb="runs_heldout300b_randsel", start="baseline_step19074", ppl_dirs=("olmoe3_squares_randsel4/ppl_validation",),
-                    base_runs=("olmoe3_275m_randsel_30b",), start_ppl="olmoe3_275m_emo_randsel_10b", model="random-pool EMO 512e", E=512,
+                    base_runs=("olmoe3_275m_randsel_30b", "olmoe3_275m_randsel_130b"), start_ppl="olmoe3_275m_emo_randsel_10b", model="random-pool EMO 512e", E=512,
                     arms=[dict(k=4, sqn="olmoe3_squares_randsel4", hr="runs_heldout300b_randsel4", color="#2563eb"), dict(k=8, sqn="olmoe3_squares_randsel8", hr="runs_heldout300b_randsel8", color="#ea580c")],
                     remerge=False, take=lambda: RANDSEL_TAKE),
     "randsel64": dict(hrb="runs_heldout300b_randsel64", start="baseline_step19074", ppl_dirs=("olmoe3_squares_randsel64k4/ppl_validation",),
-                      base_runs=("olmoe3_275m_randsel64_30b",), start_ppl="olmoe3_275m_emo_randsel64_10b", model="random-pool EMO 512e, pools of at least 64", E=512,
+                      base_runs=("olmoe3_275m_randsel64_30b", "olmoe3_275m_randsel64_130b"), start_ppl="olmoe3_275m_emo_randsel64_10b", model="random-pool EMO 512e, pools of at least 64", E=512,
                       arms=[dict(k=4, sqn="olmoe3_squares_randsel64k4", hr="runs_heldout300b_randsel64k4", color="#2563eb"), dict(k=8, sqn="olmoe3_squares_randsel64k8", hr="runs_heldout300b_randsel64k8", color="#ea580c")],
                       remerge=False, take=lambda: RANDSEL64_TAKE),
 }
