@@ -946,15 +946,15 @@ def control_explorer():
         '<label><input type="radio" name="cx-metric" value="p"> v3-small ppl sets, mean CE</label><br>'
         '<label><input type="checkbox" id="cx-samex"> same token range on every panel</label></div></div>'
         '<div class="cx-panels" id="cx-panels"></div><div class="cx-tip" id="cx-tip"></div></div>'
-        f'<script type="application/json" id="cx-data">{spec}</script>' + EXPLORER_JS)
+        f'<script type="application/json" id="cx-data">{spec}</script>' + CX_JS)
 
 
-EXPLORER_CSS = ("<style>.cx-ctl{display:flex;flex-wrap:wrap;gap:18px 34px;margin:4px 0 12px;font-size:13px}.cx-ctl label{display:block;margin:2px 0;cursor:pointer}"
+CX_CSS = ("<style>.cx-ctl{display:flex;flex-wrap:wrap;gap:18px 34px;margin:4px 0 12px;font-size:13px}.cx-ctl label{display:block;margin:2px 0;cursor:pointer}"
                 ".cx-ctl .sw{display:inline-block;width:22px;height:0;border-top:3px solid;vertical-align:middle;margin-right:6px}"
                 ".cx-panels{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start}.cx-panel{flex:1 1 320px;min-width:300px;max-width:560px}"
                 ".cx-panel h4{margin:0 0 2px;font-size:14px;color:#334155}.cx-panel svg{width:100%;height:auto;display:block}"
                 ".cx-tip{position:fixed;display:none;pointer-events:none;background:#fff;border:1px solid #cbd5e1;border-radius:6px;padding:6px 8px;font-size:12px;box-shadow:0 2px 8px rgba(0,0,0,.12);z-index:50}</style>")
-EXPLORER_JS = """<script>(function(){const D=JSON.parse(document.getElementById('cx-data').textContent);const box=document.querySelector('.cx');const panels=document.getElementById('cx-panels');const tip=document.getElementById('cx-tip');
+CX_JS = """<script>(function(){const D=JSON.parse(document.getElementById('cx-data').textContent);const box=document.querySelector('.cx');const panels=document.getElementById('cx-panels');const tip=document.getElementById('cx-tip');
 function fmtTick(v){return v.toFixed(2)}
 function render(){const metric=box.querySelector('input[name=cx-metric]:checked').value;const samex=document.getElementById('cx-samex').checked;
 const ms=[...box.querySelectorAll('input[data-m]')].filter(i=>i.checked).map(i=>D.models.find(m=>m.id===i.dataset.m));
@@ -993,7 +993,7 @@ def build_q5_controls():
         "<li><b>Compare.</b> Against the same start model continued jointly on all documents, at matched checkpoints, on the 300B-token held-out "
         "sample and the v3-small ppl sets. The squares are also scored alone (mean of the K and the best one).</li></ol>"
         "<p>The same random expert groups and document packs are used for every 512-expert start model, so the boxes differ only in the start model.</p>")
-    body += EXPLORER_CSS + control_explorer()
+    body += CX_CSS + control_explorer()
     boxes = [L for L in ("5A", "5B", "5C", "5D")]
     body += VARIANT_CSS + card("info", "Start models",
         '<ul class="q3index">' + "".join(f'<li><a href="#q5-{L}"><b>{L}</b> &middot; {t}</a> &mdash; {bl}</li>' for L, t, _, bl in VARIANTS if L in boxes) + "</ul>")
