@@ -229,7 +229,8 @@ VARIANTS = [("A", "EMO 512e, 4 sub-models", "#2563eb", "the main experiment"),
             ("C", "EMO 512e, 4 sub-models trained without the EMO loss", "#7c3aed", "same partition and start checkpoints as A; the sub-models use plain top-16 routing"),
             ("D", "EMO 512e, 8 sub-models", "#059669", "same as A with k = 8 blocks per layer"),
             ("E", "EMO 512e with pools {64, 512}, 4 sub-models", "#d97706", "same pipeline as A on the arm whose training pools were a random choice of 64 or 512 experts per document"),
-            ("F", "Standard MoE 128e, random controls with 4 and 8 sub-models", "#0d9488", "the random-partition control of block B on a 128-expert model of the same expert size (top-16 of 128), jointly trained to 10B then continued to 130B as the baseline")]
+            ("F", "Standard MoE 128e, random controls with 4 and 8 sub-models", "#0d9488", "the random-partition control of block B on a 128-expert model of the same expert size (top-16 of 128), jointly trained to 10B then continued to 130B as the baseline"),
+            ("G", "Random-pool EMO 512e models, random controls with 4 and 8 sub-models", "#7c3aed", "the random-partition control of block B on the two EMO 512e models pretrained with random per-document expert pools ([16, 512] and [64, 512] pool sizes), each continued to 30B as its own baseline")]
 
 
 def variant(letter, inner):
