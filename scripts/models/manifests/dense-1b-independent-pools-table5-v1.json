@@ -1,0 +1,84 @@
+{
+  "policy": "dense_1b_independent_pool_table5_replication_v1",
+  "model": "1.5B (repository Dense-1B / 1.279B parameters)",
+  "recipe": {
+    "variant": "Original",
+    "dataOrder": "ordinary_shuffled",
+    "weightTying": false,
+    "decayEmbeddings": false,
+    "checkpointEveryEpoch": true,
+    "terminalEvaluation": "isolated 10% WSD plus heldout validation at the reported Table-5 epoch"
+  },
+  "data": {
+    "construction": "independent whole-document samples from the sealed training partition; validation and test are excluded",
+    "poolA": "src/olmo_core/data/subsets/0802/dclm_0802_repeated_train_1b.json",
+    "poolB": "src/olmo_core/data/subsets/0802/dclm_0802_repeated_train_1b_b.json",
+    "poolC": "src/olmo_core/data/subsets/0802/dclm_0802_repeated_train_1b_c.json"
+  },
+  "trajectories": [
+    {
+      "pool": "b", "batchSequences": 32, "lr": "5e-4", "wd": "0.3", "targetEpoch": 20,
+      "variant": "Original", "dataOrder": "ordinary_shuffled", "weightTying": false, "decayEmbeddings": false,
+      "gpuCount": 8, "nprocPerNode": 8, "rankMicrobatchSequences": 4, "gradientAccumulation": 1, "warmupSteps": 768,
+      "checkpointEveryEpoch": true,
+      "dataManifest": "src/olmo_core/data/subsets/0802/dclm_0802_repeated_train_1b_b.json",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b_pool_b/bs32_lr5e-4_wd0.3"
+    },
+    {
+      "pool": "b", "batchSequences": 64, "lr": "1e-3", "wd": "0.3", "targetEpoch": 20,
+      "variant": "Original", "dataOrder": "ordinary_shuffled", "weightTying": false, "decayEmbeddings": false,
+      "gpuCount": 8, "nprocPerNode": 8, "rankMicrobatchSequences": 4, "gradientAccumulation": 2, "warmupSteps": 384,
+      "checkpointEveryEpoch": true,
+      "dataManifest": "src/olmo_core/data/subsets/0802/dclm_0802_repeated_train_1b_b.json",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b_pool_b/bs64_lr1e-3_wd0.3"
+    },
+    {
+      "pool": "b", "batchSequences": 128, "lr": "1e-3", "wd": "0.3", "targetEpoch": 16,
+      "variant": "Original", "dataOrder": "ordinary_shuffled", "weightTying": false, "decayEmbeddings": false,
+      "gpuCount": 8, "nprocPerNode": 8, "rankMicrobatchSequences": 4, "gradientAccumulation": 4, "warmupSteps": 192,
+      "checkpointEveryEpoch": true,
+      "dataManifest": "src/olmo_core/data/subsets/0802/dclm_0802_repeated_train_1b_b.json",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b_pool_b/bs128_lr1e-3_wd0.3"
+    },
+    {
+      "pool": "b", "batchSequences": 256, "lr": "2e-3", "wd": "0.333", "targetEpoch": 12,
+      "variant": "Original", "dataOrder": "ordinary_shuffled", "weightTying": false, "decayEmbeddings": false,
+      "gpuCount": 8, "nprocPerNode": 8, "rankMicrobatchSequences": 4, "gradientAccumulation": 8, "warmupSteps": 96,
+      "checkpointEveryEpoch": true,
+      "dataManifest": "src/olmo_core/data/subsets/0802/dclm_0802_repeated_train_1b_b.json",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b_pool_b/bs256_lr2e-3_wd0.333"
+    },
+    {
+      "pool": "c", "batchSequences": 32, "lr": "5e-4", "wd": "0.3", "targetEpoch": 20,
+      "variant": "Original", "dataOrder": "ordinary_shuffled", "weightTying": false, "decayEmbeddings": false,
+      "gpuCount": 8, "nprocPerNode": 8, "rankMicrobatchSequences": 4, "gradientAccumulation": 1, "warmupSteps": 768,
+      "checkpointEveryEpoch": true,
+      "dataManifest": "src/olmo_core/data/subsets/0802/dclm_0802_repeated_train_1b_c.json",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b_pool_c/bs32_lr5e-4_wd0.3"
+    },
+    {
+      "pool": "c", "batchSequences": 64, "lr": "1e-3", "wd": "0.3", "targetEpoch": 20,
+      "variant": "Original", "dataOrder": "ordinary_shuffled", "weightTying": false, "decayEmbeddings": false,
+      "gpuCount": 8, "nprocPerNode": 8, "rankMicrobatchSequences": 4, "gradientAccumulation": 2, "warmupSteps": 384,
+      "checkpointEveryEpoch": true,
+      "dataManifest": "src/olmo_core/data/subsets/0802/dclm_0802_repeated_train_1b_c.json",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b_pool_c/bs64_lr1e-3_wd0.3"
+    },
+    {
+      "pool": "c", "batchSequences": 128, "lr": "1e-3", "wd": "0.3", "targetEpoch": 16,
+      "variant": "Original", "dataOrder": "ordinary_shuffled", "weightTying": false, "decayEmbeddings": false,
+      "gpuCount": 8, "nprocPerNode": 8, "rankMicrobatchSequences": 4, "gradientAccumulation": 4, "warmupSteps": 192,
+      "checkpointEveryEpoch": true,
+      "dataManifest": "src/olmo_core/data/subsets/0802/dclm_0802_repeated_train_1b_c.json",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b_pool_c/bs128_lr1e-3_wd0.3"
+    },
+    {
+      "pool": "c", "batchSequences": 256, "lr": "2e-3", "wd": "0.333", "targetEpoch": 12,
+      "variant": "Original", "dataOrder": "ordinary_shuffled", "weightTying": false, "decayEmbeddings": false,
+      "gpuCount": 8, "nprocPerNode": 8, "rankMicrobatchSequences": 4, "gradientAccumulation": 8, "warmupSteps": 96,
+      "checkpointEveryEpoch": true,
+      "dataManifest": "src/olmo_core/data/subsets/0802/dclm_0802_repeated_train_1b_c.json",
+      "output": "/weka/oe-training-default/sewonm/icsl/models/dense_1b_dclm1b_pool_c/bs256_lr2e-3_wd0.333"
+    }
+  ]
+}
