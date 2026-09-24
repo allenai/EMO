@@ -910,8 +910,9 @@ def control_explorer_data():
             hv = lambda tag, a=a: _ce(a["HR"] / f"{tag}/none"); k = a["k"]
             sq = [[hv(f"sub{g}_match{st}") for g in range(k)] for st in steps]
             ser[f"m{k}"] = {"h": [hv(f"merged_match{st}") for st in steps], "p": [_ppl(a["SQ"] / "ppl_validation" / "merged" / f"match{st}.json") for st in steps]}
-            ser[f"s{k}"] = {"h": [sum(v) / k if all(x is not None for x in v) else None for v in sq]}
-            ser[f"b{k}"] = {"h": [min(x for x in v if x is not None) if any(x is not None for x in v) else None for v in sq]}
+            # the 10B point of the square lines would be the untrained slices (CE 2.9-3.6) and would squash the shared y-axis: left out
+            ser[f"s{k}"] = {"h": [None] + [sum(v) / k if all(x is not None for x in v) else None for v in sq[1:]]}
+            ser[f"b{k}"] = {"h": [None] + [min(x for x in v if x is not None) if any(x is not None for x in v) else None for v in sq[1:]]}
         RM = R / "runs_heldout300b_stdremerge"; RMP = ROOT / "sparse_experts/olmoe3_squares_stdremerge/ppl_validation"
         if C.get("remerge") and RM.exists() and 116479 in steps:
             rv = lambda tag: _ce(RM / f"{tag}/none"); i0 = steps.index(116479); m4 = ser["m4"]
