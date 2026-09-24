@@ -399,8 +399,19 @@ EMORAND_TAKE = ("Same story as the standard model, with a slightly smaller gap. 
                 "best square is still 0.04 behind the merge at 130B. Eight random squares instead of four (same random groups and packs as the standard k=8 arm) cost "
                 "about four times as much at 20B: the merge reaches 2.500 (gap 0.10 to the baseline against 0.024 for four squares) and the eight squares sit at "
                 "2.58&ndash;2.59, mirroring the standard model's k=8 penalty (gap 0.14 vs 0.05).")
-RANDSEL_TAKE = "Baseline and square trainings running."
-RANDSEL64_TAKE = "Baseline and square trainings running."
+RANDSEL_TAKE = ("A model trained with random pools merges almost for free. Four random squares of the [16, 512] random-pool model merge to 2.488 at "
+                "the first point against 2.507 for the jointly trained baseline, stay ahead of it until 30,000 steps (16B) and end 0.014 behind at 30B "
+                "(2.437 vs 2.423), against gaps of 0.057 for the standard-routing control and 0.029 for the uniform-EMO control at the same point. "
+                "Eight squares cost more (2.469, gap 0.046) but still a third of the standard model's k=8 gap (0.15). The squares themselves sit where "
+                "they always do (2.525 / 2.574, indistinguishable from each other), so what changed is how well their shared parameters average: "
+                "the merged model is nearly as good as any 512e merge in this report while its joint baseline is the weakest of the four start models "
+                "(2.423 vs 2.376 for uniform EMO and 2.351 for standard routing at 30B). Note that inside a square the pool draw is clamped by the "
+                "slice size, so the squares of every EMO-family control train with little pool restriction; only the baselines keep the full recipe.")
+RANDSEL64_TAKE = ("With pools of at least 64 experts the four-square merge beats joint training at every point: 2.463 vs 2.492 at the first point, "
+                  "2.422 vs 2.433 at 20B and 2.402 vs 2.406 at 30B, the only control in this report whose merge is never behind its baseline, and its "
+                  "merged model (2.402) matches the best 512e merges of blocks B and C (2.405&ndash;2.408) from a worse start model. Eight squares "
+                  "fall back to the usual pattern (2.467 vs 2.406 at 30B, gap 0.061, roughly the [16, 512] model's 0.046 plus its better baseline). "
+                  "Merging the untrained slices returns the start model exactly for all four arms (2.514 / 2.498).")
 S128_TAKE = ("Fewer, same-sized experts change little: the cost of splitting is set by the number of squares, not by the number of experts. With 128 "
              "experts, four random squares merge to 2.506 at 20B against 2.452 for the 128-expert baseline (gap 0.055, vs 0.05 for the 512-expert control), "
              "improve to 2.471 at 87B and then drift back up to 2.479 at 130B while the baseline reaches 2.349 (gap 0.13, vs 0.10 for 512 experts), the "
