@@ -276,16 +276,9 @@ def squares_block(tag, full_run, start_ppl_run, base_run, take_main="", take_pw=
 
 WINDOW2_FT_TAKE = ("Joint finetuning (dotted, shaded) recovers about 40% of the merge loss after 0.5B tokens at either window end and adds little in the "
                    "next 0.5B; the merged model stays behind the baseline.")
-STDRAND_TAKE = ("With no structure in the split the merge does <i>better</i> than with the routing split and keeps improving through the first two "
-                "windows: 2.483 &rarr; 2.430 at 20B &rarr; 2.408 at 30B on the held-out sample, against 2.462 &rarr; 2.460 for the routing split and 2.351 for "
-                "the baseline at 30B, its gap to the baseline staying near 0.05 while the routing split's grows to 0.11. The squares themselves are much weaker "
-                "(2.63 &rarr; 2.50 &rarr; 2.47, below the start model until 30B, and the four are indistinguishable). Over the next 100B the picture changes: the "
-                "merge stops improving at 2.37 (87B) and drifts back up to 2.38 at 130B while the squares keep improving (2.47 &rarr; 2.39) and the baseline "
-                "pulls away (2.28 at 130B, a gap of 0.10), so by 130B a single random square is within 0.015 of the merge. Merging helps while the squares are alike; with "
-                "enough separate training even random squares diverge until averaging their shared parameters stops paying, and the merged standard model "
-                "stays behind the baseline throughout. Eight random squares instead of four (teal) are far more expensive and never catch up: the merge goes 2.522 (20B) "
-                "&rarr; 2.505 (30B) &rarr; 2.458 (130B), a gap to the baseline of 0.14 that grows to 0.18 (four squares: 0.05 &rarr; 0.10), and by 130B the merge "
-                "is exactly as good as the best single eighth-size square (2.458), i.e. averaging the shared parameters of eight squares has stopped adding anything.")
+STDRAND_TAKE = ("Random splitting merges better than routing-based splitting (2.430 vs 2.462 at 20B), but the merge stalls at 2.37 from 87B while "
+                "the baseline reaches 2.28 and the squares keep improving, so by 130B the merge is no better than the best single square. Eight squares cost "
+                "about three times as much as four (gap 0.18 vs 0.10 at 130B).")
 
 
 def std_window2():
@@ -376,51 +369,33 @@ def std_window2():
 RANDOM_CONTROL = {  # random expert groups + random document split; arms = (sub-model count, dirs, colour), one entry per start model
     "std": dict(hrb="runs_heldout300b_std", start="std_step19074", ppl_dirs=("olmoe3_squares_std/ppl_validation",),
                 base_runs=("olmoe3_275m_20b_1node", "olmoe3_275m_30b_1node", "olmoe3_275m_130b"), start_ppl="olmoe3_275m_10b", model="standard-routing 512e", E=512,
-                arms=[dict(k=4, sqn="olmoe3_squares_stdrand", hr="runs_heldout300b_stdrand", color=None), dict(k=8, sqn="olmoe3_squares_stdrand8", hr="runs_heldout300b_stdrand8", color="#0d9488")],
+                arms=[dict(k=4, sqn="olmoe3_squares_stdrand", hr="runs_heldout300b_stdrand", color="#2563eb"), dict(k=8, sqn="olmoe3_squares_stdrand8", hr="runs_heldout300b_stdrand8", color="#ea580c")],
                 remerge=True, take=lambda: STDRAND_TAKE),
     "emo": dict(hrb="runs_heldout300b_emo", start="emo_step19074", ppl_dirs=("olmoe3_squares/ppl_validation", "olmoe3_squares_emorand/ppl_validation"),
                 base_runs=("olmoe3_275m_emo_20b_1node", "olmoe3_275m_emo_20b", "olmoe3_275m_emo_30b_1node", "olmoe3_275m_emo_130b"), start_ppl="olmoe3_275m_emo_10b", model="EMO 512e", E=512,
-                arms=[dict(k=4, sqn="olmoe3_squares_emorand", hr="runs_heldout300b_emorand", color=None), dict(k=8, sqn="olmoe3_squares_emorand8", hr="runs_heldout300b_emorand8", color="#0d9488")], remerge=False, take=lambda: EMORAND_TAKE),
+                arms=[dict(k=4, sqn="olmoe3_squares_emorand", hr="runs_heldout300b_emorand", color="#2563eb"), dict(k=8, sqn="olmoe3_squares_emorand8", hr="runs_heldout300b_emorand8", color="#ea580c")], remerge=False, take=lambda: EMORAND_TAKE),
     "s128": dict(hrb="runs_heldout300b_s128", start="s128_step19074", ppl_dirs=("olmoe3_squares_s128rand4/ppl_validation",),
                  base_runs=("olmoe3_275m_128e_130b",), start_ppl="olmoe3_275m_128e_10b", model="standard-routing 128e", E=128,
-                 arms=[dict(k=4, sqn="olmoe3_squares_s128rand4", hr="runs_heldout300b_s128rand4", color=None), dict(k=8, sqn="olmoe3_squares_s128rand8", hr="runs_heldout300b_s128rand8", color="#0d9488")],
+                 arms=[dict(k=4, sqn="olmoe3_squares_s128rand4", hr="runs_heldout300b_s128rand4", color="#2563eb"), dict(k=8, sqn="olmoe3_squares_s128rand8", hr="runs_heldout300b_s128rand8", color="#ea580c")],
                  remerge=False, take=lambda: S128_TAKE),
     "randsel": dict(hrb="runs_heldout300b_randsel", start="baseline_step19074", ppl_dirs=("olmoe3_squares_randsel4/ppl_validation",),
                     base_runs=("olmoe3_275m_randsel_30b",), start_ppl="olmoe3_275m_emo_randsel_10b", model="random-pool EMO 512e", E=512,
-                    arms=[dict(k=4, sqn="olmoe3_squares_randsel4", hr="runs_heldout300b_randsel4", color=None), dict(k=8, sqn="olmoe3_squares_randsel8", hr="runs_heldout300b_randsel8", color="#0d9488")],
+                    arms=[dict(k=4, sqn="olmoe3_squares_randsel4", hr="runs_heldout300b_randsel4", color="#2563eb"), dict(k=8, sqn="olmoe3_squares_randsel8", hr="runs_heldout300b_randsel8", color="#ea580c")],
                     remerge=False, take=lambda: RANDSEL_TAKE),
     "randsel64": dict(hrb="runs_heldout300b_randsel64", start="baseline_step19074", ppl_dirs=("olmoe3_squares_randsel64k4/ppl_validation",),
                       base_runs=("olmoe3_275m_randsel64_30b",), start_ppl="olmoe3_275m_emo_randsel64_10b", model="random-pool EMO 512e, pools of at least 64", E=512,
-                      arms=[dict(k=4, sqn="olmoe3_squares_randsel64k4", hr="runs_heldout300b_randsel64k4", color=None), dict(k=8, sqn="olmoe3_squares_randsel64k8", hr="runs_heldout300b_randsel64k8", color="#0d9488")],
+                      arms=[dict(k=4, sqn="olmoe3_squares_randsel64k4", hr="runs_heldout300b_randsel64k4", color="#2563eb"), dict(k=8, sqn="olmoe3_squares_randsel64k8", hr="runs_heldout300b_randsel64k8", color="#ea580c")],
                       remerge=False, take=lambda: RANDSEL64_TAKE),
 }
 W3_STEPS = (66481, 116479, 166478, 216477, 247956)
-EMORAND_TAKE = ("Same story as the standard model, with a slightly smaller gap. Merging the four untrained slices gives back the start model exactly "
-                "(2.465 at 10B, the sanity check), and the merge of the random squares then tracks 0.02&ndash;0.03 behind the baseline through the first two "
-                "windows (2.427 vs 2.403 at 20B, 2.405 vs 2.376 at 30B). Over the next 100B it improves to 2.367 at 113B and ticks up to 2.373 at 130B while the "
-                "baseline keeps going (2.295 at 130B), so the gap widens from 0.03 to 0.08 &mdash; against 0.10 for the standard control, whose merge stalled 25B "
-                "earlier. The squares are indistinguishable from each other (2.62 &rarr; 2.52 &rarr; 2.49 &rarr; 2.41 at 130B) and, unlike the standard control, the "
-                "best square is still 0.04 behind the merge at 130B. Eight random squares instead of four (same random groups and packs as the standard k=8 arm) cost "
-                "about four times as much at 20B: the merge reaches 2.500 (gap 0.10 to the baseline against 0.024 for four squares) and the eight squares sit at "
-                "2.58&ndash;2.59, mirroring the standard model's k=8 penalty (gap 0.14 vs 0.05).")
-RANDSEL_TAKE = ("A model trained with random pools merges almost for free. Four random squares of the [16, 512] random-pool model merge to 2.488 at "
-                "the first point against 2.507 for the jointly trained baseline, stay ahead of it until 30,000 steps (16B) and end 0.014 behind at 30B "
-                "(2.437 vs 2.423), against gaps of 0.057 for the standard-routing control and 0.029 for the uniform-EMO control at the same point. "
-                "Eight squares cost more (2.469, gap 0.046) but still a third of the standard model's k=8 gap (0.15). The squares themselves sit where "
-                "they always do (2.525 / 2.574, indistinguishable from each other), so what changed is how well their shared parameters average: "
-                "the merged model is nearly as good as any 512e merge in this report while its joint baseline is the weakest of the four start models "
-                "(2.423 vs 2.376 for uniform EMO and 2.351 for standard routing at 30B). Note that inside a square the pool draw is clamped by the "
-                "slice size, so the squares of every EMO-family control train with little pool restriction; only the baselines keep the full recipe.")
-RANDSEL64_TAKE = ("With pools of at least 64 experts the four-square merge beats joint training at every point: 2.463 vs 2.492 at the first point, "
-                  "2.422 vs 2.433 at 20B and 2.402 vs 2.406 at 30B, the only control in this report whose merge is never behind its baseline, and its "
-                  "merged model (2.402) matches the best 512e merges of blocks B and C (2.405&ndash;2.408) from a worse start model. Eight squares "
-                  "fall back to the usual pattern (2.467 vs 2.406 at 30B, gap 0.061, roughly the [16, 512] model's 0.046 plus its better baseline). "
-                  "Merging the untrained slices returns the start model exactly for all four arms (2.514 / 2.498).")
-S128_TAKE = ("Fewer, same-sized experts change little: the cost of splitting is set by the number of squares, not by the number of experts. With 128 "
-             "experts, four random squares merge to 2.506 at 20B against 2.452 for the 128-expert baseline (gap 0.055, vs 0.05 for the 512-expert control), "
-             "improve to 2.471 at 87B and then drift back up to 2.479 at 130B while the baseline reaches 2.349 (gap 0.13, vs 0.10 for 512 experts), the "
-             "same stall-then-drift as the 512-expert control and again ending level with the best single square (2.478). Eight squares merge to 2.582 at "
-             "20B (gap 0.13) and 2.541 at 130B (gap 0.19, vs 0.18 for the 512-expert k=8 arm), also ending exactly at the best square (2.541).")
+EMORAND_TAKE = ("Same picture as the standard model with a smaller gap: 0.03 at 20B, 0.08 at 130B (2.373 vs 2.295). Eight squares: 0.10 at 20B, "
+                "0.11 at 30B (window 3 running).")
+RANDSEL_TAKE = ("A model trained with random pools merges almost for free: four squares stay ahead of joint training until 16B and end 0.014 behind "
+                "at 30B (standard model: 0.057); eight squares cost 0.046 (standard: 0.15).")
+RANDSEL64_TAKE = ("With pools of at least 64 experts the four-square merge beats joint training at every point (2.402 vs 2.406 at 30B), the only "
+                  "control where that happens. Eight squares cost 0.061.")
+S128_TAKE = ("Fewer experts change nothing: the cost is set by the number of squares, not the number of experts. Four squares: gap 0.055 at 20B, "
+             "0.13 at 130B; eight: 0.13 and 0.19. Both merges end level with their best single square.")
 def random_control(which):
     """Control for a squares block: K random expert groups of equal size and documents split uniformly at random, same 300B-token
     held-out sample. Squares are scored on ALL held-out documents (a random partition gives a held-out document no 'own' square),
@@ -475,18 +450,18 @@ def random_control(which):
         if not any(v is not None for v in rm_h[i0 + 1:]): rm_h = rm_p = rm_sq = None
     rml = lambda y, name: [{"name": name, "y": y, "color": "#7c3aed"}] if y is not None else []
     ser_m = lambda key: [{"name": "merged squares" + a["lab"], "y": a[key], **({"color": a["color"]} if a["color"] else {})} for a in arms]
-    charts = CHART_CSS + line_chart(toks, [{"name": "baseline (full model, continued)", "y": b_h}, *ser_m("mr"), *rml(rm_h, "merged squares, re-merged and re-partitioned at 61B"),
+    charts = CHART_CSS + line_chart(toks, [{"name": "baseline (full model, continued)", "y": b_h, "color": "#059669"}, *ser_m("mr"), *rml(rm_h, "merged squares, re-merged and re-partitioned at 61B"),
                                           {"name": "start model (10B)", "y": [start] * len(toks), "const": True, "dashed": True, "color": "#64748b"}],
                                    title="Held-out CE (300B sample)", xlabels=labels, x_label="tokens trained")
     if any(v is not None for a in arms for v in a["mp"]):
-        charts += line_chart(toks, [{"name": "baseline (full model, continued)", "y": b_p}, *ser_m("mp"), *rml(rm_p, "merged squares, re-merged and re-partitioned at 61B"),
+        charts += line_chart(toks, [{"name": "baseline (full model, continued)", "y": b_p, "color": "#059669"}, *ser_m("mp"), *rml(rm_p, "merged squares, re-merged and re-partitioned at 61B"),
                                     {"name": "start model (10B)", "y": [ref_ppl] * len(toks), "const": True, "dashed": True, "color": "#64748b"}],
                              title="v3-small ppl sets, mean CE", xlabels=labels, x_label="tokens trained")
     sq_series = []
     for a in arms:
         c = {"color": a["color"]} if a["color"] else {}
-        sq_series += [{"name": f"squares (mean of {a['k']}, no merge)", "y": a["sqm"], **({"dashed": True} if a["color"] else {}), **c},
-                      *([{"name": "best square (no merge)", "y": a["sqb"], "color": "#d97706"}] if a is a0 else []),
+        sq_series += [{"name": f"squares (mean of {a['k']}, no merge)", "y": a["sqm"], "dashed": True, **c},
+                      *([{"name": "best square (no merge)", "y": a["sqb"], "color": "#db2777"}] if a is a0 else []),
                       {"name": "merged, free routing" + a["lab"], "y": a["mr"], **c}]
     charts += "<p><b>Where the merge stands against the squares</b> (each square scored on all held-out documents, mean of the K):</p>" + line_chart(toks,
         sq_series + rml(rm_h, "merged, re-partitioned at 61B") + ([{"name": "squares, re-partitioned at 61B (mean of 4)", "y": rm_sq, "color": "#7c3aed", "dashed": True}] if rm_sq is not None else [])
@@ -496,14 +471,9 @@ def random_control(which):
 
 
 ROUTING_SIM_TAKE = {"olmoe3_squares_stdrand": (
-    "The merged model's routing leaves the baseline's at once and then drifts slowly: after the first 0.5B of separate training it keeps 62% of the "
-    "baseline's top-64 experts per document and 85% of its 90%-mass set (KL 0.16); by 130B these are 51% and 81% (KL 0.26), while the raw expert "
-    "sets overlap 96&ndash;97% throughout because a standard-routing document touches almost every expert. And the merged model is not aligned with "
-    "its squares at all, at any checkpoint: the most-used square carries 26% of a document's routing (uniform = 25%, the baseline reads 27% on the "
-    "same random partition), the mean share of a token's 16 experts in the dominant square is 26%, and not a single token routes 13 or more of its "
-    "16 experts into one square. With a random split the squares' experts are interleaved and the merged model spreads its routing across them "
-    "exactly as the full model does, so the merge loss here is not a routing story: it is the slow divergence of the averaged shared parameters, "
-    "the same thing the re-merge test probes.")}
+    "The merged model's routing drifts slowly away from the baseline's (top-64 recall 62% &rarr; 51%, KL 0.16 &rarr; 0.26 over 130B) and is not "
+    "aligned with its squares at all (26% of a document's routing in its most-used square; uniform would be 25%). The merge loss is not a routing "
+    "story: it is the averaged shared parameters diverging.")}
 
 
 def routing_similarity_section(SQ, model, k):
