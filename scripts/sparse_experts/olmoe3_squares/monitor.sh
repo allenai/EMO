@@ -49,5 +49,5 @@ for e in json.load(sys.stdin):
     open('$FL','a').write(line+'\n'); print('  FAILURE', line)
 "
   say "loop done: free $(df -h /root/EMO | awk 'NR==2{print $4}'), $(pgrep -fc 'squares_randk|squares_control_w3|twin_scheduler|init_point_evals') local processes"
-  sleep 1800
+  sleep ${MONITOR_INTERVAL:-1800}
 done
