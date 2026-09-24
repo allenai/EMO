@@ -49,7 +49,7 @@ def main():
     if a.out.exists():
         assert a.overwrite, f"{a.out} exists"; shutil.rmtree(a.out)
     a.out.mkdir(parents=True); (a.out / "model_and_optim").mkdir()
-    out_sd, n_scatter, n_avg = {}, 0, 0
+    out_sd, n_scatter, n_avg, n_same = {}, 0, 0, 0
     for key in keys:
         suffix = "." + key.rsplit(".", 1)[1]; base = key[len("module."):-len(suffix)]; l = layer_of(key); shp = expert_shape(base, E, mcfg)
         vals = [next(load_keys(d, [key])) for d in sub_dirs]
@@ -61,11 +61,12 @@ def main():
             out_sd[key] = merged.reshape(-1).contiguous(); n_scatter += 1
         else:
             assert all(v.numel() == vals[0].numel() for v in vals), key
-            out_sd[key] = sum(float(w[g]) * vals[g] for g in range(k)).to(vals[0].dtype); n_avg += 1
+            if all(torch.equal(v, vals[0]) for v in vals[1:]): out_sd[key] = vals[0].clone(); n_same += 1   # identical in every sub-model (e.g. frozen routers): copy exactly
+            else: out_sd[key] = sum(float(w[g]) * vals[g] for g in range(k)).to(vals[0].dtype); n_avg += 1
         assert out_sd[key].numel() == full_meta[key].size.numel(), (key, out_sd[key].numel(), full_meta[key].size)
     dcp.save(out_sd, storage_writer=dcp.FileSystemWriter(str(a.out / "model_and_optim")))
     shutil.copy(a.full / "config.json", a.out / "config.json")
-    info = dict(subs=[str(p) for p in subs], weights=w.round(4).tolist(), n_scattered=n_scatter, n_averaged=n_avg, n_keys=len(out_sd))
+    info = dict(subs=[str(p) for p in subs], weights=w.round(4).tolist(), n_scattered=n_scatter, n_averaged=n_avg, n_identical_copied=n_same, n_keys=len(out_sd))
     json.dump(info, open(a.out / "merge_info.json", "w"), indent=1); print(json.dumps(info))
 
 

@@ -580,6 +580,10 @@ LR = float(os.environ.get("OLMOE3_LR", "8e-4"))
 ROUTER_ONLY_LR = float(os.environ["OLMOE3_ROUTER_ONLY_LR"]) if os.environ.get("OLMOE3_ROUTER_ONLY_LR") else None
 # (the optimizer asserts a positive base LR, so the base LR stays and every non-router group gets an explicit lr 0)
 ROUTER_ONLY_FROZEN = {"lr": 0.0, "weight_decay": 0.0} if ROUTER_ONLY_LR is not None else {}
+# Frozen routers (olmoe3_squares frozen-router squares, user request 2026-09-24): every routed-expert router (all MoE layers) stays at
+# LR 0 / WD 0 so its weights are bit-identical to the start checkpoint (verified by check_router_frozen.py after each merge).
+FREEZE_ROUTER = os.environ.get("OLMOE3_FREEZE_ROUTER", "0") == "1"
+assert not (FREEZE_ROUTER and ROUTER_ONLY_LR is not None), "OLMOE3_FREEZE_ROUTER and OLMOE3_ROUTER_ONLY_LR are contradictory"
 # NOTE: the OLMoDDP optimizer matches globs against names prefixed with "module.", so every pattern needs a leading "*"
 # (a pattern like "embeddings.weight" never matches).
 NON_ROUTER_PATTERNS = ["*embeddings.weight", "*embedding_norm.*", "*lm_head.*", "*blocks.*.attention.*", "*blocks.*.attention_input_norm.*", "*blocks.*.attention_norm.*",
@@ -621,7 +625,7 @@ FORWARDED_ENV = (
     "OLMOE3_EMO_POOL_DIST", "OLMOE3_EMO_POOL_SELECT", "OLMOE3_EXPERIMENT", "OLMOE3_PPL_EVAL_INTERVAL",
     "OLMOE3_EMO_LEARNED_D", "OLMOE3_LD_TEMP", "OLMOE3_LD_LAMBDA", "OLMOE3_LD_WARMUP", "OLMOE3_LD_FLOOR_WARMUP",
     "OLMOE3_LD_LAMBDA_WARMUP", "OLMOE3_LD_INIT", "OLMOE3_LD_EVAL", "OLMOE3_LD_DETACH", "OLMOE3_LD_LR_MULT",
-    "OLMOE3_LD_SIGNAL", "OLMOE3_LD_LAMBDA_COV", "OLMOE3_ROUTER_ONLY_LR",
+    "OLMOE3_LD_SIGNAL", "OLMOE3_LD_LAMBDA_COV", "OLMOE3_ROUTER_ONLY_LR", "OLMOE3_FREEZE_ROUTER",
     "OLMOE3_GROUPS", "OLMOE3_GROUP", "OLMOE3_DATA_PATHS", "OLMOE3_INIT_FROM", "OLMOE3_FIXED_STEPS", "OLMOE3_WARMUP",
 )
 
@@ -800,7 +804,7 @@ def build_train_module_config(common: CommonComponents) -> OLMoDDPTrainModuleCon
         + " "
         f"nodes={NUM_NODES} gpus/node={NUM_GPUS} rank_mb={RANK_MICROBATCH_SEQUENCES} ep={EP_SIZE}/{EP_PATH} attn={ATTN_BACKEND} "
         f"cute_kda={KDA_USE_CUTE_KERNEL} ppl_eval_interval={PPL_EVAL_INTERVAL} emo={EMO_ENABLED} "
-        f"router_only_lr={ROUTER_ONLY_LR} learned_d={LEARNED_D}" + (f" (T={LD_TEMP:g} lambda={LD_LAMBDA:g} warmup={LD_WARMUP} floor_warmup={LD_FLOOR_WARMUP} lambda_warmup={LD_LAMBDA_WARMUP} init={LD_INIT} eval={LD_EVAL} detach={LD_DETACH} lr_mult={LD_LR_MULT:g} signal={LD_SIGNAL} lambda_cov={LD_LAMBDA_COV:g})" if LEARNED_D else "")
+        f"router_only_lr={ROUTER_ONLY_LR} freeze_router={FREEZE_ROUTER} learned_d={LEARNED_D}" + (f" (T={LD_TEMP:g} lambda={LD_LAMBDA:g} warmup={LD_WARMUP} floor_warmup={LD_FLOOR_WARMUP} lambda_warmup={LD_LAMBDA_WARMUP} init={LD_INIT} eval={LD_EVAL} detach={LD_DETACH} lr_mult={LD_LR_MULT:g} signal={LD_SIGNAL} lambda_cov={LD_LAMBDA_COV:g})" if LEARNED_D else "")
         + (f" pool=[{EMO_MIN_POOL},{EMO_MAX_POOL}] pool_dist={EMO_POOL_DIST} eval_pool={EMO_EVAL_POOL}" if EMO_ENABLED else "")
     )
     return OLMoDDPTrainModuleConfig(
@@ -815,6 +819,7 @@ def build_train_module_config(common: CommonComponents) -> OLMoDDPTrainModuleCon
                 *([OptimGroupOverride(params=["embeddings.weight"], opts={"weight_decay": 0.0})] if ROUTER_ONLY_LR is None else []),  # (pattern never matches: names are "module.…"; kept for config parity with the earlier runs)
                 # learned-d pool-size head bias: no decay (decay would pull every pool toward mid-range)
                 *([OptimGroupOverride(params=["*routed_experts_router.weight"], opts={"lr": ROUTER_ONLY_LR})] if ROUTER_ONLY_LR is not None else []),
+                *([OptimGroupOverride(params=["*routed_experts_router.weight"], opts={"lr": 0.0, "weight_decay": 0.0})] if FREEZE_ROUTER else []),
                 *([OptimGroupOverride(params=["*routed_experts_router.d_bias"], opts={"weight_decay": 0.0, "lr": LR * LD_LR_MULT}),
                    OptimGroupOverride(params=["*routed_experts_router.d_weight"], opts={"lr": LR * LD_LR_MULT})] if LEARNED_D else []),
                 # Routed experts get their own group for OLMoDDP's distributed expert handling
@@ -920,7 +925,7 @@ def build_trainer_config(common: CommonComponents, cluster: str) -> TrainerConfi
                       *([f"pool_{EMO_POOL_DIST.replace(':', '').replace(',', 'or')}"] if EMO_ENABLED and EMO_POOL_ALPHA is not None else []),
                       *(["pool_select_random", f"pool_min{EMO_MIN_POOL}"] if EMO_ENABLED and EMO_POOL_SELECT == "random" else []),
                       *(["learned_d", f"ld_T{LD_TEMP:g}_l{LD_LAMBDA:g}_w{LD_WARMUP}_m{LD_LR_MULT:g}", f"ld_signal_{LD_SIGNAL}"] if LEARNED_D else []),
-                      *(["router_only"] if ROUTER_ONLY_LR is not None else []),
+                      *(["router_only"] if ROUTER_ONLY_LR is not None else []), *(["router_frozen"] if FREEZE_ROUTER else []),
                       cluster.rsplit("/", 1)[-1], *EXTRA_WANDB_TAGS],
             ),
         )

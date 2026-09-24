@@ -838,20 +838,34 @@ def squares_results(HELD=HELD, PPL=PPL, SQO=SQO, start="emo_step19074", start_pp
         if not has_rft: return []
         y = [None] * (len(xs) - 1) + [m[-1]] + ([a] if has_ft else []) + ([b] if has_ft2 else [])
         return [{"name": "merged squares, router-only finetune", "y": y, "color": "#d97706"}]
+    # frozen-router squares (block A only): same partition / assignment / start, routers at LR 0, merged at the same points, no finetuning
+    FRZ_H = ROOT / "sparse_experts/olmoe3_routing/runs_heldout20b_frz"; FRZ_P = ROOT / "sparse_experts/olmoe3_squares_frz/ppl_validation"
+    frz_h = [m_h[0]] + [_ce(FRZ_H / f"merged_{name}/none") for _, name in MATCH[1:]] if HELD.name == "runs_heldout20b" else []
+    frz_p = [m_p[0]] + [_ppl(FRZ_P / "merged" / f"{name}.json") for _, name in MATCH[1:]] if HELD.name == "runs_heldout20b" else []
+    has_frz = any(v is not None for v in frz_h[1:] + frz_p[1:])
+    def fline(y):
+        return [{"name": "merged squares, routers frozen", "y": y + [None] * (len(xs_all) - len(y)), "color": "#7c3aed"}] if has_frz else []
     charts = ""
     if have:
         charts = CHART_CSS + line_chart(xs_all, [{"name": "baseline (full model, continued)", "y": ext(b_h, ft["baseline_ft"], ft2["baseline_ft"])}, {"name": "merged squares", "y": ext(m_h, ft["merged_ft"], ft2["merged_ft"])},
-                                                *rline(m_h, rft["rft"], rft["rft2"]),
+                                                *fline(frz_h), *rline(m_h, rft["rft"], rft["rft2"]),
                                                 {"name": "start model (step 19,074)", "y": [ref_none] * len(xs_all), "const": True, "dashed": True, "color": "#64748b"}],
                                        title="Held-out CE (20B window, 65M tokens)", xlabels=labels, shade=shade)
         if any(v is not None for v in b_p + m_p):
             charts += line_chart(xs_all, [{"name": "baseline (full model, continued)", "y": ext(b_p, ppl_ft.get("baseline_ft"), ppl_ft.get("baseline_ft2"))}, {"name": "merged squares", "y": ext(m_p, ppl_ft.get("merged_ft"), ppl_ft.get("merged_ft2"))},
-                                          *rline(m_p, rft_ppl["rft"], rft_ppl["rft2"]),
+                                          *fline(frz_p), *rline(m_p, rft_ppl["rft"], rft_ppl["rft2"]),
                                           {"name": "start model (step 19,074)", "y": [ref_ppl] * len(xs_all), "const": True, "dashed": True, "color": "#64748b"}],
                                  title="v3-small ppl sets, mean CE", xlabels=labels, shade=shade)
     ft_html = ""
+    if has_frz:
+        chk = {st: _jload(ROOT / f"sparse_experts/olmoe3_squares_frz/logs/check_frozen_match{st}.json") for st, _ in MATCH[1:]}
+        okc = ["yes" if (c or {}).get("ok") else ("no" if c else "&ndash;") for c in chk.values()]
+        ft_html += ("<p><b>Routers frozen</b> (purple): the same four sub-models, same documents and same sliced start checkpoints, but every "
+                    "routed-expert router (all nine MoE layers) trains at learning rate 0, so routing is fixed to the start model's throughout; "
+                    "everything else trains as in the main run. Merged at the same points; no finetuning stage. Sanity check per merged point "
+                    "(merged routers bit-identical to the start model's, experts changed): " + ", ".join(f"{st} {o}" for st, o in zip([s for s, _ in MATCH[1:]], okc)) + ".</p>")
     if has_ft:
-        ft_html = ("<p><b>Finetuning</b> (shaded): the 100% merged model (Adam moments merged like the weights) and the baseline each trained on the same "
+        ft_html += ("<p><b>Finetuning</b> (shaded): the 100% merged model (Adam moments merged like the weights) and the baseline each trained on the same "
                    "0.5B more tokens (steps 38,548&ndash;39,502) at the same constant LR" + (", then on a further 0.5B (steps 39,502&ndash;40,456; 1B in total)" if has_ft2 else "")
                    + ". The held-out sample is steps 38,148&ndash;38,547 of the stream, so no finetuning token is in it."
                    + (" <b>Router-only finetune</b> (orange): the same tokens and LR from the 100% merge, but only the routed-expert routers "
