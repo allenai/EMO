@@ -396,7 +396,7 @@ RANDSEL64_TAKE = ("With pools of at least 64 experts the four-square merge beats
                   "control where that happens. Eight squares cost 0.061.")
 S128_TAKE = ("Fewer experts change nothing: the cost is set by the number of squares, not the number of experts. Four squares: gap 0.055 at 20B, "
              "0.13 at 130B; eight: 0.13 and 0.19. Both merges end level with their best single square.")
-def random_control(which):
+def random_control(which, with_charts=True):
     """Control for a squares block: K random expert groups of equal size and documents split uniformly at random, same 300B-token
     held-out sample. Squares are scored on ALL held-out documents (a random partition gives a held-out document no 'own' square),
     so the square line is the mean of the K (plus the best one). Several arms (K = 4, 8) share the charts."""
@@ -438,6 +438,8 @@ def random_control(which):
     title = f"Control: random expert groups, random document split (10B &rarr; {end})" + (f" &mdash; {C['model']}" if which.startswith("randsel") else "")
     if not any(v is not None for a in arms for v in a["mr"] + a["sqm"]):
         return section(title, setup, "", C["take"]())
+    if not with_charts:
+        return section(title, setup, "", C["take"]()) + (routing_similarity_section(arms[0]["SQ"], C["model"], arms[0]["k"]) if which == "std" else "")
     # re-merge + re-partition at 61.1B (standard control only): the 116,479 merge re-split into new random groups, trained on to 130B
     rm_h = rm_p = rm_sq = None; a0 = arms[0]
     RM = R / "runs_heldout300b_stdremerge"; RMP = ROOT / "sparse_experts/olmoe3_squares_stdremerge/ppl_validation"
@@ -882,6 +884,100 @@ def _q4_sweep_rows(T, keys, parse, with_cov):
     return rows
 
 
+def control_explorer_data():
+    """Per start model: matched steps and every line of the control charts (held-out CE 'h' and v3-small ppl mean CE 'p'), for the
+    interactive explorer of Q5. Same loaders and same points as random_control()."""
+    out = []
+    R = ROOT / "sparse_experts/olmoe3_routing"
+    for which, C in RANDOM_CONTROL.items():
+        HRB = R / C["hrb"]; arms = [dict(a, HR=R / a["hr"], SQ=ROOT / "sparse_experts" / a["sqn"]) for a in C["arms"] if (ROOT / "sparse_experts" / a["sqn"] / "groups.json").exists()]
+        if not arms: continue
+        hb = lambda tag: _ce(HRB / f"{tag}/none")
+        W1 = [19074, 20000, 25000, 30000, 35000, 38148]; W2 = [39073, 44073, 49073, 54073, 57221]
+        def has(a, st): return _ce(a["HR"] / f"merged_match{st}/none") is not None or any(_ce(a["HR"] / f"sub{g}_match{st}/none") is not None for g in range(a["k"]))
+        steps = W1 + [st for st in W2 if any(has(a, st) for a in arms)] + [st for st in W3_STEPS if any(has(a, st) for a in arms)]
+        ref_ppl = _ppl(ROOT / f"claude_outputs/debug_validation/ppl_validation/{C['start_ppl']}/step19074.json")
+        def bppl(st):
+            if st == 19074: return ref_ppl
+            for d in C["ppl_dirs"]:
+                for run in C["base_runs"]:
+                    for s_ in (st, st - 1):
+                        if (ROOT / "sparse_experts" / d / run / f"step{s_}.json").exists(): return _ppl(ROOT / "sparse_experts" / d / run / f"step{s_}.json")
+            return None
+        ser = {"baseline": {"h": [hb(f"baseline_step{st}") for st in steps], "p": [bppl(st) for st in steps]},
+               "start": {"h": [hb(C["start"])] * len(steps), "p": [ref_ppl] * len(steps)}}
+        for a in arms:
+            hv = lambda tag, a=a: _ce(a["HR"] / f"{tag}/none"); k = a["k"]
+            sq = [[hv(f"sub{g}_match{st}") for g in range(k)] for st in steps]
+            ser[f"m{k}"] = {"h": [hv(f"merged_match{st}") for st in steps], "p": [_ppl(a["SQ"] / "ppl_validation" / "merged" / f"match{st}.json") for st in steps]}
+            ser[f"s{k}"] = {"h": [sum(v) / k if all(x is not None for x in v) else None for v in sq]}
+            ser[f"b{k}"] = {"h": [min(x for x in v if x is not None) if any(x is not None for x in v) else None for v in sq]}
+        RM = R / "runs_heldout300b_stdremerge"; RMP = ROOT / "sparse_experts/olmoe3_squares_stdremerge/ppl_validation"
+        if C.get("remerge") and RM.exists() and 116479 in steps:
+            rv = lambda tag: _ce(RM / f"{tag}/none"); i0 = steps.index(116479); m4 = ser["m4"]
+            ser["rm"] = {"h": [None] * i0 + [m4["h"][i0]] + [rv(f"merged_match{st}") for st in steps[i0 + 1:]],
+                         "p": [None] * i0 + [m4["p"][i0]] + [_ppl(RMP / "merged" / f"match{st}.json") for st in steps[i0 + 1:]]}
+            rsq = [[rv(f"sub{g}_match{st}") for g in range(4)] for st in steps[i0 + 1:]]
+            ser["rs"] = {"h": [None] * i0 + [ser["s4"]["h"][i0]] + [sum(v) / 4 if all(x is not None for x in v) else None for v in rsq]}
+        out.append({"id": which, "name": C["model"], "toks": [round(st * 524288 / 1e9, 3) for st in steps], "series": ser})
+    return out
+
+
+EXPLORER_LINES = [  # key, label, colour, dashed, needs-ppl
+    ("baseline", "baseline (joint training)", "#059669", False), ("m4", "merged, 4 squares", "#2563eb", False), ("m8", "merged, 8 squares", "#ea580c", False),
+    ("s4", "squares alone, mean of 4", "#2563eb", True), ("s8", "squares alone, mean of 8", "#ea580c", True),
+    ("b4", "best single square of 4", "#db2777", False), ("b8", "best single square of 8", "#db2777", True),
+    ("rm", "re-merged + re-partitioned at 61B (std only)", "#7c3aed", False), ("rs", "squares after re-partition, mean of 4 (std only)", "#7c3aed", True),
+    ("start", "start model (10B)", "#64748b", True)]
+EXPLORER_DEFAULT = ["baseline", "m4", "m8", "s4", "s8", "start"]
+
+
+def control_explorer():
+    data = control_explorer_data()
+    if not data: return ""
+    models = "".join(f'<label><input type="checkbox" data-m="{d["id"]}" checked> {d["name"]}</label>' for d in data)
+    lines = "".join(f'<label><input type="checkbox" data-l="{k}"{" checked" if k in EXPLORER_DEFAULT else ""}> <span class="sw" style="border-color:{c};border-style:{"dashed" if dsh else "solid"}"></span>{lab}</label>' for k, lab, c, dsh in EXPLORER_LINES)
+    spec = json.dumps({"lines": [dict(k=k, lab=lab, c=c, dsh=dsh) for k, lab, c, dsh in EXPLORER_LINES], "models": data})
+    return card("results", "Explorer: pick the start models and the lines",
+        '<div class="cx"><div class="cx-ctl"><div><b>Start models</b> (one panel each, y-axis shared)<br>' + models + '</div>'
+        '<div><b>Lines</b><br>' + lines + '</div>'
+        '<div><b>Metric</b><br><label><input type="radio" name="cx-metric" value="h" checked> held-out CE (300B sample)</label> '
+        '<label><input type="radio" name="cx-metric" value="p"> v3-small ppl sets, mean CE</label><br>'
+        '<label><input type="checkbox" id="cx-samex"> same token range on every panel</label></div></div>'
+        '<div class="cx-panels" id="cx-panels"></div><div class="cx-tip" id="cx-tip"></div></div>'
+        f'<script type="application/json" id="cx-data">{spec}</script>' + EXPLORER_JS)
+
+
+EXPLORER_CSS = ("<style>.cx-ctl{display:flex;flex-wrap:wrap;gap:18px 34px;margin:4px 0 12px;font-size:13px}.cx-ctl label{display:block;margin:2px 0;cursor:pointer}"
+                ".cx-ctl .sw{display:inline-block;width:22px;height:0;border-top:3px solid;vertical-align:middle;margin-right:6px}"
+                ".cx-panels{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start}.cx-panel{flex:1 1 320px;min-width:300px;max-width:560px}"
+                ".cx-panel h4{margin:0 0 2px;font-size:14px;color:#334155}.cx-panel svg{width:100%;height:auto;display:block}"
+                ".cx-tip{position:fixed;display:none;pointer-events:none;background:#fff;border:1px solid #cbd5e1;border-radius:6px;padding:6px 8px;font-size:12px;box-shadow:0 2px 8px rgba(0,0,0,.12);z-index:50}</style>")
+EXPLORER_JS = """<script>(function(){const D=JSON.parse(document.getElementById('cx-data').textContent);const box=document.querySelector('.cx');const panels=document.getElementById('cx-panels');const tip=document.getElementById('cx-tip');
+function fmtTick(v){return v.toFixed(2)}
+function render(){const metric=box.querySelector('input[name=cx-metric]:checked').value;const samex=document.getElementById('cx-samex').checked;
+const ms=[...box.querySelectorAll('input[data-m]')].filter(i=>i.checked).map(i=>D.models.find(m=>m.id===i.dataset.m));
+const ls=[...box.querySelectorAll('input[data-l]')].filter(i=>i.checked).map(i=>D.lines.find(l=>l.k===i.dataset.l));
+let ymin=1e9,ymax=-1e9,xmax=0;const draw=ms.map(m=>{const ser=ls.map(l=>{const s=m.series[l.k];if(!s||!s[metric])return null;const y=s[metric];if(!y.some(v=>v!=null))return null;return Object.assign({y:y},l)}).filter(Boolean);
+ser.forEach(s=>s.y.forEach(v=>{if(v!=null){ymin=Math.min(ymin,v);ymax=Math.max(ymax,v)}}));xmax=Math.max(xmax,m.toks[m.toks.length-1]);return {m:m,ser:ser}});
+panels.innerHTML='';if(ymin>ymax){panels.innerHTML='<p style="color:#64748b">Nothing to show for this selection.</p>';return}
+const pad=Math.max(0.01,0.06*(ymax-ymin));ymin-=pad;ymax+=pad;const W=480,H=290,x0=46,y0=14,pw=W-60,ph=H-52;
+draw.forEach(({m,ser})=>{const xs=m.toks;const xmn=xs[0],xmx=samex?xmax:xs[xs.length-1];const X=v=>x0+(v-xmn)/(xmx-xmn||1)*pw,Y=v=>y0+(ymax-v)/(ymax-ymin)*ph;
+let g='<svg viewBox="0 0 '+W+' '+H+'">';const step0=(ymax-ymin)/4,mag=Math.pow(10,Math.floor(Math.log10(step0))),st=Math.ceil(step0/mag)*mag;
+for(let t=Math.ceil(ymin/st)*st;t<=ymax;t+=st)g+='<line x1="'+x0+'" x2="'+(x0+pw)+'" y1="'+Y(t).toFixed(1)+'" y2="'+Y(t).toFixed(1)+'" stroke="#e5e7eb"/><text x="'+(x0-6)+'" y="'+(Y(t)+4).toFixed(1)+'" font-size="11" text-anchor="end" fill="#475569">'+fmtTick(t)+'</text>';
+const ticks=samex?[10,20,30,61,87,113,130].filter(v=>v<=xmx+0.5):xs;ticks.forEach(v=>{g+='<text x="'+X(v).toFixed(1)+'" y="'+(y0+ph+16)+'" font-size="10" text-anchor="middle" fill="#475569">'+(v<15&&!samex?v.toPrecision(3):Math.round(v))+'B</text>'});
+g+='<line x1="'+x0+'" x2="'+(x0+pw)+'" y1="'+(y0+ph)+'" y2="'+(y0+ph)+'" stroke="#94a3b8"/><line x1="'+x0+'" x2="'+x0+'" y1="'+y0+'" y2="'+(y0+ph)+'" stroke="#94a3b8"/>';
+g+='<text x="'+(x0+pw/2)+'" y="'+(H-4)+'" font-size="11" text-anchor="middle" fill="#475569">tokens trained</text><text transform="translate(12,'+(y0+ph/2)+') rotate(-90)" font-size="11" text-anchor="middle" fill="#475569">CE</text>';
+ser.forEach(s=>{const pts=xs.map((x,i)=>s.y[i]==null?null:[X(x),Y(s.y[i])]);let d='',pen=false;pts.forEach(p=>{if(!p){pen=false;return}d+=(pen?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1);pen=true});
+g+='<path d="'+d+'" fill="none" stroke="'+s.c+'" stroke-width="2"'+(s.dsh?' stroke-dasharray="5,4"':'')+'/>';if(s.k!=='start')pts.forEach(p=>{if(p)g+='<circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="2.6" fill="'+s.c+'"/>'})});
+g+='<line class="vl" x1="0" x2="0" y1="'+y0+'" y2="'+(y0+ph)+'" stroke="#94a3b8" stroke-dasharray="3,3" style="display:none"/></svg>';
+const div=document.createElement('div');div.className='cx-panel';div.innerHTML='<h4>'+m.name+'</h4>'+g;panels.appendChild(div);
+const svg=div.querySelector('svg'),vl=svg.querySelector('.vl');svg.addEventListener('mousemove',e=>{const r=svg.getBoundingClientRect();const mx=(e.clientX-r.left)*(W/r.width);let best=0,bd=1e9;xs.forEach((x,i)=>{const dd=Math.abs(X(x)-mx);if(dd<bd){bd=dd;best=i}});
+vl.setAttribute('x1',X(xs[best]));vl.setAttribute('x2',X(xs[best]));vl.style.display='block';tip.style.display='block';tip.innerHTML='<b>'+m.name+' &middot; '+xs[best]+'B</b><br>'+ser.map(s=>{const v=s.y[best];return v==null?'':'<span style="color:'+s.c+'">&#9632;</span> '+s.lab+': '+v.toFixed(3)}).filter(Boolean).join('<br>');
+tip.style.left=(e.clientX+14)+'px';tip.style.top=(e.clientY-10)+'px'});svg.addEventListener('mouseleave',()=>{tip.style.display='none';vl.style.display='none'})});}
+box.querySelectorAll('input').forEach(i=>i.addEventListener('change',render));render();})();</script>"""
+
+
 def build_q5_controls():
     """Q5: the random-partition controls, one box per start model (moved out of Q3 on 2026-09-24)."""
     body = question_card("q5")
@@ -896,22 +992,23 @@ def build_q5_controls():
         "<li><b>Compare.</b> Against the same start model continued jointly on all documents, at matched checkpoints, on the 300B-token held-out "
         "sample and the v3-small ppl sets. The squares are also scored alone (mean of the K and the best one).</li></ol>"
         "<p>The same random expert groups and document packs are used for every 512-expert start model, so the boxes differ only in the start model.</p>")
+    body += EXPLORER_CSS + control_explorer()
     boxes = [L for L in ("5A", "5B", "5C", "5D")]
     body += VARIANT_CSS + card("info", "Start models",
         '<ul class="q3index">' + "".join(f'<li><a href="#q5-{L}"><b>{L}</b> &middot; {t}</a> &mdash; {bl}</li>' for L, t, _, bl in VARIANTS if L in boxes) + "</ul>")
-    body += variant("5A", random_control("emo"), tab="q5")
-    body += variant("5B", random_control("std"), tab="q5")
+    body += variant("5A", random_control("emo", with_charts=False), tab="q5")
+    body += variant("5B", random_control("std", with_charts=False), tab="q5")
     if (ROOT / "sparse_experts/olmoe3_squares_s128rand4/groups.json").exists():
         body += variant("5C", card("info", "Setup", "<p>The 128-expert standard-routing model of the expert-count ladder (same expert size as the 512e model, top-16 of 128, "
                                    "so a quarter of the total parameters): its 10B checkpoint is continued jointly to 130B as the baseline, and split into 4 and into 8 random "
-                                   "sub-models with the same random document groups as the 512e controls, at exactly the 512e controls' matched checkpoints.</p>") + random_control("s128"), tab="q5")
+                                   "sub-models with the same random document groups as the 512e controls, at exactly the 512e controls' matched checkpoints.</p>") + random_control("s128", with_charts=False), tab="q5")
     if (ROOT / "sparse_experts/olmoe3_squares_randsel4/groups.json").exists():
         body += variant("5D", card("info", "Setup", "<p>The EMO 512e model pretrained with <i>random</i> per-document expert pools (debug_validation arm: pool size uniform in "
                                    "[16, 512] as in EMO, but the pool is a random set of experts instead of the most relevant ones; 3.036 vs 3.000 in-loop CE at 10B): its 10B "
                                    "checkpoint is continued jointly to 30B as the baseline (same random-pool recipe), and split into 4 and into 8 random sub-models with the "
                                    "same random expert groups and document packs as the 512e controls, trained with the same random-pool recipe, at exactly the 512e "
                                    "controls' matched checkpoints of windows 1 and 2. The same is done for the [64, 512]-pool variant (no pool smaller than an eighth of the "
-                                   "experts; 3.019 in-loop CE at 10B), with its own baseline.</p>") + random_control("randsel") + random_control("randsel64"), tab="q5")
+                                   "experts; 3.019 in-loop CE at 10B), with its own baseline.</p>") + random_control("randsel", with_charts=False) + random_control("randsel64", with_charts=False), tab="q5")
     return body
 
 
