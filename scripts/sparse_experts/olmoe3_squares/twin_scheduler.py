@@ -129,8 +129,10 @@ def discover(state, twins):
         kind = "unalloc" if spec["tasks"][0].get("context", {}).get("preemptible") else "alloc"; j[kind] = eid
         for name, (tid, tst) in twins.items():  # adopt live twins by name
             m = re.fullmatch(re.escape(re.sub(r"[^A-Za-z0-9_.-]", "_", job["run"])[:100]) + r"-(a|u)(\d+)", name)
-            if m and tid != eid and tst[0] not in TERMINAL:
-                k2 = "alloc" if m.group(1) == "a" else "unalloc"; j["n"] = max(j["n"], int(m.group(2)))
+            if not m or tid == eid: continue
+            j["n"] = max(j["n"], int(m.group(2)))   # every twin name ever used counts (names must be unique; a relaunched run must not reuse a dead twin's name)
+            if tst[0] not in TERMINAL:
+                k2 = "alloc" if m.group(1) == "a" else "unalloc"
                 if not j.get(k2): j[k2] = tid; log(f"{job['run']}: adopted {k2} twin {name} {tid} [{tst[0]}]")
         j["safe"] = re.sub(r"[^A-Za-z0-9_.-]", "_", job["run"])[:100]
         state[job["run"]] = j; log(f"tracking {job['run']} {kind} {eid} [{st[0]}]")
@@ -159,15 +161,15 @@ def main():
                 if ra and j.get("unalloc") and su[0] not in TERMINAL: stop(j["unalloc"], f"{run}: allocated running"); j["unalloc"] = None; continue
                 if ru and j.get("alloc") and sa[0] not in TERMINAL: stop(j["alloc"], f"{run}: unallocated running"); j["alloc"] = None; (open(j["marker"], "w").write(f"beaker.org/ex/{j['unalloc']}\n") if j["marker"].endswith("_launched") else None); continue
                 if ra or ru: continue
-                if j["n"] >= MAX_SUBMITS:  # a job that keeps failing must not be resubmitted forever
+                if j.get("submits", 0) >= MAX_SUBMITS:  # a job that keeps failing must not be resubmitted forever (counts this scheduler's own submissions, not adopted names)
                     if not j.get("gave_up"): log(f"{run}: {j['n']} submissions, giving up (fix the job and delete it from state.json to retry)"); j["gave_up"] = True
                     continue
                 # nothing running: (re)submit what is missing or ended (preemption / fault); both kinds compete again
                 if not j.get("alloc") or sa[0] in TERMINAL:
-                    j["n"] += 1; new = submit(j["spec"], f"{j.get('safe', run)}-a{j['n']}", allocated=True)
+                    j["n"] += 1; j["submits"] = j.get("submits", 0) + 1; new = submit(j["spec"], f"{j.get('safe', run)}-a{j['n']}", allocated=True)
                     if new: log(f"{run}: allocated {j.get('alloc')} [{sa[0]}] -> resubmitted {new}"); j["alloc"] = new; (open(j["marker"], "w").write(f"beaker.org/ex/{new}\n") if j["marker"].endswith("_launched") else None)
                 if not j.get("unalloc") or su[0] in TERMINAL:
-                    j["n"] += 1; new = submit(j["spec"], f"{j.get('safe', run)}-u{j['n']}", allocated=False)
+                    j["n"] += 1; j["submits"] = j.get("submits", 0) + 1; new = submit(j["spec"], f"{j.get('safe', run)}-u{j['n']}", allocated=False)
                     if new: log(f"{run}: unallocated {j.get('unalloc')} [{su[0]}] -> submitted {new}"); j["unalloc"] = new
             tmp = sf.with_suffix(".tmp"); json.dump(state, open(tmp, "w")); os.replace(tmp, sf)  # atomic: a crash mid-write must not corrupt the state
         except Exception as e:
