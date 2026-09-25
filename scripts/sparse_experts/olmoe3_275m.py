@@ -353,7 +353,25 @@ def install_random_pool_select_patch() -> None:
     EmoRouterV2._pool_select = "random"  # type: ignore[attr-defined]
 
 
+def install_zero_lr_warmup_patch() -> None:
+    """Let a parameter group whose LR is 0 (frozen routers) go through the scheduler's linear warmup: olmo_core's
+    ``_linear_warmup`` asserts ``warmup_min_lr < initial_lr`` per group, which no LR-0 group can satisfy (the squares
+    start at step 0 with a 1-step warmup; the router-only finetunes started past their warmup and never hit it)."""
+    import olmo_core.optim.scheduler as sched_mod
+
+    orig = sched_mod._linear_warmup
+
+    def _linear_warmup(initial_lr, current, warmup, warmup_min_lr=0.0):
+        if isinstance(initial_lr, float) and initial_lr == 0.0: return 0.0
+        return orig(initial_lr, current, warmup, warmup_min_lr)
+
+    sched_mod._linear_warmup = _linear_warmup
+
+
 EMO_POOL_ALPHA = _parse_pool_dist(EMO_POOL_DIST)
+FREEZE_ROUTER = os.environ.get("OLMOE3_FREEZE_ROUTER", "0") == "1"   # (also see the optimizer group override below)
+if FREEZE_ROUTER:
+    install_zero_lr_warmup_patch()
 if EMO_ENABLED:
     install_pool_dist_patch(EMO_POOL_ALPHA)
     if EMO_POOL_SELECT == "random":
@@ -582,7 +600,6 @@ ROUTER_ONLY_LR = float(os.environ["OLMOE3_ROUTER_ONLY_LR"]) if os.environ.get("O
 ROUTER_ONLY_FROZEN = {"lr": 0.0, "weight_decay": 0.0} if ROUTER_ONLY_LR is not None else {}
 # Frozen routers (olmoe3_squares frozen-router squares, user request 2026-09-24): every routed-expert router (all MoE layers) stays at
 # LR 0 / WD 0 so its weights are bit-identical to the start checkpoint (verified by check_router_frozen.py after each merge).
-FREEZE_ROUTER = os.environ.get("OLMOE3_FREEZE_ROUTER", "0") == "1"
 assert not (FREEZE_ROUTER and ROUTER_ONLY_LR is not None), "OLMOE3_FREEZE_ROUTER and OLMOE3_ROUTER_ONLY_LR are contradictory"
 # NOTE: the OLMoDDP optimizer matches globs against names prefixed with "module.", so every pattern needs a leading "*"
 # (a pattern like "embeddings.weight" never matches).
