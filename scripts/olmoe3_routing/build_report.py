@@ -391,10 +391,11 @@ W3_STEPS = (66481, 116479, 166478, 216477, 247956)
 EMORAND_TAKE = ("Same picture as the standard model with a smaller gap: 0.03 at 20B, 0.08 at 130B (2.373 vs 2.295). Eight squares cost about "
                 "twice as much (gap 0.10 at 20B, 0.15 at 130B: 2.442 vs 2.295) and, unlike the standard model's, the eight-square merge stays ahead of "
                 "its best single square (2.473) at 130B.")
-RANDSEL_TAKE = ("A model trained with random pools merges almost for free: four squares stay ahead of joint training until 16B and end 0.014 behind "
-                "at 30B (standard model: 0.057); eight squares cost 0.046 (standard: 0.15).")
-RANDSEL64_TAKE = ("With pools of at least 64 experts the four-square merge beats joint training at every point (2.402 vs 2.406 at 30B), the only "
-                  "control where that happens. Eight squares cost 0.061.")
+RANDSEL_TAKE = ("A model trained with random pools merges cheaply: four squares stay ahead of joint training until 16B and end 0.043 behind at 130B "
+                "(2.397 vs 2.354; standard model 0.10, EMO 0.08); eight squares cost 0.072 (standard 0.18, EMO 0.15). Both merges stay well ahead of "
+                "their best single square (2.461 / 2.513 at 130B).")
+RANDSEL64_TAKE = ("With pools of at least 64 experts the four-square merge beats joint training up to 35B (2.398 vs 2.397), the only control where "
+                  "that happens, and ends just 0.028 behind at 130B (2.364 vs 2.336). Eight squares cost 0.107. The smallest merge gaps of every control.")
 S128_TAKE = ("Fewer experts change nothing: the cost is set by the number of squares, not the number of experts. Four squares: gap 0.055 at 20B, "
              "0.13 at 130B; eight: 0.13 and 0.19. Both merges end level with their best single square.")
 def random_control(which, with_charts=True):
@@ -788,7 +789,10 @@ EMO_TAKE = ("The merged model beats the baseline only at 5% (2.424 vs 2.455) and
             "(2.557 vs 2.398) and 0.10 above the start model on the held-out sample; the v3-small sets tell the same story. Finetuning the merge "
             "closes most of the gap (2.434 after 0.5B, 2.433 after 1B, vs the baseline's 2.396 / 2.395); the second 0.5B adds nothing. Retraining "
             "only the routers (orange) recovers about half of it (2.476, then 2.474), so roughly half of the merge loss is router mismatch that the "
-            "routers can fix on their own, and the other half sits in the averaged non-router weights and needs the full model to train.")
+            "routers can fix on their own, and the other half sits in the averaged non-router weights and needs the full model to train. "
+            "Freezing the routers during square training (purple) changes nothing: the merged curve is identical to three decimals at every point "
+            "(2.423 / 2.477 / 2.515 / 2.544 / 2.557 vs 2.424 / 2.478 / 2.513 / 2.543 / 2.557), so the squares' router updates are not what breaks the "
+            "merge; with the routers fixed, the whole loss is the averaged non-router weights.")
 EMO_PW_TAKE = ("The squares on their own track the baseline the whole way and end slightly below it (2.383 vs 2.398 at 100%), while the merged "
             "model drifts up to 2.557. Only at 5% is merging a gain (2.424 vs 2.509 piecewise): the four copies of the shared parameters are still "
             "nearly identical, so averaging is free and routing across groups adds experts. From 31% on, averaging diverged shared parameters is "

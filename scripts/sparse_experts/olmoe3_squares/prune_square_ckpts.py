@@ -14,8 +14,8 @@ mode = sys.argv[sys.argv.index("--mode") + 1] if "--mode" in sys.argv else "fina
 # finished arms: run-dir prefix, K, windows trained
 ARMS = [("olmoe3_275m_stdrand_square", 4, 3), ("olmoe3_275m_stdrand8_square", 8, 3), ("olmoe3_275m_emorand_square", 4, 3),
         ("olmoe3_275m_s128rand4_square", 4, 3), ("olmoe3_275m_s128rand8_square", 8, 3), ("olmoe3_275m_stdremerge_square", 4, 1),
-        ("olmoe3_275m_randsel4_square", 4, 2), ("olmoe3_275m_randsel8_square", 8, 2), ("olmoe3_275m_randsel64k4_square", 4, 2), ("olmoe3_275m_randsel64k8_square", 8, 2), ("olmoe3_275m_emorand8_square", 8, 3)]
-RUNNING = {"olmoe3_275m_randsel4_square", "olmoe3_275m_randsel8_square", "olmoe3_275m_randsel64k4_square", "olmoe3_275m_randsel64k8_square"}   # window 3 in flight since 2026-09-24 (user request): their window-2 finals seed window 3
+        ("olmoe3_275m_randsel4_square", 4, 3), ("olmoe3_275m_randsel8_square", 8, 3), ("olmoe3_275m_randsel64k4_square", 4, 3), ("olmoe3_275m_randsel64k8_square", 8, 3), ("olmoe3_275m_emorand8_square", 8, 3), ("olmoe3_275m_emofrz_square", 4, 1)]
+RUNNING = set()   # nothing in flight (random-pool arms finished window 3 and the frozen-router squares finished, 2026-09-26)
 
 def size(d): return sum(p.stat().st_size for p in d.rglob("*") if p.is_file())
 freed = kept = 0
