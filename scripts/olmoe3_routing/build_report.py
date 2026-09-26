@@ -1039,6 +1039,50 @@ tip.style.left=(e.clientX+14)+'px';tip.style.top=(e.clientY-10)+'px'});svg.addEv
 box.querySelectorAll('input').forEach(i=>i.addEventListener('change',render));render();})();</script>"""
 
 
+LR_SWEEP_LRS = ["1e-4", "2e-4", "4e-4", "8e-4", "1.6e-3", "3.2e-3"]
+LR_SWEEP_TAKE = "Sweep running: the LR is chosen on the selection sample at the 20B merge; window 2 follows for the chosen LR."
+
+
+def lr_sweep_section():
+    """Sub-model learning-rate sweep of the EMO 512e controls (k = 4 and 8): one LR shared by all squares, merged at the mid-window
+    (30000) and window-final (38148) matched points, selected on a separate 6,808-instance sample of the 300B stream slice
+    (disjoint from the reporting sample); window 2 (-> 57221) for the chosen LR. The 8e-4 row is the parent arm itself."""
+    R = ROOT / "sparse_experts/olmoe3_routing"; f3 = lambda v: "&ndash;" if v is None else f"{v:.3f}"
+    base = {st: _ce(R / f"runs_heldout300b_emo/baseline_step{st}/none") for st in (30000, 38148, 57221)}
+    html = ""; rows_all = {}
+    for k, parent, sqn_parent in ((4, "emorand", "olmoe3_squares_emorand"), (8, "emorand8", "olmoe3_squares_emorand8")):
+        rows = []
+        for lr in LR_SWEEP_LRS:
+            if lr == "8e-4": hv, hr, sq = f"runs_heldout300b_{parent}_val", f"runs_heldout300b_{parent}", sqn_parent
+            else: hv, hr, sq = f"runs_heldout300b_{parent}_lr{lr}_val", f"runs_heldout300b_{parent}_lr{lr}", f"{sqn_parent}_lr{lr}"
+            r = {"lr": lr}
+            for st in (30000, 38148, 57221):
+                r[f"val{st}"] = _ce(R / hv / f"merged_match{st}/none"); r[f"ho{st}"] = _ce(R / hr / f"merged_match{st}/none")
+                r[f"ppl{st}"] = _ppl(ROOT / f"sparse_experts/{sq}/ppl_validation/merged/match{st}.json")
+            rows.append(r)
+        rows_all[k] = rows
+        if not any(r["val38148"] is not None or r["ho38148"] is not None for r in rows if r["lr"] != "8e-4"): continue
+        best = min((r["val38148"] for r in rows if r["val38148"] is not None), default=None)
+        def cell(v, bold): return f"<b>{f3(v)}</b>" if bold and v is not None else f3(v)
+        tb = [[r["lr"] + (" (main run)" if r["lr"] == "8e-4" else ""), cell(r["val30000"], False), cell(r["val38148"], r["val38148"] == best), f3(r["ho38148"]), f3(r["ppl38148"]),
+               f3(r["val57221"]), f3(r["ho57221"]), f3(r["ppl57221"])] for r in rows]
+        tb.append(["baseline (joint)", "&ndash;", "&ndash;", f3(base[38148]), "&ndash;", "&ndash;", f3(base[57221]), "&ndash;"])
+        tbl = table(["sub-model LR", "selection CE @16B", "selection CE @20B", "held-out CE @20B", "ppl sets @20B", "selection CE @30B", "held-out CE @30B", "ppl sets @30B"], tb)
+        xs = list(range(len(LR_SWEEP_LRS)))
+        ch = CHART_CSS + line_chart(xs, [{"name": "merged, 20B, selection sample", "y": [r["val38148"] for r in rows], "color": "#7c3aed"},
+                                        {"name": "merged, 20B, held-out (reporting) sample", "y": [r["ho38148"] for r in rows], "color": "#2563eb" if k == 4 else "#ea580c"},
+                                        {"name": "baseline, 20B, held-out", "y": [base[38148]] * len(xs), "const": True, "dashed": True, "color": "#059669"}],
+                                   title=f"{k} squares: merged CE at 20B vs sub-model LR", y_label="CE", x_label="sub-model LR (all squares)", xlabels=LR_SWEEP_LRS)
+        html += f"<h4>{k} squares</h4>" + ch + tbl
+    if not html: return ""
+    what = ("Every square of an arm trains with the same constant LR (the main runs use 8e-4, the pretraining LR); expert groups, document packs, "
+            "sliced start checkpoints, EMO loss and batch are the main run's. Squares checkpoint only at the mid-window (16B) and window-final (20B) "
+            "matched points and are merged there. <b>Selection CE</b>: a separate 6,808-instance sample of the 300B stream slice, disjoint from the "
+            "reporting sample, used only to pick the LR (at 20B); <b>held-out CE</b> and <b>ppl sets</b> are the report's usual metrics. Window 2 "
+            "(20B &rarr; 30B, merged at 30B) is run for the chosen LR only.")
+    return section("Sub-model learning rate", what, html, LR_SWEEP_TAKE)
+
+
 def build_q5_controls():
     """Q5: the random-partition controls, one box per start model (moved out of Q3 on 2026-09-24)."""
     body = question_card("q5")
@@ -1057,7 +1101,7 @@ def build_q5_controls():
     boxes = [L for L in ("5A", "5B", "5C", "5D")]
     body += VARIANT_CSS + card("info", "Start models",
         '<ul class="q3index">' + "".join(f'<li><a href="#q5-{L}"><b>{L}</b> &middot; {t}</a> &mdash; {bl}</li>' for L, t, _, bl in VARIANTS if L in boxes) + "</ul>")
-    body += variant("5A", random_control("emo", with_charts=False), tab="q5")
+    body += variant("5A", random_control("emo", with_charts=False) + lr_sweep_section(), tab="q5")
     body += variant("5B", random_control("std", with_charts=False), tab="q5")
     if (ROOT / "sparse_experts/olmoe3_squares_s128rand4/groups.json").exists():
         body += variant("5C", card("info", "Setup", "<p>The 128-expert standard-routing model of the expert-count ladder (same expert size as the 512e model, top-16 of 128, "
