@@ -4,7 +4,7 @@
 # schedule) is exactly the parent arm's (olmoe3_squares_emorand / emorand8). Window 1 (10B -> 20B): the squares checkpoint only at the
 # mid-window matched point (baseline step 30000, 57% of the window) and at the window final (38148); both are merged and evaluated on
 # (a) the SELECTION sample sample_8k_300b_val.npz (6,808 instances of the 300B stream slice, disjoint from the reporting sample),
-# (b) the reporting sample sample_8k_300b.npz and (c) the v3-small ppl sets. The LR is chosen on (a) at 30000. Window 2 (20B -> 30B)
+# (b) the reporting sample sample_8k_300b.npz and (c) the v3-small ppl sets. The LR is chosen on (a) at the 20B point (38148); the mid-window point is an extra reading. Window 2 (20B -> 30B)
 # is run for the chosen LR only (mode w2): final checkpoint 57221, merged, same three evaluations.
 #   bash scripts/sparse_experts/olmoe3_squares/squares_lr_sweep.sh k4|k8 <lr> w1|w2      (idempotent; detach; commit + push first)
 #   bash scripts/sparse_experts/olmoe3_squares/squares_lr_sweep.sh k4|k8 ref             (selection-sample passes of the parent 8e-4 arm's merges)
