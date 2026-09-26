@@ -38,6 +38,7 @@ def main():
     ap.add_argument("--quotas", default=json.dumps(DEFAULT_QUOTAS))
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--drop-filtered", action="store_true", default=True, help="skip instances the run's repetition filter rejected")
+    ap.add_argument("--exclude", type=Path, default=None, help="an earlier sample npz from the same stream: its instances (step, slot) are left out, so the new sample is disjoint from it")
     args = ap.parse_args()
     quotas = json.loads(args.quotas)
     man = json.load(open(args.stream / "manifest.json"))
@@ -51,6 +52,9 @@ def main():
     print(f"{len(rows):,} instances in stream; group counts: {Counter(r[6] for r in rows)}")
     if args.drop_filtered:
         n0 = len(rows); rows = [r for r in rows if r[7]]; print(f"dropped {n0-len(rows)} filtered instances")
+    if args.exclude:
+        ex = np.load(args.exclude); used = set(zip(ex["step"].tolist(), ex["slot"].tolist()))
+        n0 = len(rows); rows = [r for r in rows if (r[2], r[3]) not in used]; print(f"excluded {n0-len(rows)} instances of {args.exclude}")
     rng = np.random.default_rng(args.seed)
     chosen = []
     for g, q in quotas.items():

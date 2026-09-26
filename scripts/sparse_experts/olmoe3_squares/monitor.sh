@@ -18,6 +18,8 @@ while true; do
     alive "^bash scripts/sparse_experts/olmoe3_squares/squares_randk\.sh $v$" || { setsid nohup bash $D/squares_randk.sh $v >> $S/$sq/logs_driver.log 2>&1 < /dev/null & say "restarted driver $v"; }
   done
   tail -n 1 $S/olmoe3_squares_frz/logs_driver.log 2>/dev/null | grep -q '\] done$' || alive '^bash scripts/sparse_experts/olmoe3_squares/squares_frozen\.sh' || { setsid nohup bash $D/squares_frozen.sh >> $S/olmoe3_squares_frz/logs_driver.log 2>&1 < /dev/null & say "restarted driver frz"; }
+  for da in $S/olmoe3_squares_emorand*_lr*/driver_args; do [ -f "$da" ] || continue; sq=$(dirname $da); read -r kv lr < $da; for mode in w1 w2; do [ -f $sq/logs/square0$([ $mode = w2 ] && echo _w2)_launched ] || continue   # a mode is only kept alive once it was started
+      tail -n 1 $sq/logs_driver_$mode.log 2>/dev/null | grep -q "\] done$" || alive "^bash scripts/sparse_experts/olmoe3_squares/squares_lr_sweep\.sh $kv $lr $mode$" || { setsid nohup bash $D/squares_lr_sweep.sh $kv $lr $mode >> $sq/logs_driver_$mode.log 2>&1 < /dev/null & say "restarted driver lr $kv $lr $mode"; }; done; done
   alive '^python scripts/sparse_experts/olmoe3_squares/twin_scheduler\.py' || { setsid nohup python $D/twin_scheduler.py --interval 120 >> $R/twin_scheduler/loop.log 2>&1 < /dev/null & say "restarted twin scheduler"; }
   alive '^bash scripts/sparse_experts/olmoe3_squares/init_point_evals\.sh' || grep -q "init-point evals done" $R/init_point_evals.log 2>/dev/null || { setsid nohup bash $D/init_point_evals.sh >> $R/init_point_evals.log 2>&1 < /dev/null & say "restarted init-point evals"; }
   # 2. missing evaluations
