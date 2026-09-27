@@ -980,6 +980,12 @@ def control_explorer_data():
                          "p": [None] * i0 + [m4["p"][i0]] + [_ppl(RMP / "merged" / f"match{st}.json") for st in steps[i0 + 1:]]}
             rsq = [[rv(f"sub{g}_match{st}") for g in range(4)] for st in steps[i0 + 1:]]
             ser["rs"] = {"h": [None] * i0 + [ser["s4"]["h"][i0]] + [sum(v) / 4 if all(x is not None for x in v) else None for v in rsq]}
+        if which == "emo":  # sub-model LR sweep winners (Q5 box 5A): merges at 30000 / 38148 / 57221 only, starting from the 10B start model
+            for k, sqn in ((4, "olmoe3_squares_emorand_lr4e-4"), (8, "olmoe3_squares_emorand8_lr4e-4")):
+                HL = R / f"runs_heldout300b_{'emorand' if k == 4 else 'emorand8'}_lr4e-4"; PL = ROOT / "sparse_experts" / sqn / "ppl_validation" / "merged"
+                if not HL.exists(): continue
+                ser[f"l{k}"] = {"h": [hb(C["start"]) if st == 19074 else (_ce(HL / f"merged_match{st}/none") if st in (30000, 38148, 57221) else None) for st in steps],
+                                "p": [ref_ppl if st == 19074 else (_ppl(PL / f"match{st}.json") if st in (30000, 38148, 57221) else None) for st in steps]}
         out.append({"id": which, "name": C["model"], "toks": [round(st * 524288 / 1e9, 3) for st in steps], "series": ser})
     return out
 
@@ -988,6 +994,7 @@ EXPLORER_LINES = [  # key, label, colour, dashed, needs-ppl
     ("baseline", "baseline (joint training)", "#059669", False), ("m4", "merged, 4 squares", "#2563eb", False), ("m8", "merged, 8 squares", "#ea580c", False),
     ("s4", "squares alone, mean of 4", "#2563eb", True), ("s8", "squares alone, mean of 8", "#ea580c", True),
     ("b4", "best single square of 4", "#db2777", False), ("b8", "best single square of 8", "#db2777", True),
+    ("l4", "merged, 4 squares, sub-model LR 4e-4 (EMO only)", "#0891b2", False), ("l8", "merged, 8 squares, sub-model LR 4e-4 (EMO only)", "#d97706", False),
     ("rm", "re-merged + re-partitioned at 61B (std only)", "#7c3aed", False), ("rs", "squares after re-partition, mean of 4 (std only)", "#7c3aed", True),
     ("start", "start model (10B)", "#64748b", True)]
 EXPLORER_DEFAULT = ["baseline", "m4", "m8", "s4", "s8", "start"]
