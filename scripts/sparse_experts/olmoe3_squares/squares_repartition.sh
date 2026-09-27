@@ -31,9 +31,12 @@ heldout() { local tag=$1 ckpt=$2; have $S/olmoe3_routing/$HR/$tag/none || launch
 ppl() { local ckpt=$1 json=$2 name=$3; [ -f $SQ/ppl_validation/$json ] || launch "$SQN-ppl-$name" python scripts/debug_validation/eval_ppl_validation.py --checkpoints "$ckpt" --out-dir "$W/$SQN/ppl_validation" --batch-size 8; }
 merge_optim() { local groups=$1 out=$2 weights=$3; shift 3; [ -f $out/merge_info.json ] || { PYTHONPATH=external/OLMo-core/src OPENBLAS_NUM_THREADS=8 python scripts/sparse_experts/olmoe3_squares/merge_models.py --groups $groups --full $S/$FULL/step19074 --subs "$(IFS=,; echo "$*")" --weights "$weights" --out $out --with-optim --overwrite 2>&1 | tail -1 | cut -c1-140; [ -f $out/config.json ] || cp $S/$FULL/step19074/config.json $out/config.json; }; }
 keep() { case " $KEEP " in *" $1 "*) return 0;; *) return 1;; esac; }
-cleanup() { local c=$1 end=${ENDS[$c]}   # cycle c's artifacts, once cycle c+1's squares are done and merge c is evaluated (both checked by the caller)
-  rm -rf $SQ/init_c$((c+1)) $SQ/ft_start_c$((c+1)); keep $end && { say "cycle $c ($end): kept (squares + merged model)"; return 0; }
-  for g in $(seq 0 $((K-1))); do rm -rf $S/${RP}_c${c}_sq$g; done; rm -rf $SQ/merged_optim/c$c; say "cycle $c ($end): squares + merged model deleted (not a keep point)"; }
+cleanup() { local c=$1; local end=${ENDS[$c]}   # cycle c's artifacts, once cycle c+1's squares are done and merge c is evaluated (both checked by the caller)
+  # (BUG until 2026-09-27 16:60: `local c=$1 end=${ENDS[$c]}` expanded $c BEFORE the assignment, i.e. with the caller's cycle -> the keep decision was shifted
+  #  by one cycle: cycle 1 (30B, a keep point) was deleted and cycle 3 (50B) kept. Fixed; the retro pass below re-applies the rule to every finished cycle.)
+  rm -rf $SQ/init_c$((c+1)) $SQ/ft_start_c$((c+1)); keep $end && { [ -d $SQ/merged_optim/c$c ] && say "cycle $c ($end): kept (squares + merged model)"; return 0; }
+  for g in $(seq 0 $((K-1))); do rm -rf $S/${RP}_c${c}_sq$g; done; [ -d $SQ/merged_optim/c$c ] && { rm -rf $SQ/merged_optim/c$c; say "cycle $c ($end): squares + merged model deleted (not a keep point)"; }; return 0; }
+evaluated() { have $S/olmoe3_routing/$HR/merged_c$1/none && [ -f $SQ/ppl_validation/merged_optim/c$1.json ]; }
 # ---- cycle 0: the 4e-4 arm's 20B merge, with Adam state ----
 if [ ! -f $SQ/merged_optim/c0/merge_info.json ]; then
   SH1=$(python -c "import json; print(','.join(f'{x:.4f}' for x in json.load(open('$S/$SRC/pack/stats.json'))['token_share']))"); subs=()
@@ -52,8 +55,9 @@ for c in $(seq 1 11); do B=${ENDS[$((c-1))]}; E=${ENDS[$c]}; SQS=$(( (E - B + K 
   for d in "${subs[@]}"; do until [ -f "$d/train/rank0.pt" ]; do sleep 300; done; done; say "cycle $c: square finals present"
   merge_optim $G $SQ/merged_optim/c$c 0.25,0.25,0.25,0.25 "${subs[@]}"
   heldout merged_c$c $W/$SQN/merged_optim/c$c; ppl $W/$SQN/merged_optim/c$c merged_optim/c$c.json merged-c$c
-  if [ $c -ge 2 ]; then p=$((c-1))   # previous cycle: evaluated and superseded -> apply the storage rule
-    until have $S/olmoe3_routing/$HR/merged_c$p/none && [ -f $SQ/ppl_validation/merged_optim/c$p.json ]; do sleep 300; done; cleanup $p
+  if [ $c -ge 2 ]; then   # every earlier cycle that is evaluated and superseded (its successor's squares finished): apply the storage rule (idempotent retro pass)
+    p=$((c-1)); until evaluated $p; do sleep 300; done
+    for q in $(seq 1 $p); do evaluated $q && cleanup $q; done
   fi
 done
 until have $S/olmoe3_routing/$HR/merged_c11/none && [ -f $SQ/ppl_validation/merged_optim/c11.json ]; do sleep 300; done; rm -rf $SQ/init_c11 $SQ/ft_start_c11

@@ -1103,7 +1103,8 @@ def lr_sweep_section():
 
 
 RP_ENDS = [38148, 57221, 76295, 95368, 114442, 133515, 152589, 171662, 190736, 209809, 228883, 247956]   # squares_repartition.sh cycle ends (20B, then every 10B)
-RP_TAKE = "Running: one cycle every 10B; each point appears once its merge is evaluated."
+RP_TAKE = ("Running (one cycle per 10B). So far the re-partitioned merge tracks the baseline within about 0.01: 2.384 at 30B (baseline 2.376; the same "
+           "squares without re-partitioning gave 2.385), 2.372 at 40B, 2.361 at 50B, on the way to the baseline's 2.331 at 61B.")
 
 
 def repartition_section():
@@ -1137,7 +1138,9 @@ def repartition_section():
 
 
 S128_LRS = ["1e-4", "2e-4", "4e-4", "8e-4", "1.6e-3", "3.2e-3"]
-S128_LR_TAKE = "Sweep running: the LR is chosen on the selection sample at 5.24B; the chosen LR is then pretrained from scratch to 130B."
+S128_LR_TAKE = ("The pretraining LR is already right: 8e-4 wins the selection sample at 5.24B (2.664), with 1.6e-3 (2.677) and 4e-4 (2.684) close "
+                "behind and the outer LRs clearly worse (2e-4 2.761, 3.2e-3 2.735, 1e-4 2.959). No second 130B baseline is run; the existing 8e-4 "
+                "128e baseline stands.")
 
 
 def s128_lr_sweep_section():
