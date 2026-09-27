@@ -847,17 +847,24 @@ def squares_results(HELD=HELD, PPL=PPL, SQO=SQO, start="emo_step19074", start_pp
     frz_h = [m_h[0]] + [_ce(FRZ_H / f"merged_{name}/none") for _, name in MATCH[1:]] if HELD.name == "runs_heldout20b" else []
     frz_p = [m_p[0]] + [_ppl(FRZ_P / "merged" / f"{name}.json") for _, name in MATCH[1:]] if HELD.name == "runs_heldout20b" else []
     has_frz = any(v is not None for v in frz_h[1:] + frz_p[1:])
-    def fline(y):
-        return [{"name": "merged squares, routers frozen", "y": y + [None] * (len(xs_all) - len(y)), "color": "#7c3aed"}] if has_frz else []
+    # random equal-size expert groups with block A's routing-based document assignment (block A only)
+    RX_H = ROOT / "sparse_experts/olmoe3_routing/runs_heldout20b_rndexp"; RX_P = ROOT / "sparse_experts/olmoe3_squares_rndexp/ppl_validation"
+    rx_h = [m_h[0]] + [_ce(RX_H / f"merged_{name}/none") for _, name in MATCH[1:]] if HELD.name == "runs_heldout20b" else []
+    rx_p = [m_p[0]] + [_ppl(RX_P / "merged" / f"{name}.json") for _, name in MATCH[1:]] if HELD.name == "runs_heldout20b" else []
+    has_rx = any(v is not None for v in rx_h[1:] + rx_p[1:])
+    def fline(y, rx=None):
+        out = [{"name": "merged squares, routers frozen", "y": y + [None] * (len(xs_all) - len(y)), "color": "#7c3aed"}] if has_frz else []
+        if has_rx and rx is not None: out.append({"name": "merged squares, random equal expert groups (same documents)", "y": rx + [None] * (len(xs_all) - len(rx)), "color": "#0891b2"})
+        return out
     charts = ""
     if have:
         charts = CHART_CSS + line_chart(xs_all, [{"name": "baseline (full model, continued)", "y": ext(b_h, ft["baseline_ft"], ft2["baseline_ft"])}, {"name": "merged squares", "y": ext(m_h, ft["merged_ft"], ft2["merged_ft"])},
-                                                *fline(frz_h), *rline(m_h, rft["rft"], rft["rft2"]),
+                                                *fline(frz_h, rx_h), *rline(m_h, rft["rft"], rft["rft2"]),
                                                 {"name": "start model (step 19,074)", "y": [ref_none] * len(xs_all), "const": True, "dashed": True, "color": "#64748b"}],
                                        title="Held-out CE (20B window, 65M tokens)", xlabels=labels, shade=shade)
         if any(v is not None for v in b_p + m_p):
             charts += line_chart(xs_all, [{"name": "baseline (full model, continued)", "y": ext(b_p, ppl_ft.get("baseline_ft"), ppl_ft.get("baseline_ft2"))}, {"name": "merged squares", "y": ext(m_p, ppl_ft.get("merged_ft"), ppl_ft.get("merged_ft2"))},
-                                          *fline(frz_p), *rline(m_p, rft_ppl["rft"], rft_ppl["rft2"]),
+                                          *fline(frz_p, rx_p), *rline(m_p, rft_ppl["rft"], rft_ppl["rft2"]),
                                           {"name": "start model (step 19,074)", "y": [ref_ppl] * len(xs_all), "const": True, "dashed": True, "color": "#64748b"}],
                                  title="v3-small ppl sets, mean CE", xlabels=labels, shade=shade)
     ft_html = ""
@@ -868,6 +875,11 @@ def squares_results(HELD=HELD, PPL=PPL, SQO=SQO, start="emo_step19074", start_pp
                     "routed-expert router (all nine MoE layers) trains at learning rate 0, so routing is fixed to the start model's throughout; "
                     "everything else trains as in the main run. Merged at the same points; no finetuning stage. Sanity check per merged point "
                     "(merged routers bit-identical to the start model's, experts changed): " + ", ".join(f"{st} {o}" for st, o in zip([s for s, _ in MATCH[1:]], okc)) + ".</p>")
+    if has_rx:
+        ft_html += ("<p><b>Random equal expert groups</b> (teal): the same documents as the main run (each document still goes to the square that "
+                    "block A assigned it to by routing), but the four squares' expert groups are random and equal (128 per layer 2&ndash;9, layer 1 whole) "
+                    "instead of the spectral block-groups, with start checkpoints sliced along those random groups. Everything else as the main run; "
+                    "merged and evaluated at the same points; no finetuning stage.</p>")
     if has_ft:
         ft_html += ("<p><b>Finetuning</b> (shaded): the 100% merged model (Adam moments merged like the weights) and the baseline each trained on the same "
                    "0.5B more tokens (steps 38,548&ndash;39,502) at the same constant LR" + (", then on a further 0.5B (steps 39,502&ndash;40,456; 1B in total)" if has_ft2 else "")
