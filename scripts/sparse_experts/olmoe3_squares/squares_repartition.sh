@@ -44,6 +44,11 @@ if [ ! -f $SQ/merged_optim/c0/merge_info.json ]; then
   merge_optim $S/$SRC/groups.json $SQ/merged_optim/c0 "$SH1" "${subs[@]}"; say "cycle 0: 20B merge with Adam state done"
 fi
 for c in $(seq 1 11); do B=${ENDS[$((c-1))]}; E=${ENDS[$c]}; SQS=$(( (E - B + K - 1) / K )); G=$SQ/groups_c$c.json
+  if [ -f $SQ/merged_optim/c$c/merge_info.json ] || evaluated $c; then   # a finished cycle (its squares may already be deleted by the storage rule): only its evaluations, never re-train
+    [ -f $SQ/merged_optim/c$c/merge_info.json ] && { heldout merged_c$c $W/$SQN/merged_optim/c$c; ppl $W/$SQN/merged_optim/c$c merged_optim/c$c.json merged-c$c; }
+    if [ $c -ge 2 ]; then p=$((c-1)); until evaluated $p; do sleep 300; done; for q in $(seq 1 $p); do evaluated $q && cleanup $q; done; fi
+    continue
+  fi
   [ -f $G ] || python scripts/sparse_experts/olmoe3_squares/partition_random.py --out $G --k $K --seed $((100 + c)) > /dev/null
   subs=(); for g in $(seq 0 $((K-1))); do start=$((B + g * SQS)); fin=$((start + SQS)); run=${RP}_c${c}_sq$g; subs+=("$S/$run/step$fin")
     [ -f $S/$run/step$fin/train/rank0.pt ] && continue
