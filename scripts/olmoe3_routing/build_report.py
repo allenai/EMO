@@ -1005,7 +1005,7 @@ def control_explorer():
     if not data: return ""
     models = "".join(f'<label><input type="checkbox" data-m="{d["id"]}" checked> {d["name"]}</label>' for d in data)
     lines = "".join(f'<label><input type="checkbox" data-l="{k}"{" checked" if k in EXPLORER_DEFAULT else ""}> <span class="sw" style="border-color:{c};border-style:{"dashed" if dsh else "solid"}"></span>{lab}</label>' for k, lab, c, dsh in EXPLORER_LINES)
-    spec = json.dumps({"lines": [dict(k=k, lab=lab, c=c, dsh=dsh) for k, lab, c, dsh in EXPLORER_LINES], "models": data})
+    spec = json.dumps({"lines": [dict(k=k, lab=lab, c=c, dsh=dsh, gap=k in ("l4", "l8")) for k, lab, c, dsh in EXPLORER_LINES], "models": data})   # gap: connect across missing points (sparse merges)
     return card("results", "Explorer: pick the start models and the lines",
         '<div class="cx"><div class="cx-ctl"><div><b>Start models</b> (one panel each, y-axis shared)<br>' + models + '</div>'
         '<div><b>Lines</b><br>' + lines + '</div>'
@@ -1036,7 +1036,7 @@ for(let t=Math.ceil(ymin/st)*st;t<=ymax;t+=st)g+='<line x1="'+x0+'" x2="'+(x0+pw
 const ticks=samex?[10,20,30,61,87,113,130].filter(v=>v<=xmx+0.5):xs;ticks.forEach(v=>{g+='<text x="'+X(v).toFixed(1)+'" y="'+(y0+ph+16)+'" font-size="10" text-anchor="middle" fill="#475569">'+(v<15&&!samex?v.toPrecision(3):Math.round(v))+'B</text>'});
 g+='<line x1="'+x0+'" x2="'+(x0+pw)+'" y1="'+(y0+ph)+'" y2="'+(y0+ph)+'" stroke="#94a3b8"/><line x1="'+x0+'" x2="'+x0+'" y1="'+y0+'" y2="'+(y0+ph)+'" stroke="#94a3b8"/>';
 g+='<text x="'+(x0+pw/2)+'" y="'+(H-4)+'" font-size="11" text-anchor="middle" fill="#475569">tokens trained</text><text transform="translate(12,'+(y0+ph/2)+') rotate(-90)" font-size="11" text-anchor="middle" fill="#475569">CE</text>';
-ser.forEach(s=>{const pts=xs.map((x,i)=>s.y[i]==null?null:[X(x),Y(s.y[i])]);let d='',pen=false;pts.forEach(p=>{if(!p){pen=false;return}d+=(pen?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1);pen=true});
+ser.forEach(s=>{const pts=xs.map((x,i)=>s.y[i]==null?null:[X(x),Y(s.y[i])]);let d='',pen=false;pts.forEach(p=>{if(!p){if(!s.gap)pen=false;return}d+=(pen?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1);pen=true});
 g+='<path d="'+d+'" fill="none" stroke="'+s.c+'" stroke-width="2"'+(s.dsh?' stroke-dasharray="5,4"':'')+'/>';if(s.k!=='start')pts.forEach(p=>{if(p)g+='<circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="2.6" fill="'+s.c+'"/>'})});
 g+='<line class="vl" x1="0" x2="0" y1="'+y0+'" y2="'+(y0+ph)+'" stroke="#94a3b8" stroke-dasharray="3,3" style="display:none"/></svg>';
 const div=document.createElement('div');div.className='cx-panel';div.innerHTML='<h4>'+m.name+'</h4>'+g;panels.appendChild(div);
