@@ -16,7 +16,10 @@ S = Path("sparse_experts"); ST = S / "olmoe3_routing" / "twin_scheduler"; ST.mkd
 MAX_SUBMITS = 4; WORKSPACE = "ai2/flex2"; TERMINAL = ("exited", "finalized", "canceled", "failed"); CUTOFF = time.mktime(time.strptime("2026-09-20 00:00", "%Y-%m-%d %H:%M"))
 
 
-def sh(*cmd): return subprocess.run(cmd, capture_output=True, text=True)
+def sh(*cmd):
+    """Run a CLI command with a hard timeout (a hung `beaker` call must not freeze the scheduler; seen 2026-09-27)."""
+    try: return subprocess.run(cmd, capture_output=True, text=True, timeout=900)
+    except subprocess.TimeoutExpired: return subprocess.CompletedProcess(cmd, 124, "", "timeout")
 
 
 def log(msg):
