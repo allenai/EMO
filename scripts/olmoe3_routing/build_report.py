@@ -1136,6 +1136,41 @@ def repartition_section():
     return section("Re-merge + re-partition every 10B (4 squares, sub-model LR 4e-4)", what, ch + tbl, RP_TAKE)
 
 
+S128_LRS = ["1e-4", "2e-4", "4e-4", "8e-4", "1.6e-3", "3.2e-3"]
+S128_LR_TAKE = "Sweep running: the LR is chosen on the selection sample at 5.24B; the chosen LR is then pretrained from scratch to 130B."
+
+
+def s128_lr_sweep_section():
+    """Pretraining-LR sweep of the standard-routing 128e model (std128_lr_sweep.sh): from scratch to step 10,000 (5.24B tokens) at six LRs
+    (8e-4 = the existing run), selected on the separate validation sample; the chosen LR pretrained from scratch to 130B as a second baseline."""
+    R = ROOT / "sparse_experts/olmoe3_routing"; HV = R / "runs_heldout300b_s128lr_val"; H = R / "runs_heldout300b_s128lr"; P = ROOT / "sparse_experts/olmoe3_squares_s128lr/ppl_validation"
+    if not HV.exists(): return ""
+    f3 = lambda v: "&ndash;" if v is None else f"{v:.3f}"
+    rows = []
+    for lr in S128_LRS:
+        run = "olmoe3_275m_128e_10b" if lr == "8e-4" else f"olmoe3_275m_128e_lr{lr}_5b"
+        rows.append(dict(lr=lr, val=_ce(HV / f"lr{lr}_step10000/none"), ho=_ce(H / f"lr{lr}_step10000/none"), ppl=_ppl(P / run / "step10000.json")))
+    if not any(r["val"] is not None for r in rows if r["lr"] != "8e-4"): return ""
+    best = min((r["val"] for r in rows if r["val"] is not None), default=None)
+    tb = [[r["lr"] + (" (existing run)" if r["lr"] == "8e-4" else ""), f"<b>{f3(r['val'])}</b>" if r["val"] == best and best is not None else f3(r["val"]), f3(r["ho"]), f3(r["ppl"])] for r in rows]
+    tbl = table(["pretraining LR", "selection CE @5.24B", "held-out CE @5.24B", "ppl sets @5.24B"], tb)
+    xs = list(range(len(S128_LRS)))
+    ch = CHART_CSS + line_chart(xs, [{"name": "selection sample", "y": [r["val"] for r in rows], "color": "#7c3aed"}, {"name": "held-out (reporting) sample", "y": [r["ho"] for r in rows], "color": "#2563eb"}],
+                                title="Standard 128e from scratch: CE at 5.24B vs pretraining LR", y_label="CE", x_label="pretraining LR", xlabels=S128_LRS)
+    # the chosen-LR run to 130B, if launched: its evaluated points next to the 8e-4 baseline
+    sel = sorted(H.glob("base_step*/none/meta.json")); extra = ""
+    if sel:
+        st = sorted(int(p.parent.parent.name[len("base_step"):]) for p in sel); b8 = R / "runs_heldout300b_s128"
+        rows2 = [[f"{s_ * 524288 / 1e9:.3g}B", f3(_ce(H / f"base_step{s_}/none")), f3(_ce(b8 / f"baseline_step{s_}/none") if s_ != 19074 else _ce(b8 / "s128_step19074/none"))] for s_ in st]
+        extra = "<p><b>Chosen LR pretrained from scratch to 130B</b> (held-out CE, reporting sample) next to the 8e-4 baseline:</p>" + table(["tokens", "chosen LR", "8e-4"], rows2)
+    what = ("Six pretraining runs of the standard-routing 128e model from scratch, identical except for the peak LR (2,000-step warmup, then constant: "
+            "the WSD trunk used everywhere in this report), stopped at step 10,000 = 5.24B tokens; the 8e-4 row is the existing run at the same "
+            "step. <b>Selection CE</b>: the separate 6,808-instance validation sample also used for the sub-model LR sweep of box 5A; "
+            "<b>held-out CE</b> and <b>ppl sets</b>: the report's usual metrics. The chosen LR is pretrained from scratch to 130B (4 nodes) with the "
+            "same matched checkpoints as the 8e-4 baseline.")
+    return section("Pretraining learning rate of the 128e model", what, ch + tbl + extra, S128_LR_TAKE)
+
+
 def build_q5_controls():
     """Q5: the random-partition controls, one box per start model (moved out of Q3 on 2026-09-24)."""
     body = question_card("q5")
@@ -1159,7 +1194,7 @@ def build_q5_controls():
     if (ROOT / "sparse_experts/olmoe3_squares_s128rand4/groups.json").exists():
         body += variant("5C", card("info", "Setup", "<p>The 128-expert standard-routing model of the expert-count ladder (same expert size as the 512e model, top-16 of 128, "
                                    "so a quarter of the total parameters): its 10B checkpoint is continued jointly to 130B as the baseline, and split into 4 and into 8 random "
-                                   "sub-models with the same random document groups as the 512e controls, at exactly the 512e controls' matched checkpoints.</p>") + random_control("s128", with_charts=False), tab="q5")
+                                   "sub-models with the same random document groups as the 512e controls, at exactly the 512e controls' matched checkpoints.</p>") + random_control("s128", with_charts=False) + s128_lr_sweep_section(), tab="q5")
     if (ROOT / "sparse_experts/olmoe3_squares_randsel4/groups.json").exists():
         body += variant("5D", card("info", "Setup", "<p>The EMO 512e model pretrained with <i>random</i> per-document expert pools (debug_validation arm: pool size uniform in "
                                    "[16, 512] as in EMO, but the pool is a random set of experts instead of the most relevant ones; 3.036 vs 3.000 in-loop CE at 10B): its 10B "
