@@ -8,7 +8,7 @@ import shutil, sys
 from pathlib import Path
 
 S = Path("sparse_experts"); DRY = "--dry-run" in sys.argv
-KEEP = {20000, 30000, 38148, 49073, 57221}   # both window ends + an even spread
+KEEP = {38148, 57221}   # the Q5 rule since 2026-09-27 (user): only 10B / 20B / 30B / 61B / 87B / 113B / 130B checkpoints are kept (prune_q5_ckpts.py)
 FIXED = [20000, 25000, 30000, 35000, 38148, 39073, 44073, 49073, 54073, 57221]
 # run dir | held-out baseline dir | ppl json dir
 RUNS = [("olmoe3_275m_randsel_30b", "runs_heldout300b_randsel", "olmoe3_squares_randsel4/ppl_validation/olmoe3_275m_randsel_30b"),

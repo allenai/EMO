@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Delete the training checkpoints of the random-control SQUARES whose arm is finished (every merge and evaluation done); the merged
+"""SUPERSEDED 2026-09-27 by prune_q5_ckpts.py (the Q5 rule: keep 10B/20B/30B/61B/87B/113B/130B only), which was run on the user's approval.
+Delete the training checkpoints of the random-control SQUARES whose arm is finished (every merge and evaluation done); the merged
 models, held-out summaries and ppl results stay. Two modes (user decision 2026-09-24):
   --mode all      delete every checkpoint of every finished square (~6.4 TB)
   --mode finals   keep each square's window-final checkpoint (the last fixed step of each window), delete the rest (~5 TB)
