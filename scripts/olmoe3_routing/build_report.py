@@ -769,10 +769,10 @@ def line_chart(xs, series, *, title="", y_label="CE", x_label="progress through 
             y = [v] * len(xs)
         else:
             pts = [(X(x), Y(v)) for x, v in zip(xs, y) if v is not None]
-            segs, cur = [], []  # a None breaks the line (a series may hold several separate branches)
+            segs, cur = [], []  # a None breaks the line (a series may hold several separate branches) unless the series says gap=True
             for x, v in zip(xs, y):
-                if v is None: segs.append(cur); cur = []
-                else: cur.append((X(x), Y(v)))
+                if v is None and not s_.get("gap"): segs.append(cur); cur = []
+                elif v is not None: cur.append((X(x), Y(v)))
             segs.append(cur)
             for seg in segs:
                 if len(seg) > 1: g.append(f'<polyline fill="none" stroke="{c}" stroke-width="2"{dash} points="' + " ".join(f"{a:.1f},{b:.1f}" for a, b in seg) + '"/>')
@@ -956,6 +956,9 @@ def control_explorer_data():
         W1 = [19074, 20000, 25000, 30000, 35000, 38148]; W2 = [39073, 44073, 49073, 54073, 57221]
         def has(a, st): return _ce(a["HR"] / f"merged_match{st}/none") is not None or any(_ce(a["HR"] / f"sub{g}_match{st}/none") is not None for g in range(a["k"]))
         steps = W1 + [st for st in W2 if any(has(a, st) for a in arms)] + [st for st in W3_STEPS if any(has(a, st) for a in arms)]
+        RPH = R / "runs_heldout300b_emorand_lr4e-4_rp"; RPP = ROOT / "sparse_experts/olmoe3_squares_emorand_lr4e-4_rp/ppl_validation/merged_optim"
+        rp_pts = {end: c for c, end in enumerate(RP_ENDS[1:], 1) if which == "emo" and _ce(RPH / f"merged_c{c}/none") is not None}
+        steps = sorted(set(steps) | set(rp_pts))
         ref_ppl = _ppl(ROOT / f"claude_outputs/debug_validation/ppl_validation/{C['start_ppl']}/step19074.json")
         def bppl(st):
             if st == 19074: return ref_ppl
@@ -986,6 +989,10 @@ def control_explorer_data():
                 if not HL.exists(): continue
                 ser[f"l{k}"] = {"h": [hb(C["start"]) if st == 19074 else (_ce(HL / f"merged_match{st}/none") if st in (30000, 38148, 57221) else None) for st in steps],
                                 "p": [ref_ppl if st == 19074 else (_ppl(PL / f"match{st}.json") if st in (30000, 38148, 57221) else None) for st in steps]}
+            if rp_pts and "l4" in ser:  # re-merged + re-partitioned every 10B from the 4e-4 arm's 20B merge
+                i20 = steps.index(38148)
+                ser["rp4"] = {"h": [ser["l4"]["h"][i20] if st == 38148 else (_ce(RPH / f"merged_c{rp_pts[st]}/none") if st in rp_pts else None) for st in steps],
+                              "p": [ser["l4"]["p"][i20] if st == 38148 else (_ppl(RPP / f"c{rp_pts[st]}.json") if st in rp_pts else None) for st in steps]}
         out.append({"id": which, "name": C["model"], "toks": [round(st * 524288 / 1e9, 3) for st in steps], "series": ser})
     return out
 
@@ -995,6 +1002,7 @@ EXPLORER_LINES = [  # key, label, colour, dashed, needs-ppl
     ("s4", "squares alone, mean of 4", "#2563eb", True), ("s8", "squares alone, mean of 8", "#ea580c", True),
     ("b4", "best single square of 4", "#db2777", False), ("b8", "best single square of 8", "#db2777", True),
     ("l4", "merged, 4 squares, sub-model LR 4e-4 (EMO only)", "#0891b2", False), ("l8", "merged, 8 squares, sub-model LR 4e-4 (EMO only)", "#d97706", False),
+    ("rp4", "merged, 4 squares, LR 4e-4, re-merged + re-partitioned every 10B (EMO only)", "#be123c", False),
     ("rm", "re-merged + re-partitioned at 61B (std only)", "#7c3aed", False), ("rs", "squares after re-partition, mean of 4 (std only)", "#7c3aed", True),
     ("start", "start model (10B)", "#64748b", True)]
 EXPLORER_DEFAULT = ["baseline", "m4", "m8", "s4", "s8", "start"]
@@ -1005,7 +1013,7 @@ def control_explorer():
     if not data: return ""
     models = "".join(f'<label><input type="checkbox" data-m="{d["id"]}" checked> {d["name"]}</label>' for d in data)
     lines = "".join(f'<label><input type="checkbox" data-l="{k}"{" checked" if k in EXPLORER_DEFAULT else ""}> <span class="sw" style="border-color:{c};border-style:{"dashed" if dsh else "solid"}"></span>{lab}</label>' for k, lab, c, dsh in EXPLORER_LINES)
-    spec = json.dumps({"lines": [dict(k=k, lab=lab, c=c, dsh=dsh, gap=k in ("l4", "l8")) for k, lab, c, dsh in EXPLORER_LINES], "models": data})   # gap: connect across missing points (sparse merges)
+    spec = json.dumps({"lines": [dict(k=k, lab=lab, c=c, dsh=dsh, gap=k in ("l4", "l8", "rp4")) for k, lab, c, dsh in EXPLORER_LINES], "models": data})   # gap: connect across missing points (sparse merges)
     return card("results", "Explorer: pick the start models and the lines",
         '<div class="cx"><div class="cx-ctl"><div><b>Start models</b> (one panel each, y-axis shared)<br>' + models + '</div>'
         '<div><b>Lines</b><br>' + lines + '</div>'
@@ -1033,7 +1041,7 @@ const pad=Math.max(0.01,0.06*(ymax-ymin));ymin-=pad;ymax+=pad;const W=480,H=290,
 draw.forEach(({m,ser})=>{const xs=m.toks;const xmn=xs[0],xmx=samex?xmax:xs[xs.length-1];const X=v=>x0+(v-xmn)/(xmx-xmn||1)*pw,Y=v=>y0+(ymax-v)/(ymax-ymin)*ph;
 let g='<svg viewBox="0 0 '+W+' '+H+'">';const step0=(ymax-ymin)/4,mag=Math.pow(10,Math.floor(Math.log10(step0))),st=Math.ceil(step0/mag)*mag;
 for(let t=Math.ceil(ymin/st)*st;t<=ymax;t+=st)g+='<line x1="'+x0+'" x2="'+(x0+pw)+'" y1="'+Y(t).toFixed(1)+'" y2="'+Y(t).toFixed(1)+'" stroke="#e5e7eb"/><text x="'+(x0-6)+'" y="'+(Y(t)+4).toFixed(1)+'" font-size="11" text-anchor="end" fill="#475569">'+fmtTick(t)+'</text>';
-const ticks=samex?[10,20,30,61,87,113,130].filter(v=>v<=xmx+0.5):xs;ticks.forEach(v=>{g+='<text x="'+X(v).toFixed(1)+'" y="'+(y0+ph+16)+'" font-size="10" text-anchor="middle" fill="#475569">'+(v<15&&!samex?v.toPrecision(3):Math.round(v))+'B</text>'});
+const ticks=samex?[10,20,30,61,87,113,130].filter(v=>v<=xmx+0.5):xs.filter((v,i)=>xs.length<=14||i%2==0||i==xs.length-1);ticks.forEach(v=>{g+='<text x="'+X(v).toFixed(1)+'" y="'+(y0+ph+16)+'" font-size="10" text-anchor="middle" fill="#475569">'+(v<15&&!samex?v.toPrecision(3):Math.round(v))+'B</text>'});
 g+='<line x1="'+x0+'" x2="'+(x0+pw)+'" y1="'+(y0+ph)+'" y2="'+(y0+ph)+'" stroke="#94a3b8"/><line x1="'+x0+'" x2="'+x0+'" y1="'+y0+'" y2="'+(y0+ph)+'" stroke="#94a3b8"/>';
 g+='<text x="'+(x0+pw/2)+'" y="'+(H-4)+'" font-size="11" text-anchor="middle" fill="#475569">tokens trained</text><text transform="translate(12,'+(y0+ph/2)+') rotate(-90)" font-size="11" text-anchor="middle" fill="#475569">CE</text>';
 ser.forEach(s=>{const pts=xs.map((x,i)=>s.y[i]==null?null:[X(x),Y(s.y[i])]);let d='',pen=false;pts.forEach(p=>{if(!p){if(!s.gap)pen=false;return}d+=(pen?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1);pen=true});
@@ -1094,6 +1102,40 @@ def lr_sweep_section():
     return section("Sub-model learning rate", what, html, LR_SWEEP_TAKE)
 
 
+RP_ENDS = [38148, 57221, 76295, 95368, 114442, 133515, 152589, 171662, 190736, 209809, 228883, 247956]   # squares_repartition.sh cycle ends (20B, then every 10B)
+RP_TAKE = "Running: one cycle every 10B; each point appears once its merge is evaluated."
+
+
+def repartition_section():
+    """Re-merge + re-partition every 10B (squares_repartition.sh): from the 4e-4 arm's 20B merge, eleven cycles of fresh random expert
+    groups (layer 1 whole), four squares on contiguous quarters of the next 10B at LR 4e-4, merged with Adam state carried; compared with
+    the joint baseline's existing points, the main 8e-4 merge and the 4e-4 piecewise merge (no re-partition, 20B -> 30B)."""
+    R = ROOT / "sparse_experts/olmoe3_routing"; RPH = R / "runs_heldout300b_emorand_lr4e-4_rp"; RPP = ROOT / "sparse_experts/olmoe3_squares_emorand_lr4e-4_rp/ppl_validation/merged_optim"
+    if not RPH.exists(): return ""
+    tok = lambda st: st * 524288 / 1e9; f3 = lambda v: "&ndash;" if v is None else f"{v:.3f}"
+    rp = {38148: _ce(R / "runs_heldout300b_emorand_lr4e-4/merged_match38148/none")}; rpp = {38148: _ppl(ROOT / "sparse_experts/olmoe3_squares_emorand_lr4e-4/ppl_validation/merged/match38148.json")}
+    for c, end in enumerate(RP_ENDS[1:], 1): rp[end] = _ce(RPH / f"merged_c{c}/none"); rpp[end] = _ppl(RPP / f"c{c}.json")
+    if not any(v is not None for st, v in rp.items() if st != 38148): return ""
+    base_steps = [38148, 57221, 66481, 116479, 166478, 216477, 247956]
+    base = {st: _ce(R / f"runs_heldout300b_emo/baseline_step{st}/none") for st in base_steps}
+    main = {st: _ce(R / f"runs_heldout300b_emorand/merged_match{st}/none") for st in base_steps}
+    pw = {38148: rp[38148], 57221: _ce(R / "runs_heldout300b_emorand_lr4e-4/merged_match57221/none")}
+    xs = sorted(set(RP_ENDS) | set(base_steps)); X = [round(tok(st), 1) for st in xs]
+    ch = CHART_CSS + line_chart(X, [{"name": "baseline (joint training)", "y": [base.get(st) for st in xs], "color": "#059669", "gap": True},
+                                    {"name": "merged, 4 squares, LR 8e-4 (main run, no re-partition)", "y": [main.get(st) for st in xs], "color": "#2563eb", "gap": True},
+                                    {"name": "merged, 4 squares, LR 4e-4, no re-partition", "y": [pw.get(st) for st in xs], "color": "#0891b2", "gap": True},
+                                    {"name": "re-merged + re-partitioned every 10B (LR 4e-4)", "y": [rp.get(st) for st in xs], "color": "#be123c", "gap": True}],
+                                title="Held-out CE (300B sample): re-partition every 10B vs the joint baseline", xlabels=[f"{v:.0f}B" for v in X], x_label="tokens trained", xfmt=lambda v: f"{v:.0f}B")
+    rows = [[f"{tok(st):.0f}B", f3(rp.get(st)), f3(rpp.get(st)), f3(base.get(st)), f3(main.get(st)), f3(pw.get(st))] for st in xs]
+    tbl = table(["tokens", "re-partitioned merge, held-out", "re-partitioned merge, ppl sets", "baseline, held-out", "main 8e-4 merge", "4e-4 merge, no re-partition"], rows)
+    what = ("From the 4e-4 arm's 20B merge (its four window-1 squares merged with token-share weights and Adam state carried), every 10B: a fresh "
+            "random expert grouping of layers 2&ndash;9 (layer 1 whole, as in every control), the merged model sliced into four squares, each square "
+            "trained at LR 4e-4 on a contiguous quarter of the next 10B of the stream (a random quarter of its documents), merged again with "
+            "equal weights and Adam state, and evaluated. The baseline is the jointly trained model at its existing checkpoints (no re-run); "
+            "the two blue lines are the 4-square merges that never re-partition (8e-4 to 130B, 4e-4 to 30B).")
+    return section("Re-merge + re-partition every 10B (4 squares, sub-model LR 4e-4)", what, ch + tbl, RP_TAKE)
+
+
 def build_q5_controls():
     """Q5: the random-partition controls, one box per start model (moved out of Q3 on 2026-09-24)."""
     body = question_card("q5")
@@ -1112,7 +1154,7 @@ def build_q5_controls():
     boxes = [L for L in ("5A", "5B", "5C", "5D")]
     body += VARIANT_CSS + card("info", "Start models",
         '<ul class="q3index">' + "".join(f'<li><a href="#q5-{L}"><b>{L}</b> &middot; {t}</a> &mdash; {bl}</li>' for L, t, _, bl in VARIANTS if L in boxes) + "</ul>")
-    body += variant("5A", random_control("emo", with_charts=False) + lr_sweep_section(), tab="q5")
+    body += variant("5A", random_control("emo", with_charts=False) + lr_sweep_section() + repartition_section(), tab="q5")
     body += variant("5B", random_control("std", with_charts=False), tab="q5")
     if (ROOT / "sparse_experts/olmoe3_squares_s128rand4/groups.json").exists():
         body += variant("5C", card("info", "Setup", "<p>The 128-expert standard-routing model of the expert-count ladder (same expert size as the 512e model, top-16 of 128, "
