@@ -1043,7 +1043,8 @@ LR_SWEEP_LRS = ["1e-4", "2e-4", "4e-4", "8e-4", "1.6e-3", "3.2e-3"]
 LR_SWEEP_TAKE = ("The squares want a lower LR than the pretraining one: 4e-4 wins the selection sample for both 4 and 8 squares (2e-4 is second, "
                  "8e-4 fourth, and 1.6e-3 / 3.2e-3 are far worse). On the held-out sample the 4-square merge at 4e-4 lands exactly on the jointly "
                  "trained baseline at 20B (2.403 vs 2.403; the 8e-4 merge was 2.427), so at this LR splitting into 4 random sub-models costs "
-                 "nothing up to 20B. Eight squares gain less (2.490 vs 2.500, baseline 2.403). Window 2 at 4e-4 is running.")
+                 "nothing up to 20B. At 30B the 4e-4 merge is 0.009 above the baseline (2.385 vs 2.376; at 8e-4 the gap was 0.029) and on the ppl sets "
+                 "0.004 (2.910 vs 2.906). Eight squares gain less: 2.490 vs 2.500 at 20B and 2.477 vs 2.489 at 30B (baseline 2.403 / 2.376).")
 
 
 def lr_sweep_section():
