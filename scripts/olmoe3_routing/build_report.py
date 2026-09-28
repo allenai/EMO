@@ -1117,9 +1117,10 @@ def lr_sweep_section():
 
 
 RP_ENDS = [38148, 57221, 76295, 95368, 114442, 133515, 152589, 171662, 190736, 209809, 228883, 247956]   # squares_repartition.sh cycle ends (20B, then every 10B)
-RP_TAKE = ("Re-merging and re-partitioning every 10B keeps the merge close to the baseline all the way: the gap is 0.008 at 30B (2.384 vs 2.376), "
-           "about 0.02 from 60B on (2.352 vs 2.331 at 61B, 2.335 vs 2.311 at 87B, 2.323 vs 2.301 at 113B), while the 8e-4 merge that never "
-           "re-partitions drifts to 0.044 at 61B and 0.066 at 113B. The last two cycles (120B, 130B) are running.")
+RP_TAKE = ("Re-merging and re-partitioning every 10B keeps the merge close to the baseline all the way to 130B: the gap is 0.008 at 30B "
+           "(2.384 vs 2.376) and then about 0.02 for the rest of training (2.352 vs 2.331 at 61B, 2.323 vs 2.301 at 113B, 2.315 vs 2.295 at "
+           "130B; ppl sets 2.836 vs 2.825), while the 8e-4 merge that never re-partitions drifts to 0.078 at 130B (2.373) and ends behind its "
+           "own best single square (2.412 is the best square, the merge 2.373). Re-partitioning does not close the last 0.02, but it stops the divergence.")
 
 
 def repartition_section():
