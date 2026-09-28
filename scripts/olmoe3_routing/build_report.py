@@ -792,7 +792,9 @@ EMO_TAKE = ("The merged model beats the baseline only at 5% (2.424 vs 2.455) and
             "routers can fix on their own, and the other half sits in the averaged non-router weights and needs the full model to train. "
             "Freezing the routers during square training (purple) changes nothing: the merged curve is identical to three decimals at every point "
             "(2.423 / 2.477 / 2.515 / 2.544 / 2.557 vs 2.424 / 2.478 / 2.513 / 2.543 / 2.557), so the squares' router updates are not what breaks the "
-            "merge; with the routers fixed, the whole loss is the averaged non-router weights.")
+            "merge; with the routers fixed, the whole loss is the averaged non-router weights. Replacing the spectral expert groups by random "
+            "equal ones while keeping the same documents (teal) costs a further 0.02 at every point (2.451 &rarr; 2.576 vs 2.424 &rarr; 2.557): the "
+            "routing-based grouping helps a little, but most of the merge loss is there with any grouping.")
 EMO_PW_TAKE = ("The squares on their own track the baseline the whole way and end slightly below it (2.383 vs 2.398 at 100%), while the merged "
             "model drifts up to 2.557. Only at 5% is merging a gain (2.424 vs 2.509 piecewise): the four copies of the shared parameters are still "
             "nearly identical, so averaging is free and routing across groups adds experts. From 31% on, averaging diverged shared parameters is "
@@ -1115,8 +1117,9 @@ def lr_sweep_section():
 
 
 RP_ENDS = [38148, 57221, 76295, 95368, 114442, 133515, 152589, 171662, 190736, 209809, 228883, 247956]   # squares_repartition.sh cycle ends (20B, then every 10B)
-RP_TAKE = ("Running (one cycle per 10B). So far the re-partitioned merge tracks the baseline within about 0.01: 2.384 at 30B (baseline 2.376; the same "
-           "squares without re-partitioning gave 2.385), 2.372 at 40B, 2.361 at 50B, on the way to the baseline's 2.331 at 61B.")
+RP_TAKE = ("Re-merging and re-partitioning every 10B keeps the merge close to the baseline all the way: the gap is 0.008 at 30B (2.384 vs 2.376), "
+           "about 0.02 from 60B on (2.352 vs 2.331 at 61B, 2.335 vs 2.311 at 87B, 2.323 vs 2.301 at 113B), while the 8e-4 merge that never "
+           "re-partitions drifts to 0.044 at 61B and 0.066 at 113B. The last two cycles (120B, 130B) are running.")
 
 
 def repartition_section():
