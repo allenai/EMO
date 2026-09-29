@@ -794,7 +794,11 @@ EMO_TAKE = ("The merged model beats the baseline only at 5% (2.424 vs 2.455) and
             "(2.423 / 2.477 / 2.515 / 2.544 / 2.557 vs 2.424 / 2.478 / 2.513 / 2.543 / 2.557), so the squares' router updates are not what breaks the "
             "merge; with the routers fixed, the whole loss is the averaged non-router weights. Replacing the spectral expert groups by random "
             "equal ones while keeping the same documents (teal) costs a further 0.02 at every point (2.451 &rarr; 2.576 vs 2.424 &rarr; 2.557): the "
-            "routing-based grouping helps a little, but most of the merge loss is there with any grouping.")
+            "routing-based grouping helps a little, but most of the merge loss is there with any grouping. The opposite swap settles the question: "
+            "keeping the spectral groups but giving every square a random equal quarter of the documents (pink) removes the degradation entirely, "
+            "the merge improving through the window (2.449 &rarr; 2.420 at 100%, 0.02 above the baseline's 2.398) where the main run climbs to 2.557. "
+            "Block A's merge fails because of the routing-based document assignment, which sends each square a skewed slice of the data and pulls "
+            "the averaged shared weights apart, not because of the expert grouping.")
 EMO_PW_TAKE = ("The squares on their own track the baseline the whole way and end slightly below it (2.383 vs 2.398 at 100%), while the merged "
             "model drifts up to 2.557. Only at 5% is merging a gain (2.424 vs 2.509 piecewise): the four copies of the shared parameters are still "
             "nearly identical, so averaging is free and routing across groups adds experts. From 31% on, averaging diverged shared parameters is "
