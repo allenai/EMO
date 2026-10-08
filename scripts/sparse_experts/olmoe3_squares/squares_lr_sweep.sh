@@ -9,7 +9,12 @@
 #   bash scripts/sparse_experts/olmoe3_squares/squares_lr_sweep.sh k4|k8 <lr> w1|w2      (idempotent; detach; commit + push first)
 #   bash scripts/sparse_experts/olmoe3_squares/squares_lr_sweep.sh k4|k8 ref             (selection-sample passes of the parent 8e-4 arm's merges)
 set -u; cd "$(git rev-parse --show-toplevel)"; export PATH=/root/.conda/envs/emo/bin:$PATH
-KV="${1:?k4|k8}"; LR="${2:?lr, e.g. 2e-4}"; MODE="${3:-w1}"
+KV="${1:?k4|k8}"; LR="${2:?lr, e.g. 2e-4}"; MODE="${3:-w1}"; FREEZE="${4:-none}"   # freeze ablations (user request 2026-10-08): none | router | router_attn | non_expert
+# frozen parameter-name globs per ablation (matched against module.<name>); the merged model is checked against the 10B start model after every merge
+ROUTER_PAT="*routed_experts_router.weight"; ATTN_PAT="*blocks.*.attention.*"
+NONEXPERT_PAT="*embeddings.weight,*embedding_norm.*,*lm_head.*,*blocks.*.attention.*,*blocks.*.attention_input_norm.*,*blocks.*.attention_norm.*,*blocks.*.feed_forward_input_norm.*,*blocks.*.feed_forward_norm.*,*blocks.*.latent_*,*blocks.*.shared_experts.*,*routed_experts_router.weight"
+case $FREEZE in none) FPAT="";; router) FPAT="$ROUTER_PAT";; router_attn) FPAT="$ROUTER_PAT,$ATTN_PAT";; non_expert) FPAT="$NONEXPERT_PAT";; *) echo "freeze: none|router|router_attn|non_expert"; exit 1;; esac
+FENV=""; [ -n "$FPAT" ] && FENV="OLMOE3_FREEZE_PATTERNS=$FPAT OLMOE3_FREEZE_TAG=$FREEZE"
 S=sparse_experts; W=/weka/oe-training-default/ryanwang/EMO/sparse_experts; FULL=olmoe3_275m_emo_10b; SAMPLE=sample_8k_300b.npz; VSAMPLE=sample_8k_300b_val.npz
 case $KV in k4) K=4; PARENT=olmoe3_squares_emorand;  PRP=olmoe3_275m_emorand_square;  PHR=runs_heldout300b_emorand;;
             k8) K=8; PARENT=olmoe3_squares_emorand8; PRP=olmoe3_275m_emorand8_square; PHR=runs_heldout300b_emorand8;; *) echo "k4|k8"; exit 1;; esac
@@ -34,20 +39,21 @@ if [ $MODE = ref ]; then   # the parent arm (LR 8e-4) on the selection sample, a
   for s in 30000 38148 57221; do heldout ${PHR}_val merged_match$s $W/$PARENT/merged/match$s $VSAMPLE "$PARENT-val-merged_match$s"; done
   say "ref passes launched"; exit 0
 fi
-TAG=lr$LR; SQN=${PARENT}_$TAG; RP=${PRP%_square}_${TAG}_square; HR=${PHR}_$TAG; HRV=${PHR}_${TAG}_val; SQ=$S/$SQN; LOG=$SQ/logs; mkdir -p $SQ $LOG $S/olmoe3_routing/$HR $S/olmoe3_routing/$HRV
-echo "$KV $LR" > $SQ/driver_args
+TAG=lr$LR; [ $FREEZE = none ] || TAG=lr${LR}_frz$FREEZE; SQN=${PARENT}_$TAG; RP=${PRP%_square}_${TAG}_square; HR=${PHR}_$TAG; HRV=${PHR}_${TAG}_val; SQ=$S/$SQN; LOG=$SQ/logs; mkdir -p $SQ $LOG $S/olmoe3_routing/$HR $S/olmoe3_routing/$HRV
+echo "$KV $LR" > $SQ/driver_args; [ $FREEZE = none ] || echo "$KV $LR $MODE $FREEZE" > $SQ/driver_args_$MODE
+checkfrz() { [ -z "$FPAT" ] && return 0; local s=$1; [ -f $LOG/check_frozen_match$s.json ] || PYTHONPATH=external/OLMo-core/src python scripts/sparse_experts/olmoe3_squares/check_frozen.py --start $S/$FULL/step19074 --model $SQ/merged/match$s --frozen "$FPAT" --json $LOG/check_frozen_match$s.json 2>&1 | tail -1 | sed "s/^/match$s: /"; }
 [ -f $SQ/groups.json ] || cp $S/$PARENT/groups.json $SQ/groups.json
 for d in pack pack2 init; do [ -e $SQ/$d ] || ln -s ../$PARENT/$d $SQ/$d; done
 mid() { python -c "s=$1; print(max(1, round(s*10926/19074)))"; }
 if [ $MODE = w1 ]; then
   SH1=$(shares_of $SQ/pack/stats.json); declare -a FIN MID
   for g in $GS; do t=$(python -c "import json; print(json.load(open('$SQ/pack/stats.json'))['tokens_per_group'][$g])"); FIN[$g]=$((t / 524288)); MID[$g]=$(mid ${FIN[$g]})
-    launch_train $LOG/square${g}_launched $LOG/launch_square$g.log scripts/sparse_experts/model_scripts/olmoe3_275m_emo_square.sh SQUARE_GROUP=$g SQUARES_NAME=$SQN OLMOE3_EMO=1 OLMOE3_NUM_EXPERTS=512 OLMOE3_LR=$LR OLMOE3_FIXED_STEPS="${MID[$g]},${FIN[$g]}" OLMOE3_RUNNAME=${RP}$g OLMOE3_WANDB_TAGS=$SQN,square,lr_sweep
+    launch_train $LOG/square${g}_launched $LOG/launch_square$g.log scripts/sparse_experts/model_scripts/olmoe3_275m_emo_square.sh SQUARE_GROUP=$g SQUARES_NAME=$SQN OLMOE3_EMO=1 OLMOE3_NUM_EXPERTS=512 OLMOE3_LR=$LR OLMOE3_FIXED_STEPS="${MID[$g]},${FIN[$g]}" OLMOE3_RUNNAME=${RP}$g OLMOE3_WANDB_TAGS=$SQN,square,lr_sweep $FENV
   done
   say "window-1 steps: $(for g in $GS; do echo -n "g$g mid ${MID[$g]} final ${FIN[$g]} "; done); shares $SH1"
   for point in 30000:MID 38148:FIN; do s=${point%%:*}; arr=${point##*:}; subs=()
     for g in $GS; do eval "st=\${$arr[$g]}"; until [ -f $S/${RP}$g/step$st/train/rank0.pt ]; do sleep 300; done; subs+=("$S/${RP}$g/step$st"); done; say "point $s: square checkpoints present"
-    merge_k $SQN $SQ/merged/match$s "$SH1" "${subs[@]}"
+    merge_k $SQN $SQ/merged/match$s "$SH1" "${subs[@]}"; checkfrz $s
     heldout $HRV merged_match$s $W/$SQN/merged/match$s $VSAMPLE "$SQN-val-merged_match$s"
     heldout $HR merged_match$s $W/$SQN/merged/match$s $SAMPLE "$SQN-eval-merged_match$s"
     ppl $W/$SQN/merged/match$s merged/match$s.json "$SQN-ppl-merged-$s" $SQN
@@ -59,10 +65,10 @@ else   # w2: window 2 for the chosen LR, from this arm's window-1 finals
   for g in $GS; do t=$(python -c "import json; print(json.load(open('$SQ/pack/stats.json'))['tokens_per_group'][$g])"); fin=$((t / 524288))
     [ -f $SQ/init2/group$g/model_and_optim/.metadata ] || { PYTHONPATH=external/OLMo-core/src python scripts/sparse_experts/olmoe3_squares/rewrite_checkpoint.py --src $S/${RP}$g/step$fin --out $SQ/init2/group$g --overwrite 2>&1 | tail -1; say "init2 group$g done"; }
     t2=$(python -c "import json; print(json.load(open('$SQ/pack2/stats.json'))['tokens_per_group'][$g])"); fin2=$((t2 / 524288)); subs+=("$S/${RP}${g}_w2/step$fin2")
-    launch_train $LOG/square${g}_w2_launched $LOG/launch_square${g}_w2.log scripts/sparse_experts/model_scripts/olmoe3_275m_emo_square.sh SQUARE_GROUP=$g SQUARES_NAME=$SQN OLMOE3_EMO=1 OLMOE3_NUM_EXPERTS=512 OLMOE3_LR=$LR OLMOE3_TOKENS=$t2 OLMOE3_FIXED_STEPS="$fin2" OLMOE3_DATA_PATHS="$W/$SQN/pack2/group$g/*.npy" OLMOE3_INIT_FROM="$W/$SQN/init2/group$g/model_and_optim" OLMOE3_RUNNAME=${RP}${g}_w2 OLMOE3_WANDB_TAGS=$SQN,square,lr_sweep,w2
+    launch_train $LOG/square${g}_w2_launched $LOG/launch_square${g}_w2.log scripts/sparse_experts/model_scripts/olmoe3_275m_emo_square.sh SQUARE_GROUP=$g SQUARES_NAME=$SQN OLMOE3_EMO=1 OLMOE3_NUM_EXPERTS=512 OLMOE3_LR=$LR OLMOE3_TOKENS=$t2 OLMOE3_FIXED_STEPS="$fin2" OLMOE3_DATA_PATHS="$W/$SQN/pack2/group$g/*.npy" OLMOE3_INIT_FROM="$W/$SQN/init2/group$g/model_and_optim" OLMOE3_RUNNAME=${RP}${g}_w2 OLMOE3_WANDB_TAGS=$SQN,square,lr_sweep,w2 $FENV
   done
   for d in "${subs[@]}"; do until [ -f "$d/train/rank0.pt" ]; do sleep 300; done; done; say "window-2 finals present"
-  merge_k $SQN $SQ/merged/match57221 "$SH2" "${subs[@]}"
+  merge_k $SQN $SQ/merged/match57221 "$SH2" "${subs[@]}"; checkfrz 57221
   heldout $HRV merged_match57221 $W/$SQN/merged/match57221 $VSAMPLE "$SQN-val-merged_match57221"
   heldout $HR merged_match57221 $W/$SQN/merged/match57221 $SAMPLE "$SQN-eval-merged_match57221"
   ppl $W/$SQN/merged/match57221 merged/match57221.json "$SQN-ppl-merged-57221" $SQN
