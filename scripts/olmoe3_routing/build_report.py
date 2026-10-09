@@ -1205,6 +1205,43 @@ def s128_lr_sweep_section():
     return section("Pretraining learning rate of the 128e model", what, ch + tbl + extra, S128_LR_TAKE)
 
 
+FREEZE_ARMS = [("router", "routers frozen", "#7c3aed"), ("router_attn", "routers + attention frozen", "#d97706"), ("non_expert", "everything frozen except the experts", "#0891b2")]
+FREEZE_TAKE = "Running: the three arms train both windows; each merge is checked tensor by tensor against the 10B start model."
+
+
+def freeze_section():
+    """Freeze ablations of the 8-square control at sub-model LR 4e-4 (squares_lr_sweep.sh ... w1w2 <freeze>): routers frozen; routers +
+    attention (every block's sequence mixer) frozen; everything frozen except the routed and shared experts. Merged at 16B / 20B / 30B
+    like the unfrozen 4e-4 arm; check_frozen.py verifies after every merge that the frozen tensors are bit-identical to the start model."""
+    R = ROOT / "sparse_experts/olmoe3_routing"; f3 = lambda v: "&ndash;" if v is None else f"{v:.3f}"
+    pts = [(30000, "16B"), (38148, "20B"), (57221, "30B")]
+    def arm(tag):
+        hr = R / f"runs_heldout300b_emorand8_lr4e-4{'_frz' + tag if tag else ''}"; sq = ROOT / f"sparse_experts/olmoe3_squares_emorand8_lr4e-4{'_frz' + tag if tag else ''}"
+        return {st: dict(h=_ce(hr / f"merged_match{st}/none"), p=_ppl(sq / "ppl_validation/merged" / f"match{st}.json"),
+                         chk=(_jload(sq / "logs" / f"check_frozen_match{st}.json") or {}).get("ok") if tag else None) for st, _ in pts}
+    data = {tag: arm(tag) for tag, _, _ in FREEZE_ARMS}; ref = arm(""); base = {st: _ce(R / f"runs_heldout300b_emo/baseline_step{st}/none") for st, _ in pts}
+    if not any(v["h"] is not None for d in data.values() for v in d.values()): return ""
+    rows = [["8 squares, LR 4e-4, nothing frozen"] + [f3(ref[st]["h"]) for st, _ in pts] + [f3(ref[st]["p"]) for st, _ in pts] + ["&ndash;"]]
+    for tag, lab, _ in FREEZE_ARMS:
+        d = data[tag]; chk = ", ".join(f"{t} {'yes' if d[st]['chk'] else ('no' if d[st]['chk'] is False else '&ndash;')}" for st, t in pts)
+        rows.append([lab] + [f3(d[st]["h"]) for st, _ in pts] + [f3(d[st]["p"]) for st, _ in pts] + [chk])
+    rows.append(["baseline (joint training)"] + [f3(base[st]) for st, _ in pts] + ["&ndash;"] * 3 + ["&ndash;"])
+    tbl = table(["run", "held-out 16B", "held-out 20B", "held-out 30B", "ppl 16B", "ppl 20B", "ppl 30B", "frozen weights unchanged (merge vs start)"], rows)
+    xs = [15.729, 20.001, 30.0]
+    ch = CHART_CSS + line_chart(xs, [{"name": "baseline (joint training)", "y": [base[st] for st, _ in pts], "color": "#059669"},
+                                    {"name": "8 squares, LR 4e-4, nothing frozen", "y": [ref[st]["h"] for st, _ in pts], "color": "#ea580c"}]
+                                   + [{"name": lab, "y": [data[tag][st]["h"] for st, _ in pts], "color": c} for tag, lab, c in FREEZE_ARMS],
+                                title="Held-out CE: freezing parameters in the 8 squares (LR 4e-4)", xlabels=["16B", "20B", "30B"], x_label="tokens trained", xfmt=lambda v: f"{v:.0f}B")
+    what = ("Three copies of the 8-square 4e-4 arm (same random expert groups, document packs, sliced start checkpoints, EMO loss and LR) with "
+            "part of each square held at learning rate 0 through both windows: <b>routers</b> (the routed-expert routers of all nine MoE layers); "
+            "<b>routers + attention</b> (plus every block's sequence mixer, softmax attention in two blocks and delta attention in eight, with their "
+            "internal norms; the block norms stay trainable); <b>everything except the experts</b> (only the routed experts and the shared expert of "
+            "every block train; embeddings, output head, all norms, attention, latent projections and routers are frozen). Merged at the same three "
+            "points as the unfrozen arm; after every merge the merged model is compared with the 10B start model tensor by tensor (frozen families "
+            "bit-identical, trainable families changed), the last column.")
+    return section("Freezing parameters in the 8 squares (sub-model LR 4e-4)", what, ch + tbl, FREEZE_TAKE)
+
+
 def build_q5_controls():
     """Q5: the random-partition controls, one box per start model (moved out of Q3 on 2026-09-24)."""
     body = question_card("q5")
@@ -1223,7 +1260,7 @@ def build_q5_controls():
     boxes = [L for L in ("5A", "5B", "5C", "5D")]
     body += VARIANT_CSS + card("info", "Start models",
         '<ul class="q3index">' + "".join(f'<li><a href="#q5-{L}"><b>{L}</b> &middot; {t}</a> &mdash; {bl}</li>' for L, t, _, bl in VARIANTS if L in boxes) + "</ul>")
-    body += variant("5A", random_control("emo", with_charts=False) + lr_sweep_section() + repartition_section(), tab="q5")
+    body += variant("5A", random_control("emo", with_charts=False) + lr_sweep_section() + repartition_section() + freeze_section(), tab="q5")
     body += variant("5B", random_control("std", with_charts=False), tab="q5")
     if (ROOT / "sparse_experts/olmoe3_squares_s128rand4/groups.json").exists():
         body += variant("5C", card("info", "Setup", "<p>The 128-expert standard-routing model of the expert-count ladder (same expert size as the 512e model, top-16 of 128, "
