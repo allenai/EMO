@@ -44,6 +44,7 @@ echo "$KV $LR" > $SQ/driver_args; [ $FREEZE = none ] || echo "$KV $LR $MODE $FRE
 checkfrz() { [ -z "$FPAT" ] && return 0; local s=$1; [ -f $LOG/check_frozen_match$s.json ] || PYTHONPATH=external/OLMo-core/src python scripts/sparse_experts/olmoe3_squares/check_frozen.py --start $S/$FULL/step19074 --model $SQ/merged/match$s --frozen "$FPAT" --json $LOG/check_frozen_match$s.json 2>&1 | tail -1 | sed "s/^/match$s: /"; }
 [ -f $SQ/groups.json ] || cp $S/$PARENT/groups.json $SQ/groups.json
 for d in pack pack2 init; do [ -e $SQ/$d ] || ln -s ../$PARENT/$d $SQ/$d; done
+for g in $(seq 0 $((K-1))); do [ -f $SQ/init/group$g/.metadata ] || { say "ABORT: start slice $SQ/init/group$g missing (the parent's init/ was pruned 2026-09-27; re-slice it from $S/$FULL/step19074 with slice_checkpoint.py first)"; exit 1; }; done
 mid() { python -c "s=$1; print(max(1, round(s*10926/19074)))"; }
 if [ $MODE = w1 ] || [ $MODE = w1w2 ]; then
   SH1=$(shares_of $SQ/pack/stats.json); declare -a FIN MID
