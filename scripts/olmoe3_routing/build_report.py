@@ -1229,16 +1229,27 @@ def freeze_section():
     pts = [(30000, "16B"), (38148, "20B"), (57221, "30B")]
     def arm(tag):
         hr = R / f"runs_heldout300b_emorand8_lr4e-4{'_frz' + tag if tag else ''}"; sq = ROOT / f"sparse_experts/olmoe3_squares_emorand8_lr4e-4{'_frz' + tag if tag else ''}"
-        return {st: dict(h=_ce(hr / f"merged_match{st}/none"), p=_ppl(sq / "ppl_validation/merged" / f"match{st}.json"),
+        rp = f"olmoe3_275m_emorand8_lr4e-4{'_frz' + tag if tag else ''}_square"
+        def sq_ppl(st):  # mean ppl-set CE over the 8 squares alone (freeze_square_ppl.sh); window-1 mid point ~1365-1372, finals ~2383, window-2 finals ~2383
+            vals = []
+            for g in range(8):
+                run = f"{rp}{g}" if st != 57221 else f"{rp}{g}_w2"; d = sq / "ppl_validation" / run
+                if not d.exists(): return None
+                cands = sorted(int(f.stem[4:]) for f in d.glob("step*.json"))
+                want = [c for c in cands if (1360 <= c <= 1375)] if st == 30000 else [c for c in cands if c >= 2370]
+                if not want: return None
+                vals.append(_ppl(d / f"step{want[-1]}.json"))
+            return sum(vals) / 8 if all(v is not None for v in vals) else None
+        return {st: dict(h=_ce(hr / f"merged_match{st}/none"), p=_ppl(sq / "ppl_validation/merged" / f"match{st}.json"), sp=sq_ppl(st),
                          chk=(_jload(sq / "logs" / f"check_frozen_match{st}.json") or {}).get("ok") if tag else None) for st, _ in pts}
     data = {tag: arm(tag) for tag, _, _ in FREEZE_ARMS}; ref = arm(""); base = {st: _ce(R / f"runs_heldout300b_emo/baseline_step{st}/none") for st, _ in pts}
     if not any(v["h"] is not None for d in data.values() for v in d.values()): return ""
-    rows = [["8 squares, LR 4e-4, nothing frozen"] + [f3(ref[st]["h"]) for st, _ in pts] + [f3(ref[st]["p"]) for st, _ in pts] + ["&ndash;"]]
+    rows = [["8 squares, LR 4e-4, nothing frozen"] + [f3(ref[st]["h"]) for st, _ in pts] + [f3(ref[st]["p"]) for st, _ in pts] + [f3(ref[st]["sp"]) for st, _ in pts] + ["&ndash;"]]
     for tag, lab, _ in FREEZE_ARMS:
         d = data[tag]; chk = ", ".join(f"{t} {'yes' if d[st]['chk'] else ('no' if d[st]['chk'] is False else '&ndash;')}" for st, t in pts)
-        rows.append([lab] + [f3(d[st]["h"]) for st, _ in pts] + [f3(d[st]["p"]) for st, _ in pts] + [chk])
-    rows.append(["baseline (joint training)"] + [f3(base[st]) for st, _ in pts] + ["&ndash;"] * 3 + ["&ndash;"])
-    tbl = table(["run", "held-out 16B", "held-out 20B", "held-out 30B", "ppl 16B", "ppl 20B", "ppl 30B", "frozen weights unchanged (merge vs start)"], rows)
+        rows.append([lab] + [f3(d[st]["h"]) for st, _ in pts] + [f3(d[st]["p"]) for st, _ in pts] + [f3(d[st]["sp"]) for st, _ in pts] + [chk])
+    rows.append(["baseline (joint training)"] + [f3(base[st]) for st, _ in pts] + [f3(bppl[st]) for st, _ in pts] + ["&ndash;"] * 3 + ["&ndash;"])
+    tbl = table(["run", "held-out 16B", "held-out 20B", "held-out 30B", "ppl 16B", "ppl 20B", "ppl 30B", "squares alone ppl 16B", "20B", "30B", "frozen weights unchanged (merge vs start)"], rows)
     xs = [15.729, 20.001, 30.0]
     bppl = {st: next((_ppl(ROOT / "sparse_experts" / d / run / f"step{st}.json") for d in RANDOM_CONTROL["emo"]["ppl_dirs"] for run in RANDOM_CONTROL["emo"]["base_runs"]
                       if (ROOT / "sparse_experts" / d / run / f"step{st}.json").exists()), None) for st, _ in pts}
@@ -1247,14 +1258,23 @@ def freeze_section():
                                {"name": "8 squares, LR 4e-4, nothing frozen", "y": [ref[st][key] for st, _ in pts], "color": "#ea580c", "gap": True}]
                               + [{"name": lab, "y": [data[tag][st][key] for st, _ in pts], "color": c, "gap": True} for tag, lab, c in FREEZE_ARMS],
                           title=title, y_label=ylab, xlabels=["16B", "20B", "30B"], x_label="tokens trained", xfmt=lambda v: f"{v:.0f}B")
-    ch = CHART_CSS + chart("h", "Held-out CE (300B sample): freezing parameters in the 8 squares (LR 4e-4)", "CE") + chart("p", "v3-small ppl sets, mean CE", "CE")
+    def chart_p():  # merges (solid) and the squares alone, mean of 8 (dashed), on the ppl sets
+        series = [{"name": "baseline (joint training)", "y": [bppl[st] for st, _ in pts], "color": "#059669", "gap": True},
+                  {"name": "8 squares, LR 4e-4, nothing frozen: merged", "y": [ref[st]["p"] for st, _ in pts], "color": "#ea580c", "gap": True},
+                  {"name": "nothing frozen: squares alone, mean of 8", "y": [ref[st]["sp"] for st, _ in pts], "color": "#ea580c", "dashed": True, "gap": True}]
+        for tag, lab, c in FREEZE_ARMS:
+            series += [{"name": lab + ": merged", "y": [data[tag][st]["p"] for st, _ in pts], "color": c, "gap": True},
+                       {"name": lab + ": squares alone, mean of 8", "y": [data[tag][st]["sp"] for st, _ in pts], "color": c, "dashed": True, "gap": True}]
+        return line_chart(xs, series, title="v3-small ppl sets, mean CE: merged (solid) vs the squares alone, mean of 8 (dashed)", y_label="CE", xlabels=["16B", "20B", "30B"], x_label="tokens trained", xfmt=lambda v: f"{v:.0f}B")
+    ch = CHART_CSS + chart("h", "Held-out CE (300B sample): freezing parameters in the 8 squares (LR 4e-4)", "CE") + chart_p()
     what = ("Three copies of the 8-square 4e-4 arm (same random expert groups, document packs, sliced start checkpoints, EMO loss and LR) with "
             "part of each square held at learning rate 0 through both windows: <b>routers</b> (the routed-expert routers of all nine MoE layers); "
             "<b>routers + attention</b> (plus every block's sequence mixer, softmax attention in two blocks and delta attention in eight, with their "
             "internal norms; the block norms stay trainable); <b>everything except the experts</b> (only the routed experts and the shared expert of "
             "every block train; embeddings, output head, all norms, attention, latent projections and routers are frozen). Merged at the same three "
             "points as the unfrozen arm; after every merge the merged model is compared with the 10B start model tensor by tensor (frozen families "
-            "bit-identical, trainable families changed), the last column.")
+            "bit-identical, trainable families changed), the last column. <b>Squares alone</b>: each of the 8 sub-models scored by itself on the ppl sets "
+            "(mean of the 8; dashed in the ppl chart); the unfrozen reference arm has these only at 20B and 30B, its 16B square checkpoints were pruned.")
     return section("Freezing parameters in the 8 squares (sub-model LR 4e-4)", what, ch + tbl, FREEZE_TAKE)
 
 
