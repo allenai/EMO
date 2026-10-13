@@ -66,7 +66,9 @@ def eval_from_spec(spec):
     if args[1] == "scripts/sparse_experts/olmoe3_routing/extract_routing.py":
         out = local(args[args.index("--out-dir") + 1]); return dict(run="eval:" + str(out.parent.parent.parent.name + "/" + out.parent.parent.name), final=0, done_path=str(out / "DONE"))
     if args[1] == "scripts/debug_validation/eval_ppl_validation.py":
-        ck = local(args[args.index("--checkpoints") + 1]); od = local(args[args.index("--out-dir") + 1])
+        i = args.index("--checkpoints") + 1; cks = []
+        while i < len(args) and not args[i].startswith("--"): cks.append(local(args[i])); i += 1   # a job may score several checkpoints in sequence (batched square evals)
+        ck = cks[-1]; od = local(args[args.index("--out-dir") + 1])   # done = the LAST checkpoint's json (keying on the first one killed batched jobs after their first result, 2026-10-13)
         return dict(run="ppl:" + str(od.parent.name + "/" + ck.parent.name + "/" + ck.name), final=0, done_path=str(od / ck.parent.name / f"{ck.name}.json"))
     return None
 
