@@ -1216,12 +1216,12 @@ FREEZE_ARMS = [("router", "routers frozen", "#7c3aed"), ("router_attn", "routers
 FREEZE_TAKE = ("All nine checks pass: the frozen families are bit-identical to the 10B start model at every merge and every trainable tensor changed. "
                "Freezing the routers is free (2.479 vs 2.477 at 30B, the 4-square result again). Freezing attention as well costs a steady 0.025 "
                "(2.503 at 30B), and training only the experts (routed and shared) costs 0.05 (2.531); the ordering is the same on the selection "
-               "sample and the ppl sets, and none of the three narrows the 0.10 gap to the jointly trained baseline (2.376). The merge loss of the "
-               "8-square control lives in the non-router shared weights that these runs freeze, not in the routers: freezing them only removes "
-               "capacity, it does not stop the squares from diverging. The squares alone (dashed, ppl sets) tell the same story from the other side: "
-               "with nothing or only the routers frozen the merge beats its own squares by 0.02 (3.005 vs 3.028 at 30B), but the more is frozen the "
-               "less the merge adds, and with only the experts trainable it loses to its squares (3.070 vs 3.048): every square reaches about the same "
-               "quality on its own whatever is frozen (3.028 &rarr; 3.048), so the frozen arms lose almost all of their merge deficit in the merge itself.")
+               "sample and the ppl sets, and none of the three narrows the 0.10 gap to the jointly trained baseline (2.376). The squares alone "
+               "(dashed) show where the deficit sits: on their own they end within 0.02 of each other whatever is frozen (held-out 2.504 / 2.508 / "
+               "2.515 / 2.520 at 30B), but the merge adds less the more is frozen: it beats its squares by 0.03 with nothing or only the routers frozen "
+               "(2.477 vs 2.504), by 0.01 with attention frozen too, and with only the experts trainable the merged model is worse than its own "
+               "squares (2.531 vs 2.520; ppl sets 3.070 vs 3.048). Scattering independently trained experts behind frozen shared weights does not "
+               "compose; the merge loss of the 8-square control lives in those shared weights, not in the routers.")
 
 
 def freeze_section():
