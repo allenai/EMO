@@ -1218,7 +1218,10 @@ FREEZE_TAKE = ("All nine checks pass: the frozen families are bit-identical to t
                "(2.503 at 30B), and training only the experts (routed and shared) costs 0.05 (2.531); the ordering is the same on the selection "
                "sample and the ppl sets, and none of the three narrows the 0.10 gap to the jointly trained baseline (2.376). The merge loss of the "
                "8-square control lives in the non-router shared weights that these runs freeze, not in the routers: freezing them only removes "
-               "capacity, it does not stop the squares from diverging.")
+               "capacity, it does not stop the squares from diverging. The squares alone (dashed, ppl sets) tell the same story from the other side: "
+               "with nothing or only the routers frozen the merge beats its own squares by 0.02 (3.005 vs 3.028 at 30B), but the more is frozen the "
+               "less the merge adds, and with only the experts trainable it loses to its squares (3.070 vs 3.048): every square reaches about the same "
+               "quality on its own whatever is frozen (3.028 &rarr; 3.048), so the frozen arms lose almost all of their merge deficit in the merge itself.")
 
 
 def freeze_section():
