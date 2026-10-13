@@ -1018,6 +1018,11 @@ def control_explorer_data():
                 if not HL.exists(): continue
                 ser[f"l{k}"] = {"h": [hb(C["start"]) if st == 19074 else (_ce(HL / f"merged_match{st}/none") if st in (30000, 38148, 57221) else None) for st in steps],
                                 "p": [ref_ppl if st == 19074 else (_ppl(PL / f"match{st}.json") if st in (30000, 38148, 57221) else None) for st in steps]}
+            for tag, key in (("router", "f8r"), ("router_attn", "f8ra"), ("non_expert", "f8e")):  # freeze ablations of the 8-square 4e-4 arm
+                HF = R / f"runs_heldout300b_emorand8_lr4e-4_frz{tag}"; PF = ROOT / f"sparse_experts/olmoe3_squares_emorand8_lr4e-4_frz{tag}/ppl_validation/merged"
+                if not HF.exists(): continue
+                ser[key] = {"h": [hb(C["start"]) if st == 19074 else (_ce(HF / f"merged_match{st}/none") if st in (30000, 38148, 57221) else None) for st in steps],
+                            "p": [ref_ppl if st == 19074 else (_ppl(PF / f"match{st}.json") if st in (30000, 38148, 57221) else None) for st in steps]}
             if rp_pts and "l4" in ser:  # re-merged + re-partitioned every 10B from the 4e-4 arm's 20B merge
                 i20 = steps.index(38148)
                 ser["rp4"] = {"h": [ser["l4"]["h"][i20] if st == 38148 else (_ce(RPH / f"merged_c{rp_pts[st]}/none") if st in rp_pts else None) for st in steps],
@@ -1032,6 +1037,8 @@ EXPLORER_LINES = [  # key, label, colour, dashed, needs-ppl
     ("b4", "best single square of 4", "#db2777", False), ("b8", "best single square of 8", "#db2777", True),
     ("l4", "merged, 4 squares, sub-model LR 4e-4 (EMO only)", "#0891b2", False), ("l8", "merged, 8 squares, sub-model LR 4e-4 (EMO only)", "#d97706", False),
     ("rp4", "merged, 4 squares, LR 4e-4, re-merged + re-partitioned every 10B (EMO only)", "#be123c", False),
+    ("f8r", "merged, 8 squares, LR 4e-4, routers frozen (EMO only)", "#7c3aed", True), ("f8ra", "merged, 8 squares, LR 4e-4, routers + attention frozen (EMO only)", "#d97706", True),
+    ("f8e", "merged, 8 squares, LR 4e-4, everything frozen except experts (EMO only)", "#0891b2", True),
     ("rm", "re-merged + re-partitioned at 61B (std only)", "#7c3aed", False), ("rs", "squares after re-partition, mean of 4 (std only)", "#7c3aed", True),
     ("start", "start model (10B)", "#64748b", True)]
 EXPLORER_DEFAULT = ["baseline", "m4", "m8", "s4", "s8", "start"]
@@ -1042,7 +1049,7 @@ def control_explorer():
     if not data: return ""
     models = "".join(f'<label><input type="checkbox" data-m="{d["id"]}" checked> {d["name"]}</label>' for d in data)
     lines = "".join(f'<label><input type="checkbox" data-l="{k}"{" checked" if k in EXPLORER_DEFAULT else ""}> <span class="sw" style="border-color:{c};border-style:{"dashed" if dsh else "solid"}"></span>{lab}</label>' for k, lab, c, dsh in EXPLORER_LINES)
-    spec = json.dumps({"lines": [dict(k=k, lab=lab, c=c, dsh=dsh, gap=k in ("l4", "l8", "rp4")) for k, lab, c, dsh in EXPLORER_LINES], "models": data})   # gap: connect across missing points (sparse merges)
+    spec = json.dumps({"lines": [dict(k=k, lab=lab, c=c, dsh=dsh, gap=k in ("l4", "l8", "rp4", "f8r", "f8ra", "f8e")) for k, lab, c, dsh in EXPLORER_LINES], "models": data})   # gap: connect across missing points (sparse merges)
     return card("results", "Explorer: pick the start models and the lines",
         '<div class="cx"><div class="cx-ctl"><div><b>Start models</b> (one panel each, y-axis shared)<br>' + models + '</div>'
         '<div><b>Lines</b><br>' + lines + '</div>'
@@ -1228,10 +1235,14 @@ def freeze_section():
     rows.append(["baseline (joint training)"] + [f3(base[st]) for st, _ in pts] + ["&ndash;"] * 3 + ["&ndash;"])
     tbl = table(["run", "held-out 16B", "held-out 20B", "held-out 30B", "ppl 16B", "ppl 20B", "ppl 30B", "frozen weights unchanged (merge vs start)"], rows)
     xs = [15.729, 20.001, 30.0]
-    ch = CHART_CSS + line_chart(xs, [{"name": "baseline (joint training)", "y": [base[st] for st, _ in pts], "color": "#059669"},
-                                    {"name": "8 squares, LR 4e-4, nothing frozen", "y": [ref[st]["h"] for st, _ in pts], "color": "#ea580c"}]
-                                   + [{"name": lab, "y": [data[tag][st]["h"] for st, _ in pts], "color": c} for tag, lab, c in FREEZE_ARMS],
-                                title="Held-out CE: freezing parameters in the 8 squares (LR 4e-4)", xlabels=["16B", "20B", "30B"], x_label="tokens trained", xfmt=lambda v: f"{v:.0f}B")
+    bppl = {st: next((_ppl(ROOT / "sparse_experts" / d / run / f"step{st}.json") for d in RANDOM_CONTROL["emo"]["ppl_dirs"] for run in RANDOM_CONTROL["emo"]["base_runs"]
+                      if (ROOT / "sparse_experts" / d / run / f"step{st}.json").exists()), None) for st, _ in pts}
+    def chart(key, title, ylab):
+        return line_chart(xs, [{"name": "baseline (joint training)", "y": [(base if key == "h" else bppl)[st] for st, _ in pts], "color": "#059669", "gap": True},
+                               {"name": "8 squares, LR 4e-4, nothing frozen", "y": [ref[st][key] for st, _ in pts], "color": "#ea580c", "gap": True}]
+                              + [{"name": lab, "y": [data[tag][st][key] for st, _ in pts], "color": c, "gap": True} for tag, lab, c in FREEZE_ARMS],
+                          title=title, y_label=ylab, xlabels=["16B", "20B", "30B"], x_label="tokens trained", xfmt=lambda v: f"{v:.0f}B")
+    ch = CHART_CSS + chart("h", "Held-out CE (300B sample): freezing parameters in the 8 squares (LR 4e-4)", "CE") + chart("p", "v3-small ppl sets, mean CE", "CE")
     what = ("Three copies of the 8-square 4e-4 arm (same random expert groups, document packs, sliced start checkpoints, EMO loss and LR) with "
             "part of each square held at learning rate 0 through both windows: <b>routers</b> (the routed-expert routers of all nine MoE layers); "
             "<b>routers + attention</b> (plus every block's sequence mixer, softmax attention in two blocks and delta attention in eight, with their "
