@@ -1244,6 +1244,8 @@ def freeze_section():
                          chk=(_jload(sq / "logs" / f"check_frozen_match{st}.json") or {}).get("ok") if tag else None) for st, _ in pts}
     data = {tag: arm(tag) for tag, _, _ in FREEZE_ARMS}; ref = arm(""); base = {st: _ce(R / f"runs_heldout300b_emo/baseline_step{st}/none") for st, _ in pts}
     if not any(v["h"] is not None for d in data.values() for v in d.values()): return ""
+    bppl = {st: next((_ppl(ROOT / "sparse_experts" / d / run / f"step{st}.json") for d in RANDOM_CONTROL["emo"]["ppl_dirs"] for run in RANDOM_CONTROL["emo"]["base_runs"]
+                      if (ROOT / "sparse_experts" / d / run / f"step{st}.json").exists()), None) for st, _ in pts}
     rows = [["8 squares, LR 4e-4, nothing frozen"] + [f3(ref[st]["h"]) for st, _ in pts] + [f3(ref[st]["p"]) for st, _ in pts] + [f3(ref[st]["sp"]) for st, _ in pts] + ["&ndash;"]]
     for tag, lab, _ in FREEZE_ARMS:
         d = data[tag]; chk = ", ".join(f"{t} {'yes' if d[st]['chk'] else ('no' if d[st]['chk'] is False else '&ndash;')}" for st, t in pts)
@@ -1251,8 +1253,6 @@ def freeze_section():
     rows.append(["baseline (joint training)"] + [f3(base[st]) for st, _ in pts] + [f3(bppl[st]) for st, _ in pts] + ["&ndash;"] * 3 + ["&ndash;"])
     tbl = table(["run", "held-out 16B", "held-out 20B", "held-out 30B", "ppl 16B", "ppl 20B", "ppl 30B", "squares alone ppl 16B", "20B", "30B", "frozen weights unchanged (merge vs start)"], rows)
     xs = [15.729, 20.001, 30.0]
-    bppl = {st: next((_ppl(ROOT / "sparse_experts" / d / run / f"step{st}.json") for d in RANDOM_CONTROL["emo"]["ppl_dirs"] for run in RANDOM_CONTROL["emo"]["base_runs"]
-                      if (ROOT / "sparse_experts" / d / run / f"step{st}.json").exists()), None) for st, _ in pts}
     def chart(key, title, ylab):
         return line_chart(xs, [{"name": "baseline (joint training)", "y": [(base if key == "h" else bppl)[st] for st, _ in pts], "color": "#059669", "gap": True},
                                {"name": "8 squares, LR 4e-4, nothing frozen", "y": [ref[st][key] for st, _ in pts], "color": "#ea580c", "gap": True}]
