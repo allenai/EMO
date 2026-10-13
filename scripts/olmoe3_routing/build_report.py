@@ -1213,7 +1213,12 @@ def s128_lr_sweep_section():
 
 
 FREEZE_ARMS = [("router", "routers frozen", "#7c3aed"), ("router_attn", "routers + attention frozen", "#d97706"), ("non_expert", "everything frozen except the experts", "#0891b2")]
-FREEZE_TAKE = "Running: the three arms train both windows; each merge is checked tensor by tensor against the 10B start model."
+FREEZE_TAKE = ("All nine checks pass: the frozen families are bit-identical to the 10B start model at every merge and every trainable tensor changed. "
+               "Freezing the routers is free (2.479 vs 2.477 at 30B, the 4-square result again). Freezing attention as well costs a steady 0.025 "
+               "(2.503 at 30B), and training only the experts (routed and shared) costs 0.05 (2.531); the ordering is the same on the selection "
+               "sample and the ppl sets, and none of the three narrows the 0.10 gap to the jointly trained baseline (2.376). The merge loss of the "
+               "8-square control lives in the non-router shared weights that these runs freeze, not in the routers: freezing them only removes "
+               "capacity, it does not stop the squares from diverging.")
 
 
 def freeze_section():
