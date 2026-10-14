@@ -90,7 +90,9 @@ def job_from_spec(spec):
 
 def done(job, alloc_state=None):
     """Final checkpoint present, the run already at its (possibly ceil-era) final, or the tracked job succeeded."""
-    if job.get("done_path"): return Path(job["done_path"]).exists() or (alloc_state is not None and alloc_state[0] in ("finalized", "exited") and alloc_state[2] == 0)
+    if job.get("done_path"):   # extract_routing: rank0/DONE, or the pass already merged into none/meta.json (rank0/ may be gone by then; a batch-8 1000e pass was resubmitted 6x on 2026-10-14)
+        dp = Path(job["done_path"])
+        return dp.exists() or (dp.name == "DONE" and (dp.parent.parent / "meta.json").exists()) or (alloc_state is not None and alloc_state[0] in ("finalized", "exited") and alloc_state[2] == 0)
     if (S / job["run"] / f"step{job['final']}" / "train" / "rank0.pt").exists(): return True
     steps = [int(m.group(1)) for d in (S / job["run"]).glob("step*") if (m := re.fullmatch(r"step(\d+)", d.name)) and (d / "train" / "rank0.pt").exists()]
     if steps and max(steps) >= job["final"] - 1: return True
