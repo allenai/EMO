@@ -118,6 +118,14 @@ def stop(eid, why):
 SP = "/tmp/claude-0/-root-EMO/c7db74f2-bbe3-4a2c-9d37-93c64250d7c6/scratchpad"
 
 
+def retired(run, marker):
+    """A run whose folder holds no checkpoint any more and whose marker is older than a day was deleted on purpose
+    (storage cleanup); it must never be resubmitted (2026-10-14: 8 randsel squares were relaunched after their cleanup)."""
+    d = S / run
+    if any(re.fullmatch(r"step\d+", x.name) for x in d.glob("step*")): return False
+    return time.time() - os.path.getmtime(marker) > 86400 if os.path.exists(marker) else True
+
+
 def discover(state, twins):
     markers = glob.glob("sparse_experts/olmoe3_squares_*/logs/*_launched") + [f for f in glob.glob(f"{SP}/launch_*.log") if os.path.getmtime(f) >= CUTOFF]
     for marker in markers:
@@ -127,6 +135,7 @@ def discover(state, twins):
         eid = m.group(1)
         spec = get_spec(eid); job = job_from_spec(spec) if spec else None
         if not job: continue
+        if retired(job["run"], marker): continue   # deleted run: no checkpoints left and an old marker
         st = exp_state(eid)
         if done(job, st): continue
         j = dict(job, marker=marker, spec=spec, alloc=None, unalloc=None, n=0)
@@ -152,6 +161,10 @@ def main():
         try:
             twins = workspace_twins(); discover(state, twins)
             for run, j in list(state.items()):
+                if retired(run, j.get("marker", "")) and not j.get("done_path"):
+                    for kind in ("alloc", "unalloc"):
+                        if j.get(kind) and exp_state(j[kind])[0] not in TERMINAL: stop(j[kind], f"{run} retired (checkpoints deleted)")
+                    log(f"{run}: retired, dropped"); state.pop(run); continue
                 sa = exp_state(j["alloc"]) if j.get("alloc") else ("none", None, None)
                 su = exp_state(j["unalloc"]) if j.get("unalloc") else ("none", None, None)
                 if done(j, sa if j.get("alloc") else su):
