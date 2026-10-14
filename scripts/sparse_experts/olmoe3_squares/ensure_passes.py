@@ -44,6 +44,7 @@ def launch(name, *args):
         r = sh("python", "scripts/sparse_experts/olmoe3_beaker_cmd.py", "--name", name, "--gpus", "1", "--allocated", "--", *args)
         m = re.search(r"beaker\.org/ex/([A-Z0-9]+)", re.sub(r"\x1b\[[0-9;]*m", "", r.stdout + r.stderr))
         if m: (SP / f"launch_{name}.log").write_text(r.stdout + r.stderr); print(f"  launched {name}: {m.group(1)}", flush=True); return
+        (SP / f"launchfail_{name}.log").write_text(r.stdout + r.stderr)   # kept for diagnosis (both launches of 2026-10-14 13:15 failed silently)
         time.sleep(45)
     print(f"  LAUNCH FAILED {name}", flush=True)
 
@@ -76,7 +77,8 @@ def main():
                     if (S / b / f"step{s}" / "train" / "rank0.pt").exists(): plan.append((f"baseline_step{s}", a["hrb"], f"{W}/{b}/step{s}", f"{b}/step{s}.json"))
         for tag, hd, ckpt, ppl in plan:
             d = S / "olmoe3_routing" / hd / tag / "none"
-            if not have(d) and not any(tag in nm and (hd in nm or sqn in nm) for nm in live):
+            covered = lambda nm: (tag in nm and (hd in nm or sqn in nm)) or (tag.startswith("sub") and sqn in nm and f"squares-heldout-{tag.split('match')[1]}" in nm)   # a driver's batched squares-alone job covers its sub<g> passes
+            if not have(d) and not any(covered(nm) for nm in live):
                 n += 1; launch(f"{sqn}-ensure-eval-{tag}", "python", "scripts/sparse_experts/olmoe3_routing/extract_routing.py", "--checkpoint", ckpt, "--instances", f"{W}/olmoe3_routing/sample_8k_300b.npz",
                                 "--out-dir", f"{W}/olmoe3_routing/{hd}/{tag}/none/rank0", "--restrict", "none", "--batch-size", bs(tag), "--log-every", "100")
             if ppl and not (SQ / "ppl_validation" / ppl).exists() and not any(("ppl" in nm) and (ppl.split("/")[-1].replace(".json", "") in nm or tag in nm) and sqn in nm for nm in live):
