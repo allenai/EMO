@@ -18,7 +18,7 @@ ARMS = [  # sqn, run prefix, K, held-out dir, baseline held-out dir, start tag, 
     dict(sqn="olmoe3_squares_randsel8", rp="olmoe3_275m_randsel8_square", k=8, hr="runs_heldout300b_randsel8", hrb="runs_heldout300b_randsel", windows=3, base={}),
     dict(sqn="olmoe3_squares_randsel64k8", rp="olmoe3_275m_randsel64k8_square", k=8, hr="runs_heldout300b_randsel64k8", hrb="runs_heldout300b_randsel64", windows=3, base={}),
     dict(sqn="olmoe3_squares_emo1000rand8", rp="olmoe3_275m_emo1000rand8_square", k=8, hr="runs_heldout300b_emo1000rand8", hrb="runs_heldout300b_emo1000", windows=2,
-         base={1: "olmoe3_275m_1000e_emo_30b", 2: "olmoe3_275m_1000e_emo_30b"}),   # LR 4e-4 arm: squares checkpoint only at the mid point and the final, so only the 30000 / 38148 / 57221 points have passes
+         base={1: "olmoe3_275m_1000e_emo_30b", 2: "olmoe3_275m_1000e_emo_30b"}, bs_full=4),   # LR 4e-4 arm: squares checkpoint only at the mid point and the final, so only the 30000 / 38148 / 57221 points have passes; the full 1000e model OOMs at batch 8
 ]
 
 
@@ -59,6 +59,7 @@ def main():
         sqn, rp, k, hr = a["sqn"], a["rp"], a["k"], a["hr"]; SQ = S / sqn
         if not (SQ / "groups.json").exists(): continue
         plan = []  # (tag, held-out dir, checkpoint path, ppl json name or None)
+        bs = lambda tag: str(a.get("bs_full", 8)) if not tag.startswith("sub") else "8"   # full-model passes (merged / baseline) of a big model need a smaller batch
         wins = []
         if a["windows"] >= 1 and (SQ / "pack/stats.json").exists(): wins.append((1, W1, steps_w(sqn, k, "pack"), lambda g, i: f"{rp}{g}"))
         if a["windows"] >= 2 and (SQ / "pack2/stats.json").exists(): wins.append((2, W2, steps_w(sqn, k, "pack2"), lambda g, i: f"{rp}{g}_w2"))
@@ -77,7 +78,7 @@ def main():
             d = S / "olmoe3_routing" / hd / tag / "none"
             if not have(d) and not any(tag in nm and (hd in nm or sqn in nm) for nm in live):
                 n += 1; launch(f"{sqn}-ensure-eval-{tag}", "python", "scripts/sparse_experts/olmoe3_routing/extract_routing.py", "--checkpoint", ckpt, "--instances", f"{W}/olmoe3_routing/sample_8k_300b.npz",
-                                "--out-dir", f"{W}/olmoe3_routing/{hd}/{tag}/none/rank0", "--restrict", "none", "--batch-size", "8", "--log-every", "100")
+                                "--out-dir", f"{W}/olmoe3_routing/{hd}/{tag}/none/rank0", "--restrict", "none", "--batch-size", bs(tag), "--log-every", "100")
             if ppl and not (SQ / "ppl_validation" / ppl).exists() and not any(("ppl" in nm) and (ppl.split("/")[-1].replace(".json", "") in nm or tag in nm) and sqn in nm for nm in live):
                 n += 1; launch(f"{sqn}-ensure-ppl-{tag}", "python", "scripts/debug_validation/eval_ppl_validation.py", "--checkpoints", ckpt, "--out-dir", f"{W}/{sqn}/ppl_validation", "--batch-size", "8")
     print(f"{time.strftime('%m-%d %H:%M')} ensure_passes: {n} evaluations {'would be ' if DRY else ''}launched")
