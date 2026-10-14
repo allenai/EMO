@@ -403,8 +403,12 @@ RANDSEL_TAKE = ("A model trained with random pools merges cheaply: four squares 
                 "their best single square (2.461 / 2.513 at 130B).")
 RANDSEL64_TAKE = ("With pools of at least 64 experts the four-square merge beats joint training up to 35B (2.398 vs 2.397), the only control where "
                   "that happens, and ends just 0.028 behind at 130B (2.364 vs 2.336). Eight squares cost 0.107. The smallest merge gaps of every control.")
-EMO1000_TAKE = ("In progress (launched 2026-10-14): eight squares of 125 experts at sub-model LR 4e-4 from the 1000-expert EMO model's 10B checkpoint, "
-                "merged at 16B / 20B / 30B against the jointly continued 1000e baseline; the table lists the points as they finish.")
+EMO1000_TAKE = ("More experts do not make the random split cheaper: the eight-square merge of the 1000e model trails its joint baseline by 0.08 at 15.7B, "
+                "0.09 at 20B and 0.10 at 30B (2.452 vs 2.350), the same gaps as the 512e model's eight squares at the same sub-model LR (0.08 / 0.09 / 0.10; "
+                "2.477 vs 2.376 at 30B). The 1000e start model is 0.02 better than the 512e one (2.444 vs 2.465) and its merges keep that 0.02 lead at every "
+                "point, so the merge cost is a property of the eight-way split, not of the expert count. The merge stays ahead of its squares (2.452 vs a mean "
+                "of 2.476 and a best of 2.475 at 30B; 512e: 2.477 vs 2.504), and after 20B more tokens it still has not caught up with the 10B start model "
+                "(2.452 vs 2.444), exactly as for 512e (2.477 vs 2.465). The ppl sets agree (merged 2.979 vs baseline 2.893 at 30B).")
 S128_TAKE = ("Fewer experts change nothing: the cost is set by the number of squares, not the number of experts. Four squares: gap 0.055 at 20B, "
              "0.13 at 130B; eight: 0.13 and 0.19. Both merges end level with their best single square.")
 def random_control(which, with_charts=True):
