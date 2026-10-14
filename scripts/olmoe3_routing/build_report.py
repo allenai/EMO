@@ -1356,8 +1356,12 @@ def emo1000_table():
         return f"{rp}{g}_w2/step{st_pack2['tokens_per_group'][g] // 524288}" if st_pack2 else None
     rows = []
     for st, lab in ((19074, "10B (start)"), (30000, "15.7B"), (38148, "20B"), (57221, "30B")):
-        if st == 19074:
-            rows.append([lab, f3(_ce(HRB / f"{C['start']}/none")), "&ndash;", "&ndash;", f3(_ce(HRB / f"{C['start']}/none")), f3(_ppl(ROOT / f"claude_outputs/debug_validation/ppl_validation/{C['start_ppl']}/step19074.json")), "&ndash;", "&ndash;"]); continue
+        if st == 19074:   # the untrained slices scored alone (init_point_evals.sh: sub<g>_match19074, ppl of init_ckpt/group<g>); the merged slices reproduce the start model
+            sh = [_ce(HR / f"sub{g}_match19074/none") for g in range(8)]; sp = [_ppl(SQ / "ppl_validation/init_ckpt" / f"group{g}.json") for g in range(8)]
+            mean = lambda v: sum(v) / len(v) if v and all(x is not None for x in v) else None
+            best = lambda v: min(x for x in v if x is not None) if any(x is not None for x in v) else None
+            rows.append([lab + " (untrained slices)", f3(_ce(HR / "merged_match19074/none") or _ce(HRB / f"{C['start']}/none")), f3(mean(sh)), f3(best(sh)), f3(_ce(HRB / f"{C['start']}/none")),
+                         f3(_ppl(ROOT / f"claude_outputs/debug_validation/ppl_validation/{C['start_ppl']}/step19074.json")), f3(mean(sp)), "&ndash;"]); continue
         sh = [_ce(HR / f"sub{g}_match{st}/none") for g in range(8)]; sp = [_ppl(SQ / "ppl_validation" / f"{sq_step(g, st)}.json") if sq_step(g, st) else None for g in range(8)]
         mean = lambda v: sum(v) / len(v) if v and all(x is not None for x in v) else None
         best = lambda v: min(x for x in v if x is not None) if any(x is not None for x in v) else None
