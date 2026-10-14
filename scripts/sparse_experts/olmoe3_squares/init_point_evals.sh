@@ -6,7 +6,7 @@
 set -u; cd "$(git rev-parse --show-toplevel)"; export PATH=/root/.conda/envs/emo/bin:$PATH
 S=sparse_experts; W=/weka/oe-training-default/ryanwang/EMO/sparse_experts; SP=/tmp/claude-0/-root-EMO/c7db74f2-bbe3-4a2c-9d37-93c64250d7c6/scratchpad; mkdir -p $SP
 # name | SQN | run prefix | K | full start run | held-out dir | sample | start tag (dir holding it) | piecewise out dir (- = none)
-V_ALL="emo std noemo k8 pool learnedd stdrand emorand stdrand8 s128rand4 s128rand8 emorand8 randsel4 randsel8 randsel64k4 randsel64k8"
+V_ALL="emo std noemo k8 pool learnedd stdrand emorand stdrand8 s128rand4 s128rand8 emorand8 randsel4 randsel8 randsel64k4 randsel64k8 emo1000rand8"
 spec() { case $1 in
   emo)      echo "olmoe3_squares|olmoe3_275m_emo_square|4|olmoe3_275m_emo_10b|runs_heldout20b|sample_8k_20b.npz|runs_heldout20b/emo_step19074|squares";;
   std)      echo "olmoe3_squares_std|olmoe3_275m_square|4|olmoe3_275m_10b|runs_heldout300b_std|sample_8k_300b.npz|runs_heldout300b_std/std_step19074|olmoe3_squares_std_w2";;
@@ -24,6 +24,7 @@ spec() { case $1 in
   randsel8) echo "olmoe3_squares_randsel8|olmoe3_275m_randsel8_square|8|olmoe3_275m_emo_randsel_10b|runs_heldout300b_randsel8|sample_8k_300b.npz|runs_heldout300b_randsel/baseline_step19074|-";;
   randsel64k4) echo "olmoe3_squares_randsel64k4|olmoe3_275m_randsel64k4_square|4|olmoe3_275m_emo_randsel64_10b|runs_heldout300b_randsel64k4|sample_8k_300b.npz|runs_heldout300b_randsel64/baseline_step19074|-";;
   randsel64k8) echo "olmoe3_squares_randsel64k8|olmoe3_275m_randsel64k8_square|8|olmoe3_275m_emo_randsel64_10b|runs_heldout300b_randsel64k8|sample_8k_300b.npz|runs_heldout300b_randsel64/baseline_step19074|-";;
+  emo1000rand8) echo "olmoe3_squares_emo1000rand8|olmoe3_275m_emo1000rand8_square|8|olmoe3_275m_1000e_emo_10b|runs_heldout300b_emo1000rand8|sample_8k_300b.npz|runs_heldout300b_emo1000/emo1000_step19074|-";;   # user request 2026-10-14 (the 10B point of box 5E)
   *) return 1;; esac; }
 say() { echo "$(date -u +%m-%d\ %H:%M) [$V] $*"; }
 launch() { local name=$1; shift; local log=$SP/launch_$name.log; local u=""
@@ -32,7 +33,8 @@ launch() { local name=$1; shift; local log=$SP/launch_$name.log; local u=""
     u=$(sed 's/\x1b\[[0-9;]*m//g' "$log" | grep -aoE 'beaker.org/ex/[A-Z0-9]+' | head -1); [ -n "$u" ] && break; sleep 45; done
   say "$name: ${u:-LAUNCH FAILED}"; }
 have() { [ -f "$1/meta.json" ] || [ -f "$1/rank0/DONE" ]; }
-heldout() { local tag=$1 ckpt=$2; have $S/olmoe3_routing/$HR/$tag/none || launch "$SQN-init-$tag" python scripts/sparse_experts/olmoe3_routing/extract_routing.py --checkpoint "$ckpt" --instances "$W/olmoe3_routing/$SAMPLE" --out-dir "$W/olmoe3_routing/$HR/$tag/none/rank0" --restrict none --batch-size 8 --log-every 100; }
+heldout() { local tag=$1 ckpt=$2 bs=8; [ $V = emo1000rand8 ] && [ $tag = merged_match19074 ] && bs=4   # the full 1000e model OOMs at batch 8
+  have $S/olmoe3_routing/$HR/$tag/none || launch "$SQN-init-$tag" python scripts/sparse_experts/olmoe3_routing/extract_routing.py --checkpoint "$ckpt" --instances "$W/olmoe3_routing/$SAMPLE" --out-dir "$W/olmoe3_routing/$HR/$tag/none/rank0" --restrict none --batch-size $bs --log-every 100; }
 for V in ${*:-$V_ALL}; do IFS='|' read -r SQN RP K FULL HR SAMPLE STARTP PW <<< "$(spec $V)" || { echo "unknown $V"; continue; }
   SQ=$S/$SQN; [ -f $SQ/init/group0/.metadata ] || { say "no init slices, skipping"; continue; }
   # baseline_step19074 = the start pass (same checkpoint) in the held-out dir(s) the report reads
