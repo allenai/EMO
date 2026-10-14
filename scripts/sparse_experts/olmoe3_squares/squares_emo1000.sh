@@ -26,7 +26,8 @@ launch_train() { local marker=$1 log=$2 script=$3; shift 3; [ -f "$marker" ] && 
     u=$(sed 's/\x1b\[[0-9;]*m//g' "$log" | grep -aoE 'beaker.org/ex/[A-Z0-9]+' | head -1); [ -n "$u" ] && break; sleep 60; done
   say "$(basename $marker): ${u:-LAUNCH FAILED}"; [ -n "$u" ] && echo "$u" > "$marker"; }
 have() { [ -f "$1/meta.json" ] || [ -f "$1/rank0/DONE" ]; }
-heldout() { local hr=$1 tag=$2 ckpt=$3 name=$4; have $S/olmoe3_routing/$hr/$tag/none || launch "$name" python scripts/sparse_experts/olmoe3_routing/extract_routing.py --checkpoint "$ckpt" --instances "$W/olmoe3_routing/$SAMPLE" --out-dir "$W/olmoe3_routing/$hr/$tag/none/rank0" --restrict none --batch-size 8 --log-every 100; }
+# full 1000e-model passes (start model, merges, baseline) at batch 4: batch 8 ran out of GPU memory in the lm head (24.5 GiB logits on top of the 4.9B-parameter model, 2026-10-14); the 125-expert squares keep batch 8
+heldout() { local hr=$1 tag=$2 ckpt=$3 name=$4; have $S/olmoe3_routing/$hr/$tag/none || launch "$name" python scripts/sparse_experts/olmoe3_routing/extract_routing.py --checkpoint "$ckpt" --instances "$W/olmoe3_routing/$SAMPLE" --out-dir "$W/olmoe3_routing/$hr/$tag/none/rank0" --restrict none --batch-size 4 --log-every 100; }
 ppl() { local ckpt=$1 json=$2 name=$3; [ -f $SQ/ppl_validation/$json ] || launch "$name" python scripts/debug_validation/eval_ppl_validation.py --checkpoints "$ckpt" --out-dir "$W/$SQN/ppl_validation" --batch-size 8; }
 shares_of() { python -c "import json; print(','.join(f'{x:.4f}' for x in json.load(open('$1'))['token_share']))"; }
 tokens_of() { python -c "import json; print(json.load(open('$1'))['tokens_per_group'][$2])"; }
