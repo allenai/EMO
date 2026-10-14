@@ -8,11 +8,11 @@ jobs (baselines: baseline_keeper.sh) and evaluation jobs are ignored. Twins alre
 adopted. State + log: sparse_experts/olmoe3_routing/twin_scheduler/.
   python scripts/sparse_experts/olmoe3_squares/twin_scheduler.py [--once] [--interval 120]
 """
-import argparse, copy, glob, json, math, os, re, subprocess, time
+import argparse, copy, fnmatch, glob, json, math, os, re, subprocess, time
 from pathlib import Path
 import yaml
 
-S = Path("sparse_experts"); ST = S / "olmoe3_routing" / "twin_scheduler"; ST.mkdir(parents=True, exist_ok=True)
+S = Path("sparse_experts"); ST = S / "olmoe3_routing" / "twin_scheduler"; ST.mkdir(parents=True, exist_ok=True); RETIRED_FILE = ST / "retired.txt"
 MAX_SUBMITS = 4; WORKSPACE = "ai2/flex2"; TERMINAL = ("exited", "finalized", "canceled", "failed"); CUTOFF = time.mktime(time.strptime("2026-09-20 00:00", "%Y-%m-%d %H:%M"))
 
 
@@ -121,6 +121,8 @@ SP = "/tmp/claude-0/-root-EMO/c7db74f2-bbe3-4a2c-9d37-93c64250d7c6/scratchpad"
 def retired(run, marker):
     """A run whose folder holds no checkpoint any more and whose marker is older than a day was deleted on purpose
     (storage cleanup); it must never be resubmitted (2026-10-14: 8 randsel squares were relaunched after their cleanup)."""
+    pats = [l.strip() for l in open(RETIRED_FILE)] if RETIRED_FILE.exists() else []   # one glob per line, run names
+    if any(fnmatch.fnmatch(run, pat) for pat in pats if pat and not pat.startswith("#")): return True
     d = S / run
     if any(re.fullmatch(r"step\d+", x.name) for x in d.glob("step*")): return False
     return time.time() - os.path.getmtime(marker) > 86400 if os.path.exists(marker) else True
