@@ -46,11 +46,11 @@ GS=$(seq 0 $((K-1)))
 for d in pack pack2; do [ -e $SQ/$d ] || ln -s ../$PACKSRC/$d $SQ/$d; done
 # ---- 1. joint baseline 10B -> 30B (4 nodes, allocated; keeper resumes it across the 8 h cut) + start-model evaluations ----
 launch_train $LOG/baseline_launched $LOG/launch_baseline.log scripts/sparse_experts/model_scripts/olmoe3_275m_1000e_emo_30b_baseline.sh
-pgrep -f "scripts/sparse_experts/olmoe3_squares/baseline_keeper.sh" > /dev/null || { setsid nohup bash scripts/sparse_experts/olmoe3_squares/baseline_keeper.sh >> $S/olmoe3_routing/baseline_keeper/log.txt 2>&1 < /dev/null & say "baseline keeper started"; }
+pgrep -f "scripts/sparse_experts/olmoe3_squares/baseline_keeper.sh" > /dev/null || { ( setsid nohup bash scripts/sparse_experts/olmoe3_squares/baseline_keeper.sh >> $S/olmoe3_routing/baseline_keeper/log.txt 2>&1 < /dev/null & ); say "baseline keeper started"; }   # subshell: not a child of this script, or the bare `wait`s below would wait for it (stuck 3 h on 2026-10-14)
 heldout $HRB $START $W/$FULL/step19074 "$SQN-eval-$START"
 [ -f claude_outputs/debug_validation/ppl_validation/$FULL/step19074.json ] || launch "$SQN-ppl-start" python scripts/debug_validation/eval_ppl_validation.py --checkpoints $W/$FULL/step19074 --out-dir $WR/claude_outputs/debug_validation/ppl_validation --batch-size 8
 slice1() { local g=$1; PYTHONPATH=external/OLMo-core/src python scripts/sparse_experts/olmoe3_squares/slice_checkpoint.py --checkpoint $S/$FULL/step19074 --groups $SQ/groups.json --group $g --out $SQ/init/group$g --overwrite > $LOG/slice_group$g.log 2>&1 && say "slice group$g done" || say "slice group$g FAILED (see $LOG/slice_group$g.log)"; }
-for half in 0 1; do for g in $(seq $((half*4)) $((half*4+3))); do [ -f $SQ/init/group$g/.metadata ] || slice1 $g & done; wait; done   # 4 slices at a time (CPU, ~20 min each on the 55 GB checkpoint)
+for half in 0 1; do pids=""; for g in $(seq $((half*4)) $((half*4+3))); do [ -f $SQ/init/group$g/.metadata ] || { slice1 $g & pids="$pids $!"; }; done; [ -z "$pids" ] || wait $pids; done   # 4 slices at a time (CPU, ~15 min each on the 55 GB checkpoint)
 for g in $GS; do [ -f $SQ/init/group$g/.metadata ] || { say "ABORT: start slice $SQ/init/group$g missing"; exit 1; }; done
 # ---- 2. window 1 (10B -> 20B): 8 squares at LR 4e-4, checkpoints at the mid point (matched 30000) and the final (38148) ----
 SH1=$(shares_of $SQ/pack/stats.json); declare -a FIN MID
@@ -67,7 +67,7 @@ done
 # ---- 3. window 2 (20B -> 30B): finals rewritten as start checkpoints -> squares on pack2 -> merge at 57221 ----
 SH2=$(shares_of $SQ/pack2/stats.json); subs=(); runs=()
 rw1() { local g=$1; PYTHONPATH=external/OLMo-core/src python scripts/sparse_experts/olmoe3_squares/rewrite_checkpoint.py --src $S/${RP}$g/step${FIN[$g]} --out $SQ/init2/group$g --overwrite > $LOG/rewrite_group$g.log 2>&1 && say "init2 group$g done" || say "init2 group$g FAILED"; }
-for half in 0 1; do for g in $(seq $((half*4)) $((half*4+3))); do [ -f $SQ/init2/group$g/model_and_optim/.metadata ] || rw1 $g & done; wait; done
+for half in 0 1; do pids=""; for g in $(seq $((half*4)) $((half*4+3))); do [ -f $SQ/init2/group$g/model_and_optim/.metadata ] || { rw1 $g & pids="$pids $!"; }; done; [ -z "$pids" ] || wait $pids; done
 for g in $GS; do [ -f $SQ/init2/group$g/model_and_optim/.metadata ] || { say "ABORT: init2 group$g missing"; exit 1; }
   t2=$(tokens_of $SQ/pack2/stats.json $g); fin2=$((t2 / 524288)); subs+=("$S/${RP}${g}_w2/step$fin2"); runs+=("${RP}${g}_w2/step$fin2")
   launch_train $LOG/square${g}_w2_launched $LOG/launch_square${g}_w2.log scripts/sparse_experts/model_scripts/olmoe3_275m_emo_square.sh SQUARE_GROUP=$g SQUARES_NAME=$SQN OLMOE3_EMO=1 OLMOE3_NUM_EXPERTS=$E OLMOE3_LR=$LR OLMOE3_TOKENS=$t2 OLMOE3_FIXED_STEPS="$fin2" OLMOE3_DATA_PATHS="$W/$SQN/pack2/group$g/*.npy" OLMOE3_INIT_FROM="$W/$SQN/init2/group$g/model_and_optim" OLMOE3_RUNNAME=${RP}${g}_w2 OLMOE3_WANDB_TAGS=$SQN,square,emo1000,w2
