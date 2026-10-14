@@ -74,7 +74,7 @@ for g in $GS; do [ -f $SQ/init2/group$g/model_and_optim/.metadata ] || { say "AB
   launch_train $LOG/square${g}_w2_launched $LOG/launch_square${g}_w2.log scripts/sparse_experts/model_scripts/olmoe3_275m_emo_square.sh SQUARE_GROUP=$g SQUARES_NAME=$SQN OLMOE3_EMO=1 OLMOE3_NUM_EXPERTS=$E OLMOE3_LR=$LR OLMOE3_TOKENS=$t2 OLMOE3_FIXED_STEPS="$fin2" OLMOE3_DATA_PATHS="$W/$SQN/pack2/group$g/*.npy" OLMOE3_INIT_FROM="$W/$SQN/init2/group$g/model_and_optim" OLMOE3_RUNNAME=${RP}${g}_w2 OLMOE3_WANDB_TAGS=$SQN,square,emo1000,w2
 done
 # baseline points as they appear (the 4-node run is slower than the squares; evaluated here so the squares never wait for it)
-basepts() { local s; for s in 30000 38148 57221; do [ -f $S/$BASE/step$s/train/rank0.pt ] || continue; heldout $HRB baseline_step$s $W/$BASE/step$s "$SQN-eval-baseline_step$s"; ppl $W/$BASE/step$s $BASE/step$s.json "$SQN-ppl-baseline-$s"; done; }
+basepts() { :; }   # baseline points are launched by ensure_passes.py (monitor, every 30 min; it checks the live Beaker jobs first): launching them here too duplicated the 30000 pass (2026-10-14)
 basepts
 for d in "${subs[@]}"; do until [ -f "$d/train/rank0.pt" ]; do sleep 300; basepts; done; done; say "window-2 finals present"
 merge_k $SQ/merged/match57221 "$SH2" "${subs[@]}"
