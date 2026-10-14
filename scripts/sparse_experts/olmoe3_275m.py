@@ -171,7 +171,7 @@ def _env_bool(name: str, default: bool) -> bool:
 # ---------------------------------------------------------------------------------------------
 VOCAB_SIZE = 100_352  # dolma2 tokenizer, padded
 HEAD_DIM = 128
-TOP_K = 16
+TOP_K = int(os.environ.get("OLMOE3_TOP_K", "16"))  # the ladder's 16; OLMOE3_TOP_K for the half-size-expert arms (32 of 1024 x 272 = the same active FFN)
 LATENT_COMPRESSION = 2
 INIT_SEED = 0
 INIT_STD = 0.02
@@ -181,6 +181,9 @@ N_LAYERS = 10
 N_HEADS = 8
 N_KV_HEADS = 8
 EXPERT_HIDDEN_SIZE = 544  # multiple of 32 that active-matches the dense 275M rung
+# OLMOE3_EXPERT_HIDDEN: the ROUTED experts' hidden size only (the shared expert keeps 544). 272 with 1024 experts = the 512e model's
+# routed-expert parameters split into twice as many experts of half the width (user request 2026-10-14).
+ROUTED_EXPERT_HIDDEN_SIZE = int(os.environ.get("OLMOE3_EXPERT_HIDDEN", str(EXPERT_HIDDEN_SIZE)))
 # OLMOE3_NUM_EXPERTS: the ladder rung is 512. Every other dimension (expert width, latent,
 # top-k, shared expert, router, LB/z losses) stays fixed when this changes, which is exactly the
 # ladder's own variable-sparsity -> uniform-512 move (275M went 64 -> 512 the same way).
@@ -200,6 +203,11 @@ EXPECTED_PARAMS = {
     # 2000 experts = 1000 local experts per rank at EP=2 over the sync_1d transport (plain torch
     # all-to-all, dropless, no NVSHMEM), keeping under the grouped-GEMM cap; ~9.61B total.
     2000: (285_240_144, 221_014_864, 9_610_357_584),
+}
+# (experts, routed hidden, top_k) -> the same triple for the non-default expert shapes (the 512e totals + the larger router)
+EXPECTED_PARAMS_SHAPED = {
+    (1024, 272, 16): (242_017_104, 177_791_824, 2_610_897_744),
+    (1024, 272, 32): (279_618_384, 215_393_104, 2_610_897_744),
 }
 
 KDA_USE_CUTE_KERNEL = _env_bool("OLMOE3_USE_CUTE_KDA", False)
@@ -470,7 +478,7 @@ def _moe_block(layer_norm: LayerNormConfig, sequence_mixer, num_experts: Optiona
         shared_experts=_shared_expert(),
         routed_experts=RoutedExpertsConfig(
             d_model=LATENT_DIM,
-            hidden_size=EXPERT_HIDDEN_SIZE,
+            hidden_size=ROUTED_EXPERT_HIDDEN_SIZE,
             num_experts=NUM_ROUTED_EXPERTS,
             bias=False,
             dtype=DType.float32,
@@ -572,9 +580,10 @@ def build_model_config(common: CommonComponents) -> OLMoDDPModelConfig:
         raise ValueError(f"mixer layout drifted: kda={kda} attn={attn}")
     if resolved[0].routed_experts is not None or resolved[0].latent_moe is not None:
         raise ValueError("layer 0 must remain dense")
-    if vocab_size == VOCAB_SIZE and NUM_ROUTED_EXPERTS in EXPECTED_PARAMS and not SQUARES_LAYER_EXPERTS:
+    shape = (NUM_ROUTED_EXPERTS, ROUTED_EXPERT_HIDDEN_SIZE, TOP_K); default_shape = ROUTED_EXPERT_HIDDEN_SIZE == EXPERT_HIDDEN_SIZE and TOP_K == 16
+    if vocab_size == VOCAB_SIZE and not SQUARES_LAYER_EXPERTS and ((default_shape and NUM_ROUTED_EXPERTS in EXPECTED_PARAMS) or shape in EXPECTED_PARAMS_SHAPED):
         actual = (model.num_active_params, model.num_active_non_embedding_params, model.num_params)
-        expected = EXPECTED_PARAMS[NUM_ROUTED_EXPERTS]
+        expected = EXPECTED_PARAMS[NUM_ROUTED_EXPERTS] if default_shape else EXPECTED_PARAMS_SHAPED[shape]
         if LEARNED_D:  # one d_head (d_model weights + 64-entry padded bias) per MoE layer
             expected = tuple(v + (N_LAYERS - 1) * (D_MODEL + 64) for v in expected)
         if actual != expected:
@@ -642,7 +651,7 @@ FORWARDED_ENV = (
     "OLMOE3_ATTN_BACKEND", "OLMOE3_USE_CUTE_KDA", "OLMOE3_PREEMPTIBLE", "OLMOE3_DATA_ROOT",
     "OLMOE3_SAVE_ROOT", "OLMOE3_WORK_DIR", "OLMOE3_WANDB_TAGS", "OLMOE3_IMAGE", "OLMOE3_SAVE_INTERVAL",
     "OLMOE3_EMO", "OLMOE3_EMO_MIN_POOL", "OLMOE3_EMO_MAX_POOL", "OLMOE3_EMO_EVAL_POOL", "OLMOE3_NUM_EXPERTS",
-    "OLMOE3_EMO_POOL_DIST", "OLMOE3_EMO_POOL_SELECT", "OLMOE3_EXPERIMENT", "OLMOE3_PPL_EVAL_INTERVAL",
+    "OLMOE3_EMO_POOL_DIST", "OLMOE3_EMO_POOL_SELECT", "OLMOE3_EXPERIMENT", "OLMOE3_PPL_EVAL_INTERVAL", "OLMOE3_TOP_K", "OLMOE3_EXPERT_HIDDEN",
     "OLMOE3_EMO_LEARNED_D", "OLMOE3_LD_TEMP", "OLMOE3_LD_LAMBDA", "OLMOE3_LD_WARMUP", "OLMOE3_LD_FLOOR_WARMUP",
     "OLMOE3_LD_LAMBDA_WARMUP", "OLMOE3_LD_INIT", "OLMOE3_LD_EVAL", "OLMOE3_LD_DETACH", "OLMOE3_LD_LR_MULT",
     "OLMOE3_LD_SIGNAL", "OLMOE3_LD_LAMBDA_COV", "OLMOE3_ROUTER_ONLY_LR", "OLMOE3_FREEZE_ROUTER", "OLMOE3_FREEZE_PATTERNS", "OLMOE3_FREEZE_TAG",
@@ -818,7 +827,7 @@ def _cosine_scheduler(tokens: int) -> ComposableScheduler:
 def build_train_module_config(common: CommonComponents) -> OLMoDDPTrainModuleConfig:
     assert TOKENS is not None, "set OLMOE3_TOKENS"
     print(
-        f"[olmoe3_275m] experts={NUM_ROUTED_EXPERTS} tokens={TOKENS:,} steps={_max_steps(TOKENS):,} lr={LR:g} sched={SCHEDULER}"
+        f"[olmoe3_275m] experts={NUM_ROUTED_EXPERTS} routed_hidden={ROUTED_EXPERT_HIDDEN_SIZE} top_k={TOP_K} tokens={TOKENS:,} steps={_max_steps(TOKENS):,} lr={LR:g} sched={SCHEDULER}"
         + (f" (warmup {WARMUP_STEPS}, constant, no decay)" if SCHEDULER == "wsd" else "")
         + (f" (warmup {WSD_WARMUP_STEPS}, decay from step {_wsd_decay_start_step(TOKENS):,})" if SCHEDULER == "wsd_decay" else "")
         + " "
