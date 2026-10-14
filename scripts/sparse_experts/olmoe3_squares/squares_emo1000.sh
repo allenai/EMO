@@ -16,7 +16,17 @@ SQN=olmoe3_squares_emo1000rand8; RP=olmoe3_275m_emo1000rand8_square; HR=runs_hel
 BASE=olmoe3_275m_1000e_emo_30b; SQ=$S/$SQN; LOG=$SQ/logs; SP=/tmp/claude-0/-root-EMO/c7db74f2-bbe3-4a2c-9d37-93c64250d7c6/scratchpad
 mkdir -p $SQ $LOG $SP $S/olmoe3_routing/$HR $S/olmoe3_routing/$HRB $S/olmoe3_routing/baseline_keeper
 say() { echo "$(date -u +%m-%d\ %H:%M) [emo1000] $*"; }
+# names of the live (not finalized) experiments of the workspace, read once per driver start: a restart must not resubmit a pass that is
+# already queued or running (it did, three times on 2026-10-14; concurrent writers of one out-dir)
+LIVE=$(beaker workspace experiments ai2/flex2 --format=json 2>/dev/null | python -c "
+import json,sys
+try: es=json.load(sys.stdin)
+except Exception: es=[]
+for e in es:
+    js=e.get('jobs') or []; st=(js[-1] if js else {}).get('status',{})
+    if not st.get('exited') and not st.get('finalized') and not st.get('canceled'): print(e.get('name',''))")
 launch() { local name=$1; shift; local log=$SP/launch_$name.log; local u=""
+  if grep -q -x -E "$(printf '%s' "$name" | sed 's/[.[\*^$]/\\&/g')-[0-9a-f]+(-[0-9a-f]+)?" <<< "$LIVE"; then say "$name: already live, not resubmitted"; return 0; fi
   for attempt in 1 2 3 4 5 6; do
     PYTHONPATH=external/OLMo-core/src python scripts/sparse_experts/olmoe3_beaker_cmd.py --name "$name" --gpus 1 --allocated -- "$@" > "$log" 2>&1
     u=$(sed 's/\x1b\[[0-9;]*m//g' "$log" | grep -aoE 'beaker.org/ex/[A-Z0-9]+' | head -1); [ -n "$u" ] && break; sleep 45; done
