@@ -10,7 +10,9 @@ S=sparse_experts; SP=/tmp/claude-0/-root-EMO/c7db74f2-bbe3-4a2c-9d37-93c64250d7c
 #  deleted on 10-13, and the keeper relaunched each of them three times that morning (12 crashed 4-node jobs) before it was caught)
 JOBS=("olmoe3_275m_emo_130b|247956|olmoe3_275m_emo_130b_baseline.sh|$KEEP/emo_130b.url"
       "olmoe3_275m_128e_130b|247956|olmoe3_275m_128e_130b_baseline.sh|$KEEP/128e_130b.url"
-      "olmoe3_275m_1000e_emo_30b|57221|olmoe3_275m_1000e_emo_30b_baseline.sh|$S/olmoe3_squares_emo1000rand8/logs/baseline_launched")
+      "olmoe3_275m_1000e_emo_30b|57221|olmoe3_275m_1000e_emo_30b_baseline.sh|$S/olmoe3_squares_emo1000rand8/logs/baseline_launched"
+      "olmoe3_275m_1024e_h272_k16_emo_10b|19074|olmoe3_275m_1024e_h272_k16_emo_10b.sh|$KEEP/h272_k16.url"
+      "olmoe3_275m_1024e_h272_k32_emo_10b|19074|olmoe3_275m_1024e_h272_k32_emo_10b.sh|$KEEP/h272_k32.url")
 RETIRED=$S/olmoe3_routing/twin_scheduler/retired.txt   # same retired-run globs as twin_scheduler.py: a listed run is never relaunched
 retired() { [ -f $RETIRED ] && python -c "
 import fnmatch,sys; pats=[l.strip() for l in open('$RETIRED') if l.strip() and not l.startswith('#')]; sys.exit(0 if any(fnmatch.fnmatch('$1', p) for p in pats) else 1)"; }
