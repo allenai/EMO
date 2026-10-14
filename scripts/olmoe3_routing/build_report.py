@@ -1062,7 +1062,7 @@ def control_explorer():
     if not data: return ""
     models = "".join(f'<label><input type="checkbox" data-m="{d["id"]}" checked> {d["name"]}</label>' for d in data)
     lines = "".join(f'<label><input type="checkbox" data-l="{k}"{" checked" if k in EXPLORER_DEFAULT else ""}> <span class="sw" style="border-color:{c};border-style:{"dashed" if dsh else "solid"}"></span>{lab}</label>' for k, lab, c, dsh in EXPLORER_LINES)
-    spec = json.dumps({"lines": [dict(k=k, lab=lab, c=c, dsh=dsh, gap=k in ("l4", "l8", "rp4", "f8r", "f8ra", "f8e")) for k, lab, c, dsh in EXPLORER_LINES], "models": data})   # gap: connect across missing points (sparse merges)
+    spec = json.dumps({"lines": [dict(k=k, lab=lab, c=c, dsh=dsh, gap=True) for k, lab, c, dsh in EXPLORER_LINES], "models": data})   # every line connects across missing points: the shared token axis also holds the re-partition cycle ends (every 10B), where the other lines have no evaluation (the 61B-130B stretch broke into dots, user report 2026-10-14)
     return card("results", "Explorer: pick the start models and the lines",
         '<div class="cx"><div class="cx-ctl"><div><b>Start models</b> (one panel each, y-axis shared)<br>' + models + '</div>'
         '<div><b>Lines</b><br>' + lines + '</div>'
@@ -1300,6 +1300,54 @@ def freeze_section():
     return section("Freezing parameters in the 8 squares (sub-model LR 4e-4)", what, ch + tbl, FREEZE_TAKE)
 
 
+ROUTER_NORM_TAKE = ("The router rows of the squares are indistinguishable from each other: mean row norm 1.93&ndash;1.95 in every one of the eight squares (1.85&ndash;1.87 in the "
+                    "four), the same row-norm spread (0.15&ndash;0.17) and the same drift from the start model (cosine 0.94, relative change 0.36&ndash;0.37): no square's router is larger "
+                    "or has moved further than another's. Relative to the joint baseline the squares' rows are uniformly larger: +9% with eight squares (1.93 vs 1.77 for the same "
+                    "experts) and +5% with four (1.86 vs 1.78), in every layer 2&ndash;8; layer 9 is the one layer where the baseline's rows grow more (2.16 vs 2.05&ndash;2.11), and layer 1, "
+                    "which every square trains whole, barely moves in the squares (1.72 / 1.67 vs 1.66 at the start; baseline 1.78). The squares also stay much closer to the start model "
+                    "than the baseline does (cosine 0.94 vs 0.83, relative change 0.37 vs 0.59), as expected from half the LR and 1/K of the tokens. The groups' mean rows, the shared "
+                    "component that would become a per-group logit offset after the merge, grow in the squares (0.73 vs 0.63 in the baseline, 0.56 at the start) but grow together: the "
+                    "mean distance between the groups' mean rows is smaller in the squares (0.25 for eight, 0.16 for four) than between the same experts in the baseline (0.29 / 0.21) "
+                    "or the start model (0.29 / 0.21), so the merge inherits no group-against-group router offsets. Norm differences across the sub-models are not a cause of the "
+                    "merge loss; the uniformly larger rows (sharper routing distributions) are the one systematic difference from joint training.")
+
+
+def router_norm_section():
+    """Router rows of the LR 4e-4 squares at 30B (window-2 finals) vs the same experts' rows in the joint baseline's 30B checkpoint and in the
+    10B start model (scripts/sparse_experts/olmoe3_squares/router_norms.py -> claude_outputs/olmoe3_routing/router_norms.json)."""
+    J = _jload(OUT / "router_norms.json")
+    if not J: return ""
+    f3 = lambda v: "&ndash;" if v is None else f"{v:.3f}"; f2 = lambda v: "&ndash;" if v is None else f"{v:.2f}"
+    html = ""
+    for arm, A in J.items():
+        K = A["K"]; L = A["layers"]; part = [str(l) for l in range(2, 10)]
+        mean = lambda g, key, layers=part: sum(L[l][str(g)][key] for l in layers) / len(layers)
+        rows = []
+        for g in range(K):
+            rows.append([f"square {g}", f3(mean(g, "norm_sq")), f3(mean(g, "norm_base")), f3(mean(g, "norm_start")), f2(mean(g, "norm_sq") / mean(g, "norm_base")),
+                         f3(mean(g, "norm_sq_std")), f3(mean(g, "norm_base_std")), f3(mean(g, "centroid_sq")), f3(mean(g, "centroid_base")), f3(mean(g, "centroid_start")), f3(mean(g, "centroid_shift")),
+                         f3(mean(g, "cos_sq_start")), f3(mean(g, "cos_base_start")), f3(mean(g, "rel_sq_start")), f3(mean(g, "rel_base_start")), f3(mean(g, "norm_sq", ["1"])), f3(mean(g, "norm_base", ["1"]))])
+        tbl = table(["square", "row norm, square", "baseline (same experts)", "start (10B)", "square / baseline", "row-norm std, square", "baseline", "centroid norm, square", "baseline", "start",
+                     "centroid shift (square &minus; baseline)", "cos(square, start)", "cos(baseline, start)", "rel. change square", "baseline", "layer 1 row norm, square", "baseline"], rows)
+        PAL = ["#2563eb", "#dc2626", "#7c3aed", "#d97706", "#0891b2", "#db2777", "#65a30d", "#78350f"]
+        pdist = lambda key: sum(L[l]["centroid_pdist"][key] for l in part) / len(part) if all("centroid_pdist" in L[l] for l in part) else None
+        tbl += f"<p>Mean pairwise distance between the groups' mean rows (layers 2&ndash;9): squares {f3(pdist('sq'))}, the same experts in the baseline {f3(pdist('base'))}, in the start model {f3(pdist('start'))}.</p>"
+        xs = list(range(1, 10)); series = [{"name": f"square {g}", "y": [L[str(l)][str(g)]["norm_sq"] for l in xs], "color": PAL[g % len(PAL)]} for g in range(K)]
+        series += [{"name": "baseline (all experts)", "y": [L[str(l)]["all_base"]["norm"] for l in xs], "color": "#059669", "dashed": True}, {"name": "start model (all experts)", "y": [L[str(l)]["all_start"]["norm"] for l in xs], "color": "#64748b", "dashed": True}]
+        ch = line_chart(xs, series, title=f"{K} squares: mean router row norm per layer (30B)", y_label="mean ||row||", x_label="layer", xlabels=[str(l) for l in xs], xfmt=lambda v: f"{v:.0f}")
+        cs = [{"name": f"square {g}", "y": [L[str(l)][str(g)]["centroid_sq"] for l in xs], "color": PAL[g % len(PAL)]} for g in range(K)]
+        cs += [{"name": "baseline (same experts, mean over groups)", "y": [sum(L[str(l)][str(g)]["centroid_base"] for g in range(K)) / K for l in xs], "color": "#059669", "dashed": True},
+               {"name": "start (same experts, mean over groups)", "y": [sum(L[str(l)][str(g)]["centroid_start"] for g in range(K)) / K for l in xs], "color": "#64748b", "dashed": True}]
+        ch += line_chart(xs, cs, title=f"{K} squares: norm of the group's mean router row per layer (a shared direction = one logit offset for the whole group after the merge)", y_label="||mean row||", x_label="layer", xlabels=[str(l) for l in xs], xfmt=lambda v: f"{v:.0f}")
+        html += f"<p><b>{K} squares, sub-model LR 4e-4, 30B point</b> (window-2 finals vs the joint baseline's step 57,221 and the 10B start model; table values are means over layers 2&ndash;9, layer 1 is whole in every square).</p>" + tbl + CHART_CSS + ch
+    what = ("For each square at its 30B final (the window-2 final of the LR 4e-4 arm) and each MoE layer, the routed-expert router rows (one d_model vector per expert; the router has no bias) are "
+            "compared with the rows of the <i>same</i> experts in the jointly trained baseline's 30B checkpoint and in the 10B start model. Columns: mean and std of the per-row L2 norms; the norm "
+            "of the group's mean row (the component shared by all of a group's rows: inside the square it shifts every logit equally and cancels in the softmax, but after the merge it is an "
+            "offset of that whole group against the other groups); the norm of the difference of the mean rows square &minus; baseline; the mean cosine between a square's rows and the start "
+            "model's (and the baseline's); the relative change ||W &minus; W<sub>start</sub>|| / ||W<sub>start</sub>||; and the same norms in layer 1, which every square trains whole.")
+    return section("Router weights of the squares vs the joint baseline at 30B", what, html, ROUTER_NORM_TAKE)
+
+
 def build_q5_controls():
     """Q5: the random-partition controls, one box per start model (moved out of Q3 on 2026-09-24)."""
     body = question_card("q5")
@@ -1319,7 +1367,7 @@ def build_q5_controls():
     boxes = [L for L in ("5A", "5B", "5C", "5D", "5E") if L != "5E" or (ROOT / "sparse_experts/olmoe3_squares_emo1000rand8/groups.json").exists()]
     body += VARIANT_CSS + card("info", "Start models",
         '<ul class="q3index">' + "".join(f'<li><a href="#q5-{L}"><b>{L}</b> &middot; {t}</a> &mdash; {bl}</li>' for L, t, _, bl in VARIANTS if L in boxes) + "</ul>")
-    body += variant("5A", random_control("emo", with_charts=False) + lr_sweep_section() + repartition_section() + freeze_section(), tab="q5")
+    body += variant("5A", random_control("emo", with_charts=False) + lr_sweep_section() + repartition_section() + freeze_section() + router_norm_section(), tab="q5")
     body += variant("5B", random_control("std", with_charts=False), tab="q5")
     if (ROOT / "sparse_experts/olmoe3_squares_s128rand4/groups.json").exists():
         body += variant("5C", card("info", "Setup", "<p>The 128-expert standard-routing model of the expert-count ladder (same expert size as the 512e model, top-16 of 128, "
