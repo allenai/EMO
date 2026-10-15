@@ -66,7 +66,32 @@ def build_overview():
         "(8,000 instances from the 10B&ndash;20B token window of the same data order). Layer 0 of this family is dense; layers 1&ndash;9 are MoE.</p>"
     )
     rq = "<ol>" + "".join(f"<li><b>{name}</b> &mdash; {q}</li>" for _, name, q in QUESTIONS) + "</ol>"
-    return card("info", "Setup", setup) + card("info", "Research questions (one tab each)", rq)
+    return card("info", "Setup", setup) + card("info", "Research questions (one tab each)", rq) + half_size_experts_card()
+
+
+def half_size_experts_card():
+    """Half-size-expert EMO arms (user request 2026-10-14): the 512e recipe with 1024 routed experts of hidden size 272 (half of 544; latent dim,
+    shared expert and everything else unchanged), top-16 and top-32 of 1024, pools uniform in [top-k, 1024], EP=2. Routed-expert parameters equal
+    the 512e model's; top-32 x 272 is the 512e model's active FFN width. Scored like the ladder arms: the 65.5M-token sample (runs/<tag>/none),
+    the 300B-stream sample of Q5 (runs_heldout300b_*), and the v3-small ppl sets."""
+    R = ROOT / "sparse_experts/olmoe3_routing"; P = ROOT / "claude_outputs/debug_validation/ppl_validation"; f3 = lambda v: "&ndash;" if v is None else f"{v:.3f}"
+    rows = [("EMO 512e: top-16 of 512, hidden 544 (the main model)", "276.7M", "2.61B", R / "runs/emo/none", R / "runs_heldout300b_emo/emo_step19074/none", P / "olmoe3_275m_emo_10b/step19074.json"),
+            ("EMO 1024e half-size: top-32 of 1024, hidden 272 (same active FFN width)", "279.6M", "2.61B", R / "runs/emo1024h272k32/none", R / "runs_heldout300b_h272/emo1024h272k32_step19074/none", P / "olmoe3_275m_1024e_h272_k32_emo_10b/step19074.json"),
+            ("EMO 1024e half-size: top-16 of 1024, hidden 272 (half the active FFN width)", "242.0M", "2.61B", R / "runs/emo1024h272k16/none", R / "runs_heldout300b_h272/emo1024h272k16_step19074/none", P / "olmoe3_275m_1024e_h272_k16_emo_10b/step19074.json"),
+            ("EMO 1000e: top-16 of 1000, hidden 544 (twice the total)", "279.5M", "4.90B", R / "runs/emo1000/none", R / "runs_heldout300b_emo1000/emo1000_step19074/none", P / "olmoe3_275m_1000e_emo_10b/step19074.json"),
+            ("standard MoE 512e", "276.7M", "2.61B", R / "runs/std/none", R / "runs_heldout300b_std/std_step19074/none", P / "olmoe3_275m_10b/step19074.json")]
+    if not any(_ce(a) is not None for _, _, _, a, _, _ in rows[1:3]): return ""
+    tbl = table(["model (10B tokens)", "active", "total", "held-out CE, 65.5M-token sample", "held-out CE, 300B sample", "v3-small ppl sets, mean CE"],
+                [[n, act, tot, f3(_ce(a)), f3(_ce(b)), f3(_ppl(c))] for n, act, tot, a, b, c in rows])
+    what = ("<p>The 512e EMO recipe with <b>1024 routed experts of half the width</b> (hidden 272 instead of 544; latent dim 320, the shared expert, "
+            "dense layer 0 and attention unchanged), trained for the same 10B tokens with the same schedule. Routed-expert parameters are exactly the "
+            "512e model's (the total is 2.611B vs 2.608B because the router has twice as many rows). Two arms: <b>top-32</b> of 1024, whose 32 x 272 "
+            "hidden units equal the 512e model's 16 x 544 active FFN width, and <b>top-16</b> of 1024, half that width. Per-document pools are uniform "
+            "in [top-k, 1024]. 1024 local experts exceed the grouped-GEMM cap, so both run at expert parallelism 2.</p>")
+    take = ("At fixed total parameters, twice as many half-width experts change nothing: the top-32 arm reproduces the 512e model to within 0.001 on all "
+            "three measures. Halving the active expert width (top-16 of the half-width experts, 242M active instead of 277M) costs only 0.005. The "
+            "0.02 advantage of the 1000-expert arm therefore comes from its doubled total parameters, not from the larger expert count.")
+    return card("results", "Expert count vs expert size at fixed total parameters (half-size experts, 2026-10-15)", what + tbl + f"<p><b>Takeaway.</b> {take}</p>")
 
 
 def question_card(qid):
