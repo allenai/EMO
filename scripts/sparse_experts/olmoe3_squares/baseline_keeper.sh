@@ -12,7 +12,9 @@ JOBS=("olmoe3_275m_emo_130b|247956|olmoe3_275m_emo_130b_baseline.sh|$KEEP/emo_13
       "olmoe3_275m_128e_130b|247956|olmoe3_275m_128e_130b_baseline.sh|$KEEP/128e_130b.url"
       "olmoe3_275m_1000e_emo_30b|57221|olmoe3_275m_1000e_emo_30b_baseline.sh|$S/olmoe3_squares_emo1000rand8/logs/baseline_launched"
       "olmoe3_275m_1024e_h272_k16_emo_10b|19074|olmoe3_275m_1024e_h272_k16_emo_10b.sh|$KEEP/h272_k16.url"
-      "olmoe3_275m_1024e_h272_k32_emo_10b|19074|olmoe3_275m_1024e_h272_k32_emo_10b.sh|$KEEP/h272_k32.url")
+      "olmoe3_275m_1024e_h272_k32_emo_10b|19074|olmoe3_275m_1024e_h272_k32_emo_10b.sh|$KEEP/h272_k32.url"
+      "olmoe3_275m_1024e_h272_k16_emo_30b|57221|olmoe3_275m_1024e_h272_k16_emo_30b_baseline.sh|$S/olmoe3_squares_h272k16rand8/logs/baseline_launched"
+      "olmoe3_275m_1024e_h272_k32_emo_30b|57221|olmoe3_275m_1024e_h272_k32_emo_30b_baseline.sh|$S/olmoe3_squares_h272k32rand8/logs/baseline_launched")
 RETIRED=$S/olmoe3_routing/twin_scheduler/retired.txt   # same retired-run globs as twin_scheduler.py: a listed run is never relaunched
 retired() { [ -f $RETIRED ] && python -c "
 import fnmatch,sys; pats=[l.strip() for l in open('$RETIRED') if l.strip() and not l.startswith('#')]; sys.exit(0 if any(fnmatch.fnmatch('$1', p) for p in pats) else 1)"; }

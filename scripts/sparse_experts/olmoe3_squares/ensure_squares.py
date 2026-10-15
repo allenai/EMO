@@ -13,7 +13,9 @@ ARMS = [dict(v="emo_k8", sqn="olmoe3_squares_emorand8", rp="olmoe3_275m_emorand8
         dict(v="s128_k8", sqn="olmoe3_squares_s128rand8", rp="olmoe3_275m_s128rand8_square", k=8, E=128, emo=0, windows=3),
         dict(v="randsel_k8", sqn="olmoe3_squares_randsel8", rp="olmoe3_275m_randsel8_square", k=8, E=512, emo=1, windows=3, psel="random"),
         dict(v="randsel64_k8", sqn="olmoe3_squares_randsel64k8", rp="olmoe3_275m_randsel64k8_square", k=8, E=512, emo=1, windows=3, psel="random", minpool=64),
-        dict(v="emo1000_k8", sqn="olmoe3_squares_emo1000rand8", rp="olmoe3_275m_emo1000rand8_square", k=8, E=1000, emo=1, windows=2, lr="4e-4", midfinal=True)]   # squares_emo1000.sh: LR 4e-4, checkpoints at the mid point + final only
+        dict(v="emo1000_k8", sqn="olmoe3_squares_emo1000rand8", rp="olmoe3_275m_emo1000rand8_square", k=8, E=1000, emo=1, windows=2, lr="4e-4", midfinal=True),   # squares_emo1000.sh: LR 4e-4, checkpoints at the mid point + final only
+        dict(v="h272k16_k8", sqn="olmoe3_squares_h272k16rand8", rp="olmoe3_275m_h272k16rand8_square", k=8, E=1024, emo=1, windows=2, lr="4e-4", midfinal=True, env=dict(OLMOE3_EXPERT_HIDDEN="272", OLMOE3_TOP_K="16", OLMOE3_EP_SIZE="2", OLMOE3_EP_PATH="sync_1d")),   # squares_h272.sh
+        dict(v="h272k32_k8", sqn="olmoe3_squares_h272k32rand8", rp="olmoe3_275m_h272k32rand8_square", k=8, E=1024, emo=1, windows=2, lr="4e-4", midfinal=True, env=dict(OLMOE3_EXPERT_HIDDEN="272", OLMOE3_TOP_K="32", OLMOE3_EP_SIZE="2", OLMOE3_EP_PATH="sync_1d"))]
 
 
 def sh(*cmd, env=None): return subprocess.run(cmd, capture_output=True, text=True, env=env)
@@ -59,7 +61,7 @@ def main():
     for a in ARMS:
         SQ = S / a["sqn"]; LOG = SQ / "logs"; rp, k = a["rp"], a["k"]
         if not (SQ / "groups.json").exists() or not (SQ / "pack/stats.json").exists(): continue
-        base = dict(SQUARE_GROUP="", SQUARES_NAME=a["sqn"], OLMOE3_EMO=str(a["emo"]), OLMOE3_NUM_EXPERTS=str(a["E"]), OLMOE3_EMO_POOL_SELECT=a.get("psel", "relevance"), OLMOE3_EMO_MIN_POOL=str(a.get("minpool", 16)), OLMOE3_LR=a.get("lr", "8e-4"))
+        base = dict(SQUARE_GROUP="", SQUARES_NAME=a["sqn"], OLMOE3_EMO=str(a["emo"]), OLMOE3_NUM_EXPERTS=str(a["E"]), OLMOE3_EMO_POOL_SELECT=a.get("psel", "relevance"), OLMOE3_EMO_MIN_POOL=str(a.get("minpool", 16)), OLMOE3_LR=a.get("lr", "8e-4"), **a.get("env", {}))
         mid = lambda s: max(1, round(s * 10926 / 19074))   # the matched-30000 point of a window-1 square (squares_lr_sweep.sh / squares_emo1000.sh)
         tok1 = json.load(open(SQ / "pack/stats.json"))["tokens_per_group"]
         for g in range(k):  # window 1 (the driver launches all k at once after slicing every init)
