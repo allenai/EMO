@@ -66,7 +66,7 @@ def build_overview():
         "(8,000 instances from the 10B&ndash;20B token window of the same data order). Layer 0 of this family is dense; layers 1&ndash;9 are MoE.</p>"
     )
     rq = "<ol>" + "".join(f"<li><b>{name}</b> &mdash; {q}</li>" for _, name, q in QUESTIONS) + "</ol>"
-    return card("info", "Setup", setup) + card("info", "Research questions (one tab each)", rq) + half_size_experts_card()
+    return card("info", "Setup", setup) + card("info", "Research questions (one tab each)", rq)
 
 
 def half_size_experts_card():
@@ -261,7 +261,8 @@ VARIANTS = [("A", "EMO 512e, 4 sub-models", "#2563eb", "the main experiment"),
             ("5B", "Standard MoE 512e", "#dc2626", "the standard-routing model of block B, 4 and 8 random sub-models, 10B &rarr; 130B, plus the re-merge / re-partition at 61B and the routing analysis"),
             ("5C", "Standard MoE 128e", "#0d9488", "the 128-expert standard-routing model of the expert-count ladder (same expert size, top-16 of 128), 4 and 8 random sub-models, 10B &rarr; 130B"),
             ("5D", "Random-pool EMO 512e", "#7c3aed", "the two EMO 512e models pretrained with random per-document expert pools ([16, 512] and [64, 512]), 4 and 8 random sub-models, 10B &rarr; 30B"),
-            ("5E", "EMO 1000e", "#b45309", "the 1000-expert EMO arm of the expert-count ladder (same expert size and data as the 512e model, top-16 of 1000), 8 random sub-models of 125 experts at sub-model LR 4e-4 on the same document packs, 10B &rarr; 30B")]
+            ("5E", "EMO 1000e", "#b45309", "the 1000-expert EMO arm of the expert-count ladder (same expert size and data as the 512e model, top-16 of 1000), 8 random sub-models of 125 experts at sub-model LR 4e-4 on the same document packs, 10B &rarr; 30B"),
+            ("5F", "Half-size-expert EMO 1024e (top-16 and top-32)", "#0f766e", "the 512e recipe with 1024 routed experts of half the width (hidden 272), same total parameters; start models at 10B, no squares yet")]
 
 
 def variant(letter, inner, tab="q3"):
@@ -412,6 +413,12 @@ RANDOM_CONTROL = {  # random expert groups + random document split; arms = (sub-
                       base_runs=("olmoe3_275m_randsel64_30b", "olmoe3_275m_randsel64_130b"), start_ppl="olmoe3_275m_emo_randsel64_10b", model="random-pool EMO 512e, pools of at least 64", E=512,
                       arms=[dict(k=4, sqn="olmoe3_squares_randsel64k4", hr="runs_heldout300b_randsel64k4", color="#2563eb"), dict(k=8, sqn="olmoe3_squares_randsel64k8", hr="runs_heldout300b_randsel64k8", color="#ea580c")],
                       remerge=False, take=lambda: RANDSEL64_TAKE),
+    "emo1024h272k32": dict(hrb="runs_heldout300b_h272", start="emo1024h272k32_step19074", ppl_dirs=("olmoe3_squares_emo1024h272k32rand8/ppl_validation",),
+                       base_runs=("olmoe3_275m_1024e_h272_k32_emo_30b",), start_ppl="olmoe3_275m_1024e_h272_k32_emo_10b", model="EMO 1024e half-size experts, top-32", E=1024,
+                       arms=[], remerge=False, take=lambda: "", sparse=True, standalone=True),   # half-size experts (box 5F): start model only so far
+    "emo1024h272k16": dict(hrb="runs_heldout300b_h272", start="emo1024h272k16_step19074", ppl_dirs=("olmoe3_squares_emo1024h272k16rand8/ppl_validation",),
+                       base_runs=("olmoe3_275m_1024e_h272_k16_emo_30b",), start_ppl="olmoe3_275m_1024e_h272_k16_emo_10b", model="EMO 1024e half-size experts, top-16", E=1024,
+                       arms=[], remerge=False, take=lambda: "", sparse=True, standalone=True),
     "emo1000": dict(hrb="runs_heldout300b_emo1000", start="emo1000_step19074", ppl_dirs=("olmoe3_squares_emo1000rand8/ppl_validation",),
                     base_runs=("olmoe3_275m_1000e_emo_30b",), start_ppl="olmoe3_275m_1000e_emo_10b", model="EMO 1000e", E=1000,
                     arms=[dict(k=8, sqn="olmoe3_squares_emo1000rand8", hr="runs_heldout300b_emo1000rand8", color="#ea580c")],
@@ -1020,11 +1027,12 @@ def control_explorer_data():
     R = ROOT / "sparse_experts/olmoe3_routing"
     for which, C in RANDOM_CONTROL.items():
         HRB = R / C["hrb"]; arms = [dict(a, HR=R / a["hr"], SQ=ROOT / "sparse_experts" / a["sqn"]) for a in C["arms"] if (ROOT / "sparse_experts" / a["sqn"] / "groups.json").exists()]
-        if not arms: continue
         hb = lambda tag: _ce(HRB / f"{tag}/none")
+        if not arms and not (C.get("standalone") and hb(C["start"]) is not None): continue
         W1 = [19074, 20000, 25000, 30000, 35000, 38148]; W2 = [39073, 44073, 49073, 54073, 57221]
         def has(a, st): return _ce(a["HR"] / f"merged_match{st}/none") is not None or any(_ce(a["HR"] / f"sub{g}_match{st}/none") is not None for g in range(a["k"]))
-        steps = [19074] + [st for st in W1[1:] if not C.get("sparse") or any(has(a, st) for a in arms)] + [st for st in W2 if any(has(a, st) for a in arms)] + [st for st in W3_STEPS if any(has(a, st) for a in arms)]
+        if arms: steps = [19074] + [st for st in W1[1:] if not C.get("sparse") or any(has(a, st) for a in arms)] + [st for st in W2 if any(has(a, st) for a in arms)] + [st for st in W3_STEPS if any(has(a, st) for a in arms)]
+        else: steps = [19074] + [st for st in W1[1:] + W2 + list(W3_STEPS) if hb(f"baseline_step{st}") is not None]   # start model only (+ a joint continuation once evaluated)
         RPH = R / "runs_heldout300b_emorand_lr4e-4_rp"; RPP = ROOT / "sparse_experts/olmoe3_squares_emorand_lr4e-4_rp/ppl_validation/merged_optim"
         rp_pts = {end: c for c, end in enumerate(RP_ENDS[1:], 1) if which == "emo" and _ce(RPH / f"merged_c{c}/none") is not None}
         steps = sorted(set(steps) | set(rp_pts))
@@ -1391,7 +1399,7 @@ def build_q5_controls():
         "<p>The same random expert groups and document packs are used for every 512-expert start model, so the boxes differ only in the start model; "
         "the 1000-expert model (box 5E) uses the same document packs with its own random groups of 125 experts.</p>")
     body += CX_CSS + control_explorer()
-    boxes = [L for L in ("5A", "5B", "5C", "5D", "5E") if L != "5E" or (ROOT / "sparse_experts/olmoe3_squares_emo1000rand8/groups.json").exists()]
+    boxes = [L for L in ("5A", "5B", "5C", "5D", "5E", "5F") if (L != "5E" or (ROOT / "sparse_experts/olmoe3_squares_emo1000rand8/groups.json").exists()) and (L != "5F" or half_size_experts_card())]
     body += VARIANT_CSS + card("info", "Start models",
         '<ul class="q3index">' + "".join(f'<li><a href="#q5-{L}"><b>{L}</b> &middot; {t}</a> &mdash; {bl}</li>' for L, t, _, bl in VARIANTS if L in boxes) + "</ul>")
     body += variant("5A", random_control("emo", with_charts=False) + lr_sweep_section() + repartition_section() + freeze_section() + router_norm_section(), tab="q5")
@@ -1415,6 +1423,10 @@ def build_q5_controls():
                                    "window and then of the 20B &rarr; 30B window from its own window-1 final. Merged and evaluated at the freeze-ablation points only: the window-1 "
                                    "mid point (matched step 30,000, 15.7B), 20B (38,148) and 30B (57,221). Each square is also scored alone on all held-out documents and on the "
                                    "ppl sets (mean of 8 and best of 8).</p>") + random_control("emo1000", with_charts=True) + emo1000_table(), tab="q5")
+    if "5F" in boxes:
+        body += variant("5F", half_size_experts_card() + card("info", "Status", "<p>Both models are evaluated at their 10B checkpoint only (start-model point in the explorer above, held-out "
+                                   "300B sample and ppl sets). Neither has a joint continuation past 10B nor random squares yet; the explorer panels fill in like the other boxes once "
+                                   "those run (same drivers: squares_emo1000.sh-style eight squares at LR 4e-4 on the 512e controls' document packs, baseline 10B &rarr; 30B).</p>"), tab="q5")
     return body
 
 
