@@ -25,7 +25,6 @@ while true; do
   alldone=1
   for spec in "${JOBS[@]}"; do IFS='|' read -r run final script urlf <<< "$spec"
     [ -f $S/$run/step$final/train/rank0.pt ] && continue; retired $run && continue; alldone=0; [ -f $urlf ] || continue   # not launched yet: nothing to keep (but not done either)
-    ls -d $S/$run/step* > /dev/null 2>&1 || grep -q "load_path" scripts/sparse_experts/model_scripts/$script || { say "$run: no checkpoint and no load_path: not relaunching"; continue; }
     id=$(sed 's|.*/||' $urlf); st=$(state $id)
     if [ "$st" = exited ] || [ "$st" = finalized ] || [ "$st" = canceled ]; then
       rm -rf $S/$run/*-tmp 2>/dev/null; u=""
