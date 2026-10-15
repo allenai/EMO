@@ -408,7 +408,9 @@ EMO1000_TAKE = ("More experts do not make the random split cheaper: the eight-sq
                 "2.477 vs 2.376 at 30B). The 1000e start model is 0.02 better than the 512e one (2.444 vs 2.465) and its merges keep that 0.02 lead at every "
                 "point, so the merge cost is a property of the eight-way split, not of the expert count. The merge stays ahead of its squares (2.452 vs a mean "
                 "of 2.476 and a best of 2.475 at 30B; 512e: 2.477 vs 2.504), and after 20B more tokens it still has not caught up with the 10B start model "
-                "(2.452 vs 2.444), exactly as for 512e (2.477 vs 2.465). The ppl sets agree (merged 2.979 vs baseline 2.893 at 30B).")
+                "(2.452 vs 2.444), exactly as for 512e (2.477 vs 2.465). The ppl sets agree (merged 2.979 vs baseline 2.893 at 30B). At 10B, before any training, the "
+                "untrained slices alone score 3.06 (mean of 8, best 3.056; every square has the same 0.62 handicap from losing 7/8 of the experts) and merging them "
+                "back reproduces the start model exactly (2.444); the first 1.25B tokens per square recover most of that (2.547 at 15.7B).")
 S128_TAKE = ("Fewer experts change nothing: the cost is set by the number of squares, not the number of experts. Four squares: gap 0.055 at 20B, "
              "0.13 at 130B; eight: 0.13 and 0.19. Both merges end level with their best single square.")
 def random_control(which, with_charts=True):
