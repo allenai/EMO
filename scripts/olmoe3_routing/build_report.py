@@ -439,8 +439,13 @@ RANDSEL_TAKE = ("A model trained with random pools merges cheaply: four squares 
                 "their best single square (2.461 / 2.513 at 130B).")
 RANDSEL64_TAKE = ("With pools of at least 64 experts the four-square merge beats joint training up to 35B (2.398 vs 2.397), the only control where "
                   "that happens, and ends just 0.028 behind at 130B (2.364 vs 2.336). Eight squares cost 0.107. The smallest merge gaps of every control.")
-H272_TAKE = ("In progress (launched 2026-10-15): eight squares of 128 half-width experts at sub-model LR 4e-4 from each half-size-expert model's 10B checkpoint, merged at "
-             "16B / 20B / 30B against the jointly continued baseline; the table lists the points as they finish.")
+H272_TAKE = ("Half-width experts make the eight-way split more expensive, not cheaper. With the same total parameters as the 512e model, the eight-square merges trail "
+             "their joint baselines by 0.09 / 0.11 / 0.12 (top-16: 2.501 vs 2.378 at 30B) and 0.11 / 0.12 / 0.14 (top-32: 2.508 vs 2.373) at 15.7B / 20B / 30B, against "
+             "0.08 / 0.09 / 0.10 for both the 512e model and the 1000e model. Neither merge gets back to its own 10B start model after 20B more tokens (2.501 vs 2.470, "
+             "2.508 vs 2.466), whereas the full-width models end within 0.01 of theirs; and the top-32 merge ends level with its best single square (2.508 vs 2.507, like "
+             "the standard model's eight squares), the top-16 merge only 0.01 ahead (2.501 vs 2.513). The ppl sets agree (top-16 3.024 vs 2.914, top-32 3.043 vs 2.912 at 30B). "
+             "Expert count is not what sets the merge cost, expert width is: a square of 128 half-width experts has the capacity of 64 full-width ones, and the narrower "
+             "experts seem to leave less room for the shared parameters of eight separately trained copies to be averaged. The four-square controls (blue) are running.")
 EMO1000_TAKE = ("More experts do not make the random split cheaper: the eight-square merge of the 1000e model trails its joint baseline by 0.08 at 15.7B, "
                 "0.09 at 20B and 0.10 at 30B (2.452 vs 2.350), the same gaps as the 512e model's eight squares at the same sub-model LR (0.08 / 0.09 / 0.10; "
                 "2.477 vs 2.376 at 30B). The 1000e start model is 0.02 better than the 512e one (2.444 vs 2.465) and its merges keep that 0.02 lead at every "
