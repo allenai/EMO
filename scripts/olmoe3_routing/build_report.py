@@ -413,19 +413,19 @@ RANDOM_CONTROL = {  # random expert groups + random document split; arms = (sub-
                       base_runs=("olmoe3_275m_randsel64_30b", "olmoe3_275m_randsel64_130b"), start_ppl="olmoe3_275m_emo_randsel64_10b", model="random-pool EMO 512e, pools of at least 64", E=512,
                       arms=[dict(k=4, sqn="olmoe3_squares_randsel64k4", hr="runs_heldout300b_randsel64k4", color="#2563eb"), dict(k=8, sqn="olmoe3_squares_randsel64k8", hr="runs_heldout300b_randsel64k8", color="#ea580c")],
                       remerge=False, take=lambda: RANDSEL64_TAKE),
-    "emo1024h272k32": dict(hrb="runs_heldout300b_h272k32", start="emo1024h272k32_step19074", ppl_dirs=("olmoe3_squares_h272k32rand8/ppl_validation",),
+    "emo1024h272k32": dict(hrb="runs_heldout300b_h272k32", start="emo1024h272k32_step19074", ppl_dirs=("olmoe3_squares_h272k32rand8/ppl_validation", "olmoe3_squares_h272k32rand4/ppl_validation"),
                        base_runs=("olmoe3_275m_1024e_h272_k32_emo_30b",), start_ppl="olmoe3_275m_1024e_h272_k32_emo_10b", model="EMO 1024e half-size experts, top-32", E=1024,
-                       arms=[dict(k=8, sqn="olmoe3_squares_h272k32rand8", hr="runs_heldout300b_h272k32rand8", color="#ea580c")], remerge=False, take=lambda: H272_TAKE, sparse=True, standalone=True,
+                       arms=[dict(k=4, sqn="olmoe3_squares_h272k32rand4", hr="runs_heldout300b_h272k32rand4", color="#2563eb"), dict(k=8, sqn="olmoe3_squares_h272k32rand8", hr="runs_heldout300b_h272k32rand8", color="#ea580c")], remerge=False, take=lambda: H272_TAKE, sparse=True, standalone=True,
                        setup_note=" The document packs are the 512e controls' (same random split of the same documents); the expert groups are a fresh random shuffle of the 1024 experts into 8 groups of 128 "
                                   "(seed 2); the squares train at LR 4e-4 with the model's own shape (hidden 272, top-32) at expert parallelism 2 (layer 1 keeps all 1024 experts)."),
-    "emo1024h272k16": dict(hrb="runs_heldout300b_h272k16", start="emo1024h272k16_step19074", ppl_dirs=("olmoe3_squares_h272k16rand8/ppl_validation",),
+    "emo1024h272k16": dict(hrb="runs_heldout300b_h272k16", start="emo1024h272k16_step19074", ppl_dirs=("olmoe3_squares_h272k16rand8/ppl_validation", "olmoe3_squares_h272k16rand4/ppl_validation"),
                        base_runs=("olmoe3_275m_1024e_h272_k16_emo_30b",), start_ppl="olmoe3_275m_1024e_h272_k16_emo_10b", model="EMO 1024e half-size experts, top-16", E=1024,
-                       arms=[dict(k=8, sqn="olmoe3_squares_h272k16rand8", hr="runs_heldout300b_h272k16rand8", color="#ea580c")], remerge=False, take=lambda: H272_TAKE, sparse=True, standalone=True,
+                       arms=[dict(k=4, sqn="olmoe3_squares_h272k16rand4", hr="runs_heldout300b_h272k16rand4", color="#2563eb"), dict(k=8, sqn="olmoe3_squares_h272k16rand8", hr="runs_heldout300b_h272k16rand8", color="#ea580c")], remerge=False, take=lambda: H272_TAKE, sparse=True, standalone=True,
                        setup_note=" The document packs are the 512e controls' (same random split of the same documents); the expert groups are a fresh random shuffle of the 1024 experts into 8 groups of 128 "
                                   "(seed 2); the squares train at LR 4e-4 with the model's own shape (hidden 272, top-16) at expert parallelism 2 (layer 1 keeps all 1024 experts)."),
-    "emo1000": dict(hrb="runs_heldout300b_emo1000", start="emo1000_step19074", ppl_dirs=("olmoe3_squares_emo1000rand8/ppl_validation",),
+    "emo1000": dict(hrb="runs_heldout300b_emo1000", start="emo1000_step19074", ppl_dirs=("olmoe3_squares_emo1000rand8/ppl_validation", "olmoe3_squares_emo1000rand4/ppl_validation"),
                     base_runs=("olmoe3_275m_1000e_emo_30b",), start_ppl="olmoe3_275m_1000e_emo_10b", model="EMO 1000e", E=1000,
-                    arms=[dict(k=8, sqn="olmoe3_squares_emo1000rand8", hr="runs_heldout300b_emo1000rand8", color="#ea580c")],
+                    arms=[dict(k=4, sqn="olmoe3_squares_emo1000rand4", hr="runs_heldout300b_emo1000rand4", color="#2563eb"), dict(k=8, sqn="olmoe3_squares_emo1000rand8", hr="runs_heldout300b_emo1000rand8", color="#ea580c")],
                     remerge=False, take=lambda: EMO1000_TAKE, sparse=True,   # squares_emo1000.sh: sub-model LR 4e-4, merges at 30000 / 38148 / 57221 only
                     setup_note=" The document packs are the 512e controls' (same random split of the same documents); the expert groups are a fresh random "
                                "shuffle of the 1000 experts into 8 groups of 125 (seed 2), and the squares train at LR 4e-4, the winner of the 512e sub-model LR sweep."),
@@ -1442,11 +1442,14 @@ def build_q5_controls():
 def emo1000_table(which="emo1000"):
     """The three points of an eight-square control with mid/final checkpoints (boxes 5E, 5F) as numbers: merged model, squares alone (mean / best of 8), joint baseline,
     start model; held-out CE and ppl-set CE."""
-    C = RANDOM_CONTROL[which]; R = ROOT / "sparse_experts/olmoe3_routing"; HR = R / C["arms"][0]["hr"]; HRB = R / C["hrb"]; SQ = ROOT / "sparse_experts" / C["arms"][0]["sqn"]
+    return "".join(_points_table(which, a) for a in RANDOM_CONTROL[which]["arms"])
+
+
+def _points_table(which, arm):
+    C = RANDOM_CONTROL[which]; R = ROOT / "sparse_experts/olmoe3_routing"; HR = R / arm["hr"]; HRB = R / C["hrb"]; SQ = ROOT / "sparse_experts" / arm["sqn"]; K = arm["k"]
     st_pack = _jload(SQ / "pack/stats.json"); st_pack2 = _jload(SQ / "pack2/stats.json")
     if not st_pack: return ""
-    f3 = lambda v: "&ndash;" if v is None else f"{v:.3f}"; rp = C["arms"][0]["sqn"].replace("olmoe3_squares_", "olmoe3_275m_") + "_square"
-    if not (SQ / "pack/stats.json").exists(): return ""
+    f3 = lambda v: "&ndash;" if v is None else f"{v:.3f}"; rp = arm["sqn"].replace("olmoe3_squares_", "olmoe3_275m_") + "_square"
     def sq_step(g, st):  # the square checkpoint at a matched point: window-1 mid / final, window-2 final
         fin = st_pack["tokens_per_group"][g] // 524288
         if st == 30000: return f"{rp}{g}/step{max(1, round(fin * 10926 / 19074))}"
@@ -1455,17 +1458,17 @@ def emo1000_table(which="emo1000"):
     rows = []
     for st, lab in ((19074, "10B (start)"), (30000, "15.7B"), (38148, "20B"), (57221, "30B")):
         if st == 19074:   # the untrained slices scored alone (init_point_evals.sh: sub<g>_match19074, ppl of init_ckpt/group<g>); the merged slices reproduce the start model
-            sh = [_ce(HR / f"sub{g}_match19074/none") for g in range(8)]; sp = [_ppl(SQ / "ppl_validation/init_ckpt" / f"group{g}.json") for g in range(8)]
+            sh = [_ce(HR / f"sub{g}_match19074/none") for g in range(K)]; sp = [_ppl(SQ / "ppl_validation/init_ckpt" / f"group{g}.json") for g in range(K)]
             mean = lambda v: sum(v) / len(v) if v and all(x is not None for x in v) else None
             best = lambda v: min(x for x in v if x is not None) if any(x is not None for x in v) else None
             rows.append([lab + " (untrained slices)", f3(_ce(HR / "merged_match19074/none") or _ce(HRB / f"{C['start']}/none")), f3(mean(sh)), f3(best(sh)), f3(_ce(HRB / f"{C['start']}/none")),
                          f3(_ppl(ROOT / f"claude_outputs/debug_validation/ppl_validation/{C['start_ppl']}/step19074.json")), f3(mean(sp)), "&ndash;"]); continue
-        sh = [_ce(HR / f"sub{g}_match{st}/none") for g in range(8)]; sp = [_ppl(SQ / "ppl_validation" / f"{sq_step(g, st)}.json") if sq_step(g, st) else None for g in range(8)]
+        sh = [_ce(HR / f"sub{g}_match{st}/none") for g in range(K)]; sp = [_ppl(SQ / "ppl_validation" / f"{sq_step(g, st)}.json") if sq_step(g, st) else None for g in range(K)]
         mean = lambda v: sum(v) / len(v) if v and all(x is not None for x in v) else None
         best = lambda v: min(x for x in v if x is not None) if any(x is not None for x in v) else None
         rows.append([lab, f3(_ce(HR / f"merged_match{st}/none")), f3(mean(sh)), f3(best(sh)), f3(_ce(HRB / f"baseline_step{st}/none")),
                      f3(_ppl(SQ / "ppl_validation/merged" / f"match{st}.json")), f3(mean(sp)), f3(_ppl(SQ / "ppl_validation" / C["base_runs"][0] / f"step{st}.json"))])
-    return card("results", "Numbers" + ("" if which == "emo1000" else f" &mdash; {C['model']}"), table(["tokens", "merged, held-out CE", "squares alone, mean of 8", "best square", "baseline (joint)", "merged, ppl sets", "squares alone, ppl sets", "baseline, ppl sets"], rows))
+    return card("results", f"Numbers &mdash; {C['model']}, {K} squares", table(["tokens", "merged, held-out CE", f"squares alone, mean of {K}", "best square", "baseline (joint)", "merged, ppl sets", "squares alone, ppl sets", "baseline, ppl sets"], rows))
 
 
 def build_q4():

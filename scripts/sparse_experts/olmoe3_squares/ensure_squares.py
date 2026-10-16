@@ -15,7 +15,10 @@ ARMS = [dict(v="emo_k8", sqn="olmoe3_squares_emorand8", rp="olmoe3_275m_emorand8
         dict(v="randsel64_k8", sqn="olmoe3_squares_randsel64k8", rp="olmoe3_275m_randsel64k8_square", k=8, E=512, emo=1, windows=3, psel="random", minpool=64),
         dict(v="emo1000_k8", sqn="olmoe3_squares_emo1000rand8", rp="olmoe3_275m_emo1000rand8_square", k=8, E=1000, emo=1, windows=2, lr="4e-4", midfinal=True),   # squares_emo1000.sh: LR 4e-4, checkpoints at the mid point + final only
         dict(v="h272k16_k8", sqn="olmoe3_squares_h272k16rand8", rp="olmoe3_275m_h272k16rand8_square", k=8, E=1024, emo=1, windows=2, lr="4e-4", midfinal=True, env=dict(OLMOE3_EXPERT_HIDDEN="272", OLMOE3_TOP_K="16", OLMOE3_EP_SIZE="2", OLMOE3_EP_PATH="sync_1d")),   # squares_h272.sh
-        dict(v="h272k32_k8", sqn="olmoe3_squares_h272k32rand8", rp="olmoe3_275m_h272k32rand8_square", k=8, E=1024, emo=1, windows=2, lr="4e-4", midfinal=True, env=dict(OLMOE3_EXPERT_HIDDEN="272", OLMOE3_TOP_K="32", OLMOE3_EP_SIZE="2", OLMOE3_EP_PATH="sync_1d"))]
+        dict(v="h272k32_k8", sqn="olmoe3_squares_h272k32rand8", rp="olmoe3_275m_h272k32rand8_square", k=8, E=1024, emo=1, windows=2, lr="4e-4", midfinal=True, env=dict(OLMOE3_EXPERT_HIDDEN="272", OLMOE3_TOP_K="32", OLMOE3_EP_SIZE="2", OLMOE3_EP_PATH="sync_1d")),
+        dict(v="emo1000_k4", sqn="olmoe3_squares_emo1000rand4", rp="olmoe3_275m_emo1000rand4_square", k=4, E=1000, emo=1, windows=2, lr="4e-4", midfinal=True),   # squares_big_k4.sh (2026-10-16)
+        dict(v="h272k16_k4", sqn="olmoe3_squares_h272k16rand4", rp="olmoe3_275m_h272k16rand4_square", k=4, E=1024, emo=1, windows=2, lr="4e-4", midfinal=True, env=dict(OLMOE3_EXPERT_HIDDEN="272", OLMOE3_TOP_K="16", OLMOE3_EP_SIZE="2", OLMOE3_EP_PATH="sync_1d")),
+        dict(v="h272k32_k4", sqn="olmoe3_squares_h272k32rand4", rp="olmoe3_275m_h272k32rand4_square", k=4, E=1024, emo=1, windows=2, lr="4e-4", midfinal=True, env=dict(OLMOE3_EXPERT_HIDDEN="272", OLMOE3_TOP_K="32", OLMOE3_EP_SIZE="2", OLMOE3_EP_PATH="sync_1d"))]
 
 
 def sh(*cmd, env=None): return subprocess.run(cmd, capture_output=True, text=True, env=env)
