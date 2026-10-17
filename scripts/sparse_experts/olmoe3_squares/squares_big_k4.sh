@@ -23,13 +23,14 @@ mkdir -p $SQ $LOG $SP $S/olmoe3_routing/$HR $S/olmoe3_routing/$HRB $S/olmoe3_rou
 say() { echo "$(date -u +%m-%d\ %H:%M) [k4 $ARM] $*"; }
 # names of the live (not finalized) experiments of the workspace, read once per driver start: a restart must not resubmit a pass that is
 # already queued or running (it did, three times on 2026-10-14; concurrent writers of one out-dir)
-LIVE=$(beaker workspace experiments ai2/flex2 --format=json 2>/dev/null | python -c "
+LIVE=""; for attempt in 1 2 3 4 5; do LIVE=$(timeout 600 beaker workspace experiments ai2/flex2 --format=json 2>/dev/null | python -c "
 import json,sys
 try: es=json.load(sys.stdin)
 except Exception: es=[]
 for e in es:
     js=e.get('jobs') or []; st=(js[-1] if js else {}).get('status',{})
-    if not st.get('exited') and not st.get('finalized') and not st.get('canceled'): print(e.get('name',''))")
+    if not st.get('exited') and not st.get('finalized') and not st.get('canceled'): print(e.get('name',''))"); [ -n "$LIVE" ] && break; sleep 60; done
+[ -n "$LIVE" ] || { say "ABORT: could not list the live Beaker experiments (an empty list would resubmit every queued pass: 7 duplicates on 2026-10-17)"; exit 1; }
 launch() { local name=$1; shift; local log=$SP/launch_$name.log; local u=""
   if grep -q -x -E "$(printf '%s' "$name" | sed 's/[.[\*^$]/\\&/g')-[0-9a-f]+(-[0-9a-f]+)?" <<< "$LIVE"; then say "$name: already live, not resubmitted"; return 0; fi
   for attempt in 1 2 3 4 5 6; do
