@@ -439,21 +439,27 @@ RANDSEL_TAKE = ("A model trained with random pools merges cheaply: four squares 
                 "their best single square (2.461 / 2.513 at 130B).")
 RANDSEL64_TAKE = ("With pools of at least 64 experts the four-square merge beats joint training up to 35B (2.398 vs 2.397), the only control where "
                   "that happens, and ends just 0.028 behind at 130B (2.364 vs 2.336). Eight squares cost 0.107. The smallest merge gaps of every control.")
-H272_TAKE = ("Half-width experts make the eight-way split more expensive, not cheaper. With the same total parameters as the 512e model, the eight-square merges trail "
-             "their joint baselines by 0.09 / 0.11 / 0.12 (top-16: 2.501 vs 2.378 at 30B) and 0.11 / 0.12 / 0.14 (top-32: 2.508 vs 2.373) at 15.7B / 20B / 30B, against "
-             "0.08 / 0.09 / 0.10 for both the 512e model and the 1000e model. Neither merge gets back to its own 10B start model after 20B more tokens (2.501 vs 2.470, "
-             "2.508 vs 2.466), whereas the full-width models end within 0.01 of theirs; and the top-32 merge ends level with its best single square (2.508 vs 2.507, like "
-             "the standard model's eight squares), the top-16 merge only 0.01 ahead (2.501 vs 2.513). The ppl sets agree (top-16 3.024 vs 2.914, top-32 3.043 vs 2.912 at 30B). "
-             "Expert count is not what sets the merge cost, expert width is: a square of 128 half-width experts has the capacity of 64 full-width ones, and the narrower "
-             "experts seem to leave less room for the shared parameters of eight separately trained copies to be averaged. The four-square controls (blue) are running.")
-EMO1000_TAKE = ("More experts do not make the random split cheaper: the eight-square merge of the 1000e model trails its joint baseline by 0.08 at 15.7B, "
+H272_TAKE = ("Half-width experts make the random split more expensive, not cheaper, at either K. <b>Eight squares</b>: with the same total parameters as the 512e model, the "
+             "merges trail their joint baselines by 0.09 / 0.11 / 0.12 (top-16: 2.501 vs 2.378 at 30B) and 0.11 / 0.12 / 0.14 (top-32: 2.508 vs 2.373) at 15.7B / 20B / 30B, "
+             "against 0.08 / 0.09 / 0.10 for both the 512e model and the 1000e model. Neither merge gets back to its own 10B start model after 20B more tokens (2.501 vs "
+             "2.470, 2.508 vs 2.466), whereas the full-width models end within 0.01 of theirs; the top-32 merge ends level with its best single square (2.508 vs 2.507), "
+             "the top-16 merge only 0.01 ahead. <b>Four squares</b> (blue): the same ordering with smaller numbers: top-16 trails by 0.007 / 0.009 / 0.021 (2.399 vs 2.378 "
+             "at 30B), top-32 by 0.020 / 0.029 / 0.036 (2.409 vs 2.373), while the 512e model's four squares at this LR trail by 0.009 at 30B and the 1000e model's are level. "
+             "The ppl sets agree throughout (eight squares at 30B: 3.024 vs 2.914 and 3.043 vs 2.912; four squares: 2.925 vs 2.914 and 2.947 vs 2.912). Expert count is "
+             "not what sets the merge cost, expert width is: a square of 128 (or 256) half-width experts has the capacity of 64 (128) full-width ones, and the narrower experts "
+             "leave less room for the shared parameters of separately trained copies to be averaged; and the top-32 model, whose active width matches the 512e model's, "
+             "is the costlier of the two at both K.")
+EMO1000_TAKE = ("Eight squares: more experts do not make the random split cheaper. The eight-square merge of the 1000e model trails its joint baseline by 0.08 at 15.7B, "
                 "0.09 at 20B and 0.10 at 30B (2.452 vs 2.350), the same gaps as the 512e model's eight squares at the same sub-model LR (0.08 / 0.09 / 0.10; "
                 "2.477 vs 2.376 at 30B). The 1000e start model is 0.02 better than the 512e one (2.444 vs 2.465) and its merges keep that 0.02 lead at every "
                 "point, so the merge cost is a property of the eight-way split, not of the expert count. The merge stays ahead of its squares (2.452 vs a mean "
                 "of 2.476 and a best of 2.475 at 30B; 512e: 2.477 vs 2.504), and after 20B more tokens it still has not caught up with the 10B start model "
                 "(2.452 vs 2.444), exactly as for 512e (2.477 vs 2.465). The ppl sets agree (merged 2.979 vs baseline 2.893 at 30B). At 10B, before any training, the "
                 "untrained slices alone score 3.06 (mean of 8, best 3.056; every square has the same 0.62 handicap from losing 7/8 of the experts) and merging them "
-                "back reproduces the start model exactly (2.444); the first 1.25B tokens per square recover most of that (2.547 at 15.7B).")
+                "back reproduces the start model exactly (2.444); the first 1.25B tokens per square recover most of that (2.547 at 15.7B). "
+                "<b>Four squares</b> (blue, LR 4e-4): the merge is <i>ahead</i> of joint training at 15.7B and 20B (2.391 vs 2.397, 2.373 vs 2.379) and level at 30B "
+                "(2.351 vs 2.350; ppl sets 2.874 vs 2.893, also ahead), the best result of any full-width four-square control (512e at the same LR: level at 20B, 0.009 "
+                "behind at 30B). Each square sees a quarter of the tokens and keeps 250 experts; the merge is 0.05 ahead of the squares alone (2.351 vs 2.401).")
 S128_TAKE = ("Fewer experts change nothing: the cost is set by the number of squares, not the number of experts. Four squares: gap 0.055 at 20B, "
              "0.13 at 130B; eight: 0.13 and 0.19. Both merges end level with their best single square.")
 def random_control(which, with_charts=True):
@@ -1472,7 +1478,8 @@ def _points_table(which, arm):
         mean = lambda v: sum(v) / len(v) if v and all(x is not None for x in v) else None
         best = lambda v: min(x for x in v if x is not None) if any(x is not None for x in v) else None
         rows.append([lab, f3(_ce(HR / f"merged_match{st}/none")), f3(mean(sh)), f3(best(sh)), f3(_ce(HRB / f"baseline_step{st}/none")),
-                     f3(_ppl(SQ / "ppl_validation/merged" / f"match{st}.json")), f3(mean(sp)), f3(_ppl(SQ / "ppl_validation" / C["base_runs"][0] / f"step{st}.json"))])
+                     f3(_ppl(SQ / "ppl_validation/merged" / f"match{st}.json")), f3(mean(sp)),
+                     f3(next((_ppl(ROOT / "sparse_experts" / d / run / f"step{st}.json") for d in C["ppl_dirs"] for run in C["base_runs"] if (ROOT / "sparse_experts" / d / run / f"step{st}.json").exists()), None))])   # the baseline ppl may live in a sibling arm's dir
     return card("results", f"Numbers &mdash; {C['model']}, {K} squares", table(["tokens", "merged, held-out CE", f"squares alone, mean of {K}", "best square", "baseline (joint)", "merged, ppl sets", "squares alone, ppl sets", "baseline, ppl sets"], rows))
 
 
