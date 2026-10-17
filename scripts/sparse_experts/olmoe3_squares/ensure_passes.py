@@ -23,7 +23,9 @@ ARMS = [  # sqn, run prefix, K, held-out dir, baseline held-out dir, start tag, 
     dict(sqn="olmoe3_squares_h272k32rand8", rp="olmoe3_275m_h272k32rand8_square", k=8, hr="runs_heldout300b_h272k32rand8", hrb="runs_heldout300b_h272k32", windows=2, base={1: "olmoe3_275m_1024e_h272_k32_emo_30b", 2: "olmoe3_275m_1024e_h272_k32_emo_30b"}),
     dict(sqn="olmoe3_squares_emo1000rand4", rp="olmoe3_275m_emo1000rand4_square", k=4, hr="runs_heldout300b_emo1000rand4", hrb="runs_heldout300b_emo1000", windows=2, base={}, bs_full=4),   # squares_big_k4.sh: baselines evaluated by the k=8 arms
     dict(sqn="olmoe3_squares_h272k16rand4", rp="olmoe3_275m_h272k16rand4_square", k=4, hr="runs_heldout300b_h272k16rand4", hrb="runs_heldout300b_h272k16", windows=2, base={}),
-    dict(sqn="olmoe3_squares_h272k32rand4", rp="olmoe3_275m_h272k32rand4_square", k=4, hr="runs_heldout300b_h272k32rand4", hrb="runs_heldout300b_h272k32", windows=2, base={}),   # LR 4e-4 arm: squares checkpoint only at the mid point and the final, so only the 30000 / 38148 / 57221 points have passes; the full 1000e model OOMs at batch 8
+    dict(sqn="olmoe3_squares_h272k32rand4", rp="olmoe3_275m_h272k32rand4_square", k=4, hr="runs_heldout300b_h272k32rand4", hrb="runs_heldout300b_h272k32", windows=2, base={}),
+    dict(sqn="olmoe3_squares_emo2000rand8", rp="olmoe3_275m_emo2000rand8_square", k=8, hr="runs_heldout300b_emo2000rand8", hrb="runs_heldout300b_emo2000", windows=2, base={1: "olmoe3_275m_2000e_emo_30b", 2: "olmoe3_275m_2000e_emo_30b"}, bs_full=2),   # 9.6B model
+    dict(sqn="olmoe3_squares_emo2000rand4", rp="olmoe3_275m_emo2000rand4_square", k=4, hr="runs_heldout300b_emo2000rand4", hrb="runs_heldout300b_emo2000", windows=2, base={}, bs_full=2),   # LR 4e-4 arm: squares checkpoint only at the mid point and the final, so only the 30000 / 38148 / 57221 points have passes; the full 1000e model OOMs at batch 8
 ]
 
 

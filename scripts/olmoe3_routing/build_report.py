@@ -262,7 +262,8 @@ VARIANTS = [("A", "EMO 512e, 4 sub-models", "#2563eb", "the main experiment"),
             ("5C", "Standard MoE 128e", "#0d9488", "the 128-expert standard-routing model of the expert-count ladder (same expert size, top-16 of 128), 4 and 8 random sub-models, 10B &rarr; 130B"),
             ("5D", "Random-pool EMO 512e", "#7c3aed", "the two EMO 512e models pretrained with random per-document expert pools ([16, 512] and [64, 512]), 4 and 8 random sub-models, 10B &rarr; 30B"),
             ("5E", "EMO 1000e", "#b45309", "the 1000-expert EMO arm of the expert-count ladder (same expert size and data as the 512e model, top-16 of 1000), 8 random sub-models of 125 experts at sub-model LR 4e-4 on the same document packs, 10B &rarr; 30B"),
-            ("5F", "Half-size-expert EMO 1024e (top-16 and top-32)", "#0f766e", "the 512e recipe with 1024 routed experts of half the width (hidden 272), same total parameters; start models at 10B, no squares yet")]
+            ("5F", "Half-size-expert EMO 1024e (top-16 and top-32)", "#0f766e", "the 512e recipe with 1024 routed experts of half the width (hidden 272), same total parameters; four and eight squares at sub-model LR 4e-4, 10B &rarr; 30B"),
+            ("5G", "EMO 2000e", "#9333ea", "the 2000-expert EMO arm of the expert-count ladder (same expert size and data as the 512e model, top-16 of 2000, 9.6B total), four and eight random sub-models at sub-model LR 4e-4 on the same document packs, 10B &rarr; 30B")]
 
 
 def variant(letter, inner, tab="q3"):
@@ -423,6 +424,12 @@ RANDOM_CONTROL = {  # random expert groups + random document split; arms = (sub-
                        arms=[dict(k=4, lr="4e-4", sqn="olmoe3_squares_h272k16rand4", hr="runs_heldout300b_h272k16rand4", color="#2563eb"), dict(k=8, lr="4e-4", sqn="olmoe3_squares_h272k16rand8", hr="runs_heldout300b_h272k16rand8", color="#ea580c")], remerge=False, take=lambda: H272_TAKE, sparse=True, standalone=True,
                        setup_note=" The document packs are the 512e controls' (same random split of the same documents); the expert groups are a fresh random shuffle of the 1024 experts into 8 groups of 128 "
                                   "(seed 2); the squares train at LR 4e-4 with the model's own shape (hidden 272, top-16) at expert parallelism 2 (layer 1 keeps all 1024 experts)."),
+    "emo2000": dict(hrb="runs_heldout300b_emo2000", start="emo2000_step19074", ppl_dirs=("olmoe3_squares_emo2000rand8/ppl_validation", "olmoe3_squares_emo2000rand4/ppl_validation"),
+                    base_runs=("olmoe3_275m_2000e_emo_30b",), start_ppl="olmoe3_275m_2000e_emo_10b", model="EMO 2000e", E=2000,
+                    arms=[dict(k=4, lr="4e-4", sqn="olmoe3_squares_emo2000rand4", hr="runs_heldout300b_emo2000rand4", color="#2563eb"), dict(k=8, lr="4e-4", sqn="olmoe3_squares_emo2000rand8", hr="runs_heldout300b_emo2000rand8", color="#ea580c")],
+                    remerge=False, take=lambda: EMO2000_TAKE, sparse=True, standalone=True,   # squares_big.sh emo2000 (2026-10-17): sub-model LR 4e-4, merges at 30000 / 38148 / 57221
+                    setup_note=" The document packs are the 512e controls' (same random split of the same documents); the expert groups are a fresh random shuffle of the 2000 experts "
+                               "into 4 groups of 500 / 8 groups of 250 (seed 2); the squares train at LR 4e-4 at expert parallelism 2 (layer 1 keeps all 2000 experts)."),
     "emo1000": dict(hrb="runs_heldout300b_emo1000", start="emo1000_step19074", ppl_dirs=("olmoe3_squares_emo1000rand8/ppl_validation", "olmoe3_squares_emo1000rand4/ppl_validation"),
                     base_runs=("olmoe3_275m_1000e_emo_30b",), start_ppl="olmoe3_275m_1000e_emo_10b", model="EMO 1000e", E=1000,
                     arms=[dict(k=4, lr="4e-4", sqn="olmoe3_squares_emo1000rand4", hr="runs_heldout300b_emo1000rand4", color="#2563eb"), dict(k=8, lr="4e-4", sqn="olmoe3_squares_emo1000rand8", hr="runs_heldout300b_emo1000rand8", color="#ea580c")],
@@ -449,6 +456,8 @@ H272_TAKE = ("Half-width experts make the random split more expensive, not cheap
              "not what sets the merge cost, expert width is: a square of 128 (or 256) half-width experts has the capacity of 64 (128) full-width ones, and the narrower experts "
              "leave less room for the shared parameters of separately trained copies to be averaged; and the top-32 model, whose active width matches the 512e model's, "
              "is the costlier of the two at both K.")
+EMO2000_TAKE = ("In progress (launched 2026-10-17): four and eight squares at sub-model LR 4e-4 from the 2000-expert EMO model's 10B checkpoint, merged at 16B / 20B / 30B "
+                "against its jointly continued baseline; the tables list the points as they finish.")
 EMO1000_TAKE = ("Eight squares: more experts do not make the random split cheaper. The eight-square merge of the 1000e model trails its joint baseline by 0.08 at 15.7B, "
                 "0.09 at 20B and 0.10 at 30B (2.452 vs 2.350), the same gaps as the 512e model's eight squares at the same sub-model LR (0.08 / 0.09 / 0.10; "
                 "2.477 vs 2.376 at 30B). The 1000e start model is 0.02 better than the 512e one (2.444 vs 2.465) and its merges keep that 0.02 lead at every "
@@ -1420,7 +1429,8 @@ def build_q5_controls():
         "<p>The same random expert groups and document packs are used for every 512-expert start model, so the boxes differ only in the start model; "
         "the 1000-expert model (box 5E) uses the same document packs with its own random groups of 125 experts.</p>")
     body += CX_CSS + control_explorer()
-    boxes = [L for L in ("5A", "5B", "5C", "5D", "5E", "5F") if (L != "5E" or (ROOT / "sparse_experts/olmoe3_squares_emo1000rand8/groups.json").exists()) and (L != "5F" or half_size_experts_card())]
+    boxes = [L for L in ("5A", "5B", "5C", "5D", "5E", "5F", "5G") if (L != "5E" or (ROOT / "sparse_experts/olmoe3_squares_emo1000rand8/groups.json").exists()) and (L != "5F" or half_size_experts_card())
+             and (L != "5G" or (ROOT / "sparse_experts/olmoe3_squares_emo2000rand8/groups.json").exists())]
     body += VARIANT_CSS + card("info", "Start models",
         '<ul class="q3index">' + "".join(f'<li><a href="#q5-{L}"><b>{L}</b> &middot; {t}</a> &mdash; {bl}</li>' for L, t, _, bl in VARIANTS if L in boxes) + "</ul>")
     body += variant("5A", random_control("emo", with_charts=False) + lr_sweep_section() + repartition_section() + freeze_section() + router_norm_section(), tab="q5")
@@ -1451,6 +1461,14 @@ def build_q5_controls():
                                    "of the 20B &rarr; 30B window from its own window-1 final. Merged and evaluated at the window-1 mid point (matched step 30,000, 15.7B), 20B (38,148) and "
                                    "30B (57,221); each square is also scored alone (mean of 8 and best of 8). Launched 2026-10-15 (squares_h272.sh k16 | k32).</p>")
                         + random_control("emo1024h272k32", with_charts=True) + emo1000_table("emo1024h272k32") + random_control("emo1024h272k16", with_charts=True) + emo1000_table("emo1024h272k16"), tab="q5")
+    if "5G" in boxes:
+        body += variant("5G", card("info", "Setup", "<p>The 2000-expert EMO arm of the expert-count ladder (olmoe3_275m_2000e_emo_10b: the 512e recipe with 2000 routed experts of the same size, "
+                                   "top-16, per-document pools uniform in [16, 2000], the same 10B of data, LR 8e-4; 9.61B total / 285.2M active parameters, trained at expert parallelism 2). Its 10B "
+                                   "checkpoint is continued jointly to 30B on the same stream as the baseline (4 nodes, EP=2, constant LR), and split into 4 random sub-models of 500 experts and "
+                                   "into 8 of 250 experts per layer 2&ndash;9 (layer 1 whole) with the 512e controls' random document packs, each square trained at sub-model LR 4e-4 on its "
+                                   "documents of the 10B &rarr; 20B window and then of the 20B &rarr; 30B window from its own window-1 final. Merged and evaluated at the window-1 mid point "
+                                   "(matched step 30,000, 15.7B), 20B (38,148) and 30B (57,221) on the 300B held-out sample and the ppl sets; each square is also scored alone.</p>")
+                        + random_control("emo2000", with_charts=True) + emo1000_table("emo2000"), tab="q5")
     return body
 
 
