@@ -27,7 +27,7 @@ for e in es:
     if not st.get('exited') and not st.get('finalized') and not st.get('canceled'): print(e.get('name',''))"); [ -n "$LIVE" ] && break; sleep 60; done
 [ -n "$LIVE" ] || { say "ABORT: could not list the live Beaker experiments (an empty list would resubmit every queued pass: 7 duplicates on 2026-10-17)"; exit 1; }
 launch() { local name=$1; shift; local log=$SP/launch_$name.log; local u=""
-  if grep -q -x -E "$(printf '%s' "$name" | sed 's/[.[\*^$]/\\&/g')-[0-9a-f]+(-[0-9a-f]+)?" <<< "$LIVE"; then say "$name: already live, not resubmitted"; return 0; fi
+  if grep -q -x -E "$(printf '%s' "$name" | sed 's/[.[\*^$]/\\&/g')(-[0-9a-f]+)*" <<< "$LIVE"; then say "$name: already live, not resubmitted"; return 0; fi   # Beaker keeps the exact name; a -hex suffix only appears on a name collision
   for attempt in 1 2 3 4 5 6; do
     PYTHONPATH=external/OLMo-core/src python scripts/sparse_experts/olmoe3_beaker_cmd.py --name "$name" --gpus 1 --allocated -- "$@" > "$log" 2>&1
     u=$(sed 's/\x1b\[[0-9;]*m//g' "$log" | grep -aoE 'beaker.org/ex/[A-Z0-9]+' | head -1); [ -n "$u" ] && break; sleep 45; done
