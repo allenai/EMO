@@ -415,17 +415,17 @@ RANDOM_CONTROL = {  # random expert groups + random document split; arms = (sub-
                       remerge=False, take=lambda: RANDSEL64_TAKE),
     "emo1024h272k32": dict(hrb="runs_heldout300b_h272k32", start="emo1024h272k32_step19074", ppl_dirs=("olmoe3_squares_h272k32rand8/ppl_validation", "olmoe3_squares_h272k32rand4/ppl_validation"),
                        base_runs=("olmoe3_275m_1024e_h272_k32_emo_30b",), start_ppl="olmoe3_275m_1024e_h272_k32_emo_10b", model="EMO 1024e half-size experts, top-32", E=1024,
-                       arms=[dict(k=4, sqn="olmoe3_squares_h272k32rand4", hr="runs_heldout300b_h272k32rand4", color="#2563eb"), dict(k=8, sqn="olmoe3_squares_h272k32rand8", hr="runs_heldout300b_h272k32rand8", color="#ea580c")], remerge=False, take=lambda: H272_TAKE, sparse=True, standalone=True,
+                       arms=[dict(k=4, lr="4e-4", sqn="olmoe3_squares_h272k32rand4", hr="runs_heldout300b_h272k32rand4", color="#2563eb"), dict(k=8, lr="4e-4", sqn="olmoe3_squares_h272k32rand8", hr="runs_heldout300b_h272k32rand8", color="#ea580c")], remerge=False, take=lambda: H272_TAKE, sparse=True, standalone=True,
                        setup_note=" The document packs are the 512e controls' (same random split of the same documents); the expert groups are a fresh random shuffle of the 1024 experts into 8 groups of 128 "
                                   "(seed 2); the squares train at LR 4e-4 with the model's own shape (hidden 272, top-32) at expert parallelism 2 (layer 1 keeps all 1024 experts)."),
     "emo1024h272k16": dict(hrb="runs_heldout300b_h272k16", start="emo1024h272k16_step19074", ppl_dirs=("olmoe3_squares_h272k16rand8/ppl_validation", "olmoe3_squares_h272k16rand4/ppl_validation"),
                        base_runs=("olmoe3_275m_1024e_h272_k16_emo_30b",), start_ppl="olmoe3_275m_1024e_h272_k16_emo_10b", model="EMO 1024e half-size experts, top-16", E=1024,
-                       arms=[dict(k=4, sqn="olmoe3_squares_h272k16rand4", hr="runs_heldout300b_h272k16rand4", color="#2563eb"), dict(k=8, sqn="olmoe3_squares_h272k16rand8", hr="runs_heldout300b_h272k16rand8", color="#ea580c")], remerge=False, take=lambda: H272_TAKE, sparse=True, standalone=True,
+                       arms=[dict(k=4, lr="4e-4", sqn="olmoe3_squares_h272k16rand4", hr="runs_heldout300b_h272k16rand4", color="#2563eb"), dict(k=8, lr="4e-4", sqn="olmoe3_squares_h272k16rand8", hr="runs_heldout300b_h272k16rand8", color="#ea580c")], remerge=False, take=lambda: H272_TAKE, sparse=True, standalone=True,
                        setup_note=" The document packs are the 512e controls' (same random split of the same documents); the expert groups are a fresh random shuffle of the 1024 experts into 8 groups of 128 "
                                   "(seed 2); the squares train at LR 4e-4 with the model's own shape (hidden 272, top-16) at expert parallelism 2 (layer 1 keeps all 1024 experts)."),
     "emo1000": dict(hrb="runs_heldout300b_emo1000", start="emo1000_step19074", ppl_dirs=("olmoe3_squares_emo1000rand8/ppl_validation", "olmoe3_squares_emo1000rand4/ppl_validation"),
                     base_runs=("olmoe3_275m_1000e_emo_30b",), start_ppl="olmoe3_275m_1000e_emo_10b", model="EMO 1000e", E=1000,
-                    arms=[dict(k=4, sqn="olmoe3_squares_emo1000rand4", hr="runs_heldout300b_emo1000rand4", color="#2563eb"), dict(k=8, sqn="olmoe3_squares_emo1000rand8", hr="runs_heldout300b_emo1000rand8", color="#ea580c")],
+                    arms=[dict(k=4, lr="4e-4", sqn="olmoe3_squares_emo1000rand4", hr="runs_heldout300b_emo1000rand4", color="#2563eb"), dict(k=8, lr="4e-4", sqn="olmoe3_squares_emo1000rand8", hr="runs_heldout300b_emo1000rand8", color="#ea580c")],
                     remerge=False, take=lambda: EMO1000_TAKE, sparse=True,   # squares_emo1000.sh: sub-model LR 4e-4, merges at 30000 / 38148 / 57221 only
                     setup_note=" The document packs are the 512e controls' (same random split of the same documents); the expert groups are a fresh random "
                                "shuffle of the 1000 experts into 8 groups of 125 (seed 2), and the squares train at LR 4e-4, the winner of the 512e sub-model LR sweep."),
@@ -489,7 +489,8 @@ def random_control(which, with_charts=True):
         a["sqm"] = [sum(v) / a["k"] if all(x is not None for x in v) else None for v in sq]
         a["sqb"] = [min(x for x in v if x is not None) if any(x is not None for x in v) else None for v in sq]
         a["mp"] = [_ppl(a["SQ"] / "ppl_validation" / "merged" / f"match{st}.json") for st in steps]
-        a["lab"] = f", {a['k']} sub-models" if len(arms) > 1 else ""; a["stt"] = _jload(a["SQ"] / "pack/stats.json")
+        a["lab"] = (f", {a['k']} sub-models" if len(arms) > 1 else "") + (" (sub-model LR 4e-4)" if a.get("lr") == "4e-4" else ""); a["stt"] = _jload(a["SQ"] / "pack/stats.json")
+        if a.get("lr") == "4e-4": a["color"] = "#0891b2" if a["k"] == 4 else "#d97706"   # the explorer's 4e-4 colours
     arms = [a for i, a in enumerate(arms) if i == 0 or any(v is not None for v in a["mr"] + a["sqm"])]  # arms without any result yet stay out of the charts
     toks = [st * 524288 / 1e9 for st in steps]; labels = [f"{t:.3g}B" for t in toks]
     end = "130B" if w3 else ("30B" if w2 else "20B"); E = C["E"]; ks = " and ".join(str(a["k"]) for a in arms)
@@ -1066,7 +1067,8 @@ def control_explorer_data():
         for a in arms:
             hv = lambda tag, a=a: _ce(a["HR"] / f"{tag}/none"); k = a["k"]
             sq = [[hv(f"sub{g}_match{st}") for g in range(k)] for st in steps]
-            ser[f"m{k}"] = {"h": [hv(f"merged_match{st}") for st in steps], "p": [_ppl(a["SQ"] / "ppl_validation" / "merged" / f"match{st}.json") for st in steps]}
+            mkey = f"l{k}" if a.get("lr") == "4e-4" else f"m{k}"   # the merged line of a 4e-4 arm sits on the 'sub-model LR 4e-4' key, like the 512e panel's (user catch 2026-10-17)
+            ser[mkey] = {"h": [hv(f"merged_match{st}") for st in steps], "p": [_ppl(a["SQ"] / "ppl_validation" / "merged" / f"match{st}.json") for st in steps]}
             # the 10B point of the square lines would be the untrained slices (CE 2.9-3.6) and would squash the shared y-axis: left out
             ser[f"s{k}"] = {"h": [None] + [sum(v) / k if all(x is not None for x in v) else None for v in sq[1:]]}
             ser[f"b{k}"] = {"h": [None] + [min(x for x in v if x is not None) if any(x is not None for x in v) else None for v in sq[1:]]}
@@ -1092,21 +1094,22 @@ def control_explorer_data():
                 i20 = steps.index(38148)
                 ser["rp4"] = {"h": [ser["l4"]["h"][i20] if st == 38148 else (_ce(RPH / f"merged_c{rp_pts[st]}/none") if st in rp_pts else None) for st in steps],
                               "p": [ser["l4"]["p"][i20] if st == 38148 else (_ppl(RPP / f"c{rp_pts[st]}.json") if st in rp_pts else None) for st in steps]}
-        out.append({"id": which, "name": C["model"], "toks": [round(st * 524288 / 1e9, 3) for st in steps], "series": ser})
+        name = C["model"] + (" (all squares at sub-model LR 4e-4)" if arms and all(a.get("lr") == "4e-4" for a in arms) else "")
+        out.append({"id": which, "name": name, "toks": [round(st * 524288 / 1e9, 3) for st in steps], "series": ser})
     return out
 
 
 EXPLORER_LINES = [  # key, label, colour, dashed, needs-ppl
-    ("baseline", "baseline (joint training)", "#059669", False), ("m4", "merged, 4 squares", "#2563eb", False), ("m8", "merged, 8 squares", "#ea580c", False),
+    ("baseline", "baseline (joint training)", "#059669", False), ("m4", "merged, 4 squares, sub-model LR 8e-4", "#2563eb", False), ("m8", "merged, 8 squares, sub-model LR 8e-4", "#ea580c", False),
     ("s4", "squares alone, mean of 4", "#2563eb", True), ("s8", "squares alone, mean of 8", "#ea580c", True),
     ("b4", "best single square of 4", "#db2777", False), ("b8", "best single square of 8", "#db2777", True),
-    ("l4", "merged, 4 squares, sub-model LR 4e-4 (EMO only)", "#0891b2", False), ("l8", "merged, 8 squares, sub-model LR 4e-4 (EMO only)", "#d97706", False),
+    ("l4", "merged, 4 squares, sub-model LR 4e-4 (EMO 512e, 1000e, half-size)", "#0891b2", False), ("l8", "merged, 8 squares, sub-model LR 4e-4 (EMO 512e, 1000e, half-size)", "#d97706", False),
     ("rp4", "merged, 4 squares, LR 4e-4, re-merged + re-partitioned every 10B (EMO only)", "#be123c", False),
     ("f8r", "merged, 8 squares, LR 4e-4, routers frozen (EMO only)", "#7c3aed", True), ("f8ra", "merged, 8 squares, LR 4e-4, routers + attention frozen (EMO only)", "#d97706", True),
     ("f8e", "merged, 8 squares, LR 4e-4, everything frozen except experts (EMO only)", "#0891b2", True),
     ("rm", "re-merged + re-partitioned at 61B (std only)", "#7c3aed", False), ("rs", "squares after re-partition, mean of 4 (std only)", "#7c3aed", True),
     ("start", "start model (10B)", "#64748b", True)]
-EXPLORER_DEFAULT = ["baseline", "m4", "m8", "s4", "s8", "start"]
+EXPLORER_DEFAULT = ["baseline", "m4", "m8", "l4", "l8", "s4", "s8", "start"]
 
 
 def control_explorer():
@@ -1480,7 +1483,7 @@ def _points_table(which, arm):
         rows.append([lab, f3(_ce(HR / f"merged_match{st}/none")), f3(mean(sh)), f3(best(sh)), f3(_ce(HRB / f"baseline_step{st}/none")),
                      f3(_ppl(SQ / "ppl_validation/merged" / f"match{st}.json")), f3(mean(sp)),
                      f3(next((_ppl(ROOT / "sparse_experts" / d / run / f"step{st}.json") for d in C["ppl_dirs"] for run in C["base_runs"] if (ROOT / "sparse_experts" / d / run / f"step{st}.json").exists()), None))])   # the baseline ppl may live in a sibling arm's dir
-    return card("results", f"Numbers &mdash; {C['model']}, {K} squares", table(["tokens", "merged, held-out CE", f"squares alone, mean of {K}", "best square", "baseline (joint)", "merged, ppl sets", "squares alone, ppl sets", "baseline, ppl sets"], rows))
+    return card("results", f"Numbers &mdash; {C['model']}, {K} squares" + (", sub-model LR 4e-4" if arm.get("lr") == "4e-4" else ""), table(["tokens", "merged, held-out CE", f"squares alone, mean of {K}", "best square", "baseline (joint)", "merged, ppl sets", "squares alone, ppl sets", "baseline, ppl sets"], rows))
 
 
 def build_q4():
