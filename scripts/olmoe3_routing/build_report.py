@@ -1072,6 +1072,7 @@ def control_explorer_data():
             # the 10B point of the square lines would be the untrained slices (CE 2.9-3.6) and would squash the shared y-axis: left out
             ser[f"s{k}"] = {"h": [None] + [sum(v) / k if all(x is not None for x in v) else None for v in sq[1:]]}
             ser[f"b{k}"] = {"h": [None] + [min(x for x in v if x is not None) if any(x is not None for x in v) else None for v in sq[1:]]}
+            if a.get("lr") == "4e-4": ser[f"s{k}"]["c"] = "#0891b2" if k == 4 else "#d97706"   # dashed squares-alone line in the colour of its merged (4e-4) line
         RM = R / "runs_heldout300b_stdremerge"; RMP = ROOT / "sparse_experts/olmoe3_squares_stdremerge/ppl_validation"
         if C.get("remerge") and RM.exists() and 116479 in steps:
             rv = lambda tag: _ce(RM / f"{tag}/none"); i0 = steps.index(116479); m4 = ser["m4"]
@@ -1138,7 +1139,7 @@ function fmtTick(v){return v.toFixed(2)}
 function render(){const metric=box.querySelector('input[name=cx-metric]:checked').value;const samex=document.getElementById('cx-samex').checked;
 const ms=[...box.querySelectorAll('input[data-m]')].filter(i=>i.checked).map(i=>D.models.find(m=>m.id===i.dataset.m));
 const ls=[...box.querySelectorAll('input[data-l]')].filter(i=>i.checked).map(i=>D.lines.find(l=>l.k===i.dataset.l));
-let ymin=1e9,ymax=-1e9,xmax=0;const draw=ms.map(m=>{const ser=ls.map(l=>{const s=m.series[l.k];if(!s||!s[metric])return null;const y=s[metric];if(!y.some(v=>v!=null))return null;return Object.assign({y:y},l)}).filter(Boolean);
+let ymin=1e9,ymax=-1e9,xmax=0;const draw=ms.map(m=>{const ser=ls.map(l=>{const s=m.series[l.k];if(!s||!s[metric])return null;const y=s[metric];if(!y.some(v=>v!=null))return null;return Object.assign({y:y},l,s.c?{c:s.c}:{})}).filter(Boolean);
 ser.forEach(s=>s.y.forEach(v=>{if(v!=null){ymin=Math.min(ymin,v);ymax=Math.max(ymax,v)}}));xmax=Math.max(xmax,m.toks[m.toks.length-1]);return {m:m,ser:ser}});
 panels.innerHTML='';if(ymin>ymax){panels.innerHTML='<p style="color:#64748b">Nothing to show for this selection.</p>';return}
 const pad=Math.max(0.01,0.06*(ymax-ymin));ymin-=pad;ymax+=pad;const W=480,H=290,x0=46,y0=14,pw=W-60,ph=H-52;
