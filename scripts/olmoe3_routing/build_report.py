@@ -456,8 +456,14 @@ H272_TAKE = ("Half-width experts make the random split more expensive, not cheap
              "not what sets the merge cost, expert width is: a square of 128 (or 256) half-width experts has the capacity of 64 (128) full-width ones, and the narrower experts "
              "leave less room for the shared parameters of separately trained copies to be averaged; and the top-32 model, whose active width matches the 512e model's, "
              "is the costlier of the two at both K.")
-EMO2000_TAKE = ("In progress (launched 2026-10-17): four and eight squares at sub-model LR 4e-4 from the 2000-expert EMO model's 10B checkpoint, merged at 16B / 20B / 30B "
-                "against its jointly continued baseline; the tables list the points as they finish.")
+EMO2000_TAKE = ("The 2000-expert model is the easiest of all start models to split. <b>Four squares</b> (sub-model LR 4e-4): the merge is <i>ahead</i> of joint training at every "
+                "point, by 0.009 at 15.7B (2.367 vs 2.376), 0.012 at 20B (2.350 vs 2.362) and 0.012 at 30B (2.324 vs 2.336; ppl sets 2.864), where the 1000e model's "
+                "four-square merge was level and the 512e model's 0.009 behind. <b>Eight squares</b>: the gap is 0.08 / 0.08 / 0.09 (2.422 vs 2.336 at 30B), the smallest "
+                "eight-square gap of the full-width models (512e and 1000e: 0.10 at 30B), and the merge stays 0.03 ahead of its squares alone (2.422 vs a mean of 2.454). "
+                "Across the ladder the picture is monotone in the number of full-width experts: with 512, 1000 and 2000 experts the four-square merge goes from 0.009 behind to "
+                "level to 0.012 ahead, and the eight-square gap from 0.10 to 0.10 to 0.09, while halving the expert width at fixed total size moves both the other way. Every "
+                "square keeps a quarter (eighth) of the experts, so the squares of a bigger model are themselves bigger models (500 or 250 experts here), and more of the "
+                "start model's capacity survives the split. The 2000e merges also stay well below their 10B start model (2.429) from the first point on.")
 EMO1000_TAKE = ("Eight squares: more experts do not make the random split cheaper. The eight-square merge of the 1000e model trails its joint baseline by 0.08 at 15.7B, "
                 "0.09 at 20B and 0.10 at 30B (2.452 vs 2.350), the same gaps as the 512e model's eight squares at the same sub-model LR (0.08 / 0.09 / 0.10; "
                 "2.477 vs 2.376 at 30B). The 1000e start model is 0.02 better than the 512e one (2.444 vs 2.465) and its merges keep that 0.02 lead at every "

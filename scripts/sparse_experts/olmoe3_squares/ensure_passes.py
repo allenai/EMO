@@ -24,8 +24,8 @@ ARMS = [  # sqn, run prefix, K, held-out dir, baseline held-out dir, start tag, 
     dict(sqn="olmoe3_squares_emo1000rand4", rp="olmoe3_275m_emo1000rand4_square", k=4, hr="runs_heldout300b_emo1000rand4", hrb="runs_heldout300b_emo1000", windows=2, base={}, bs_full=4),   # squares_big_k4.sh: baselines evaluated by the k=8 arms
     dict(sqn="olmoe3_squares_h272k16rand4", rp="olmoe3_275m_h272k16rand4_square", k=4, hr="runs_heldout300b_h272k16rand4", hrb="runs_heldout300b_h272k16", windows=2, base={}),
     dict(sqn="olmoe3_squares_h272k32rand4", rp="olmoe3_275m_h272k32rand4_square", k=4, hr="runs_heldout300b_h272k32rand4", hrb="runs_heldout300b_h272k32", windows=2, base={}),
-    dict(sqn="olmoe3_squares_emo2000rand8", rp="olmoe3_275m_emo2000rand8_square", k=8, hr="runs_heldout300b_emo2000rand8", hrb="runs_heldout300b_emo2000", windows=2, base={1: "olmoe3_275m_2000e_emo_30b", 2: "olmoe3_275m_2000e_emo_30b"}, bs_full=2, bs_sub=2),   # 9.6B model
-    dict(sqn="olmoe3_squares_emo2000rand4", rp="olmoe3_275m_emo2000rand4_square", k=4, hr="runs_heldout300b_emo2000rand4", hrb="runs_heldout300b_emo2000", windows=2, base={}, bs_full=2, bs_sub=2),   # LR 4e-4 arm: squares checkpoint only at the mid point and the final, so only the 30000 / 38148 / 57221 points have passes; the full 1000e model OOMs at batch 8
+    dict(sqn="olmoe3_squares_emo2000rand8", rp="olmoe3_275m_emo2000rand8_square", k=8, hr="runs_heldout300b_emo2000rand8", hrb="runs_heldout300b_emo2000", windows=2, base={1: "olmoe3_275m_2000e_emo_30b", 2: "olmoe3_275m_2000e_emo_30b"}, bs_full=2, bs_sub=2, ppl_bs=4),   # 9.6B model
+    dict(sqn="olmoe3_squares_emo2000rand4", rp="olmoe3_275m_emo2000rand4_square", k=4, hr="runs_heldout300b_emo2000rand4", hrb="runs_heldout300b_emo2000", windows=2, base={}, bs_full=2, bs_sub=2, ppl_bs=4),   # LR 4e-4 arm: squares checkpoint only at the mid point and the final, so only the 30000 / 38148 / 57221 points have passes; the full 1000e model OOMs at batch 8
 ]
 
 
@@ -89,7 +89,7 @@ def main():
                 n += 1; launch(f"{sqn}-ensure-eval-{tag}", "python", "scripts/sparse_experts/olmoe3_routing/extract_routing.py", "--checkpoint", ckpt, "--instances", f"{W}/olmoe3_routing/sample_8k_300b.npz",
                                 "--out-dir", f"{W}/olmoe3_routing/{hd}/{tag}/none/rank0", "--restrict", "none", "--batch-size", bs(tag), "--log-every", "100")
             if ppl and not (SQ / "ppl_validation" / ppl).exists() and not any(("ppl" in nm) and (ppl.split("/")[-1].replace(".json", "") in nm or tag in nm) and sqn in nm for nm in live):
-                n += 1; launch(f"{sqn}-ensure-ppl-{tag}", "python", "scripts/debug_validation/eval_ppl_validation.py", "--checkpoints", ckpt, "--out-dir", f"{W}/{sqn}/ppl_validation", "--batch-size", "8")
+                n += 1; launch(f"{sqn}-ensure-ppl-{tag}", "python", "scripts/debug_validation/eval_ppl_validation.py", "--checkpoints", ckpt, "--out-dir", f"{W}/{sqn}/ppl_validation", "--batch-size", str(a.get("ppl_bs", 8)))   # 9.6B model: 4
     print(f"{time.strftime('%m-%d %H:%M')} ensure_passes: {n} evaluations {'would be ' if DRY else ''}launched")
 
 
