@@ -11,7 +11,7 @@ set -u; cd "$(git rev-parse --show-toplevel)"; export PATH=/root/.conda/envs/emo
 ARM="${1:?emo2000}"; KV="${2:?k4|k8}"; case $KV in k4) K=4; PACKSRC=olmoe3_squares_stdrand;; k8) K=8; PACKSRC=olmoe3_squares_stdrand8;; *) echo "k4|k8"; exit 1;; esac
 case $ARM in
   emo2000) FULL=olmoe3_275m_2000e_emo_10b; E=2000; HRB=runs_heldout300b_emo2000; START=emo2000_step19074; BASE=olmoe3_275m_2000e_emo_30b
-           BASE_SCRIPT=scripts/sparse_experts/model_scripts/olmoe3_275m_2000e_emo_30b_baseline.sh; SQENV="OLMOE3_EP_SIZE=2 OLMOE3_EP_PATH=sync_1d"; BSF=2; PPLB=4;;   # 9.6B parameters: small batches for the full-model passes
+           BASE_SCRIPT=scripts/sparse_experts/model_scripts/olmoe3_275m_2000e_emo_30b_baseline.sh; SQENV="OLMOE3_EP_SIZE=2 OLMOE3_EP_PATH=sync_1d"; BSF=2; PPLB=4; BSQ=2;;   # 9.6B parameters: small batches for the full-model passes; the squares (2.3-3.3B, layer 1 whole) OOMed at batch 8 too -> BSQ
   *) echo "emo2000"; exit 1;;
 esac
 S=sparse_experts; W=/weka/oe-training-default/ryanwang/EMO/sparse_experts; WR=/weka/oe-training-default/ryanwang/EMO
@@ -51,10 +51,10 @@ merge_k() { local out=$1 weights=$2; shift 2; [ -f $out/merge_info.json ] || PYT
 squares_eval() { local s=$1; shift; local runs=("$@"); local cmds="" ckpts="" half
   for half in $(seq 0 $((K/4-1))); do cmds=""
     for g in $(seq $((half*4)) $((half*4+3))); do have $S/olmoe3_routing/$HR/sub${g}_match$s/none && continue
-      cmds="$cmds python scripts/sparse_experts/olmoe3_routing/extract_routing.py --checkpoint $W/${runs[$g]} --instances $W/olmoe3_routing/$SAMPLE --out-dir $W/olmoe3_routing/$HR/sub${g}_match$s/none/rank0 --restrict none --batch-size 8 --log-every 100;"; done
+      cmds="$cmds python scripts/sparse_experts/olmoe3_routing/extract_routing.py --checkpoint $W/${runs[$g]} --instances $W/olmoe3_routing/$SAMPLE --out-dir $W/olmoe3_routing/$HR/sub${g}_match$s/none/rank0 --restrict none --batch-size $BSQ --log-every 100;"; done
     [ -n "$cmds" ] && launch "$SQN-squares-heldout-$s-h$half" bash -c "$cmds"; done
   for g in $(seq 0 $((K-1))); do [ -f $SQ/ppl_validation/${runs[$g]}.json ] || ckpts="$ckpts $W/${runs[$g]}"; done
-  [ -n "$ckpts" ] && launch "$SQN-squares-ppl-$s" python scripts/debug_validation/eval_ppl_validation.py --checkpoints $ckpts --out-dir "$W/$SQN/ppl_validation" --batch-size 8; return 0; }
+  [ -n "$ckpts" ] && launch "$SQN-squares-ppl-$s" python scripts/debug_validation/eval_ppl_validation.py --checkpoints $ckpts --out-dir "$W/$SQN/ppl_validation" --batch-size $PPLB; return 0; }
 GS=$(seq 0 $((K-1)))
 # ---- 0. fresh random expert groups of E/4 (layer 1 whole); the 512e k=4 controls' random document packs; start model sliced ----
 [ -f $SQ/groups.json ] || python scripts/sparse_experts/olmoe3_squares/partition_random.py --out $SQ/groups.json --k $K --seed 2 --num-experts $E
