@@ -29,7 +29,10 @@ ARMS = [  # sqn, run prefix, K, held-out dir, baseline held-out dir, start tag, 
 ]
 
 
-def sh(*cmd): return subprocess.run(cmd, capture_output=True, text=True)
+def sh(*cmd):
+    import os
+    env = dict(os.environ, PYTHONPATH="external/OLMo-core/src" + (":" + os.environ["PYTHONPATH"] if os.environ.get("PYTHONPATH") else ""))   # the pinned submodule's olmo_core (the repo's own lacks BeakerLaunchConfig.min_runtime; launches failed 2026-10-18)
+    return subprocess.run(cmd, capture_output=True, text=True, env=env)
 
 
 def live_names():

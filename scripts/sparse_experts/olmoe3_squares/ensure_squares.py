@@ -23,7 +23,10 @@ ARMS = [dict(v="emo_k8", sqn="olmoe3_squares_emorand8", rp="olmoe3_275m_emorand8
         dict(v="emo2000_k4", sqn="olmoe3_squares_emo2000rand4", rp="olmoe3_275m_emo2000rand4_square", k=4, E=2000, emo=1, windows=2, lr="4e-4", midfinal=True, env=dict(OLMOE3_EP_SIZE="2", OLMOE3_EP_PATH="sync_1d"))]
 
 
-def sh(*cmd, env=None): return subprocess.run(cmd, capture_output=True, text=True, env=env)
+def sh(*cmd, env=None):
+    import os
+    env = dict(env if env is not None else os.environ); env["PYTHONPATH"] = "external/OLMo-core/src" + (":" + env["PYTHONPATH"] if env.get("PYTHONPATH") else "")   # pinned submodule first
+    return subprocess.run(cmd, capture_output=True, text=True, env=env)
 
 
 def live():
