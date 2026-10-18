@@ -29,12 +29,14 @@ for e in es:
     js=e.get('jobs') or []; st=(js[-1] if js else {}).get('status',{})
     if not st.get('exited') and not st.get('finalized') and not st.get('canceled'): print(e.get('name',''))"); [ -n "$LIVE" ] && break; sleep 60; done
 [ -n "$LIVE" ] || { say "ABORT: could not list the live Beaker experiments"; exit 1; }
+LAUNCHED=" "   # names this driver already submitted (the live list is read once at start; basept() runs every 5 min while waiting -> 34 duplicate ppl jobs on 2026-10-18)
 launch() { local name=$1; shift; local log=$SP/launch_$name.log; local u=""
-  if grep -q -x -E "$(printf '%s' "$name" | sed 's/[.[\*^$]/\\&/g')(-[0-9a-f]+)*" <<< "$LIVE"; then say "$name: already live, not resubmitted"; return 0; fi
+  case "$LAUNCHED" in *" $name "*) return 0;; esac
+  if grep -q -x -E "$(printf '%s' "$name" | sed 's/[.[\*^$]/\\&/g')(-[0-9a-f]+)*" <<< "$LIVE"; then say "$name: already live, not resubmitted"; LAUNCHED="$LAUNCHED$name "; return 0; fi
   for attempt in 1 2 3 4 5 6; do
     PYTHONPATH=external/OLMo-core/src python scripts/sparse_experts/olmoe3_beaker_cmd.py --name "$name" --gpus 1 --allocated -- "$@" > "$log" 2>&1
     u=$(sed 's/\x1b\[[0-9;]*m//g' "$log" | grep -aoE 'beaker.org/ex/[A-Z0-9]+' | head -1); [ -n "$u" ] && break; sleep 45; done
-  say "$name: ${u:-LAUNCH FAILED}"; }
+  say "$name: ${u:-LAUNCH FAILED}"; [ -n "$u" ] && LAUNCHED="$LAUNCHED$name "; }
 launch_train() { local marker=$1 log=$2 script=$3; shift 3; [ -f "$marker" ] && return 0; local u=""
   for attempt in $(seq 1 12); do env "$@" OLMOE3_FOLLOW=0 bash $script launch > "$log" 2>&1
     u=$(sed 's/\x1b\[[0-9;]*m//g' "$log" | grep -aoE 'beaker.org/ex/[A-Z0-9]+' | head -1); [ -n "$u" ] && break; sleep 60; done
