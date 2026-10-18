@@ -425,13 +425,13 @@ RANDOM_CONTROL = {  # random expert groups + random document split; arms = (sub-
                        setup_note=" The document packs are the 512e controls' (same random split of the same documents); the expert groups are a fresh random shuffle of the 1024 experts into 8 groups of 128 "
                                   "(seed 2); the squares train at LR 4e-4 with the model's own shape (hidden 272, top-16) at expert parallelism 2 (layer 1 keeps all 1024 experts)."),
     "emo2000": dict(hrb="runs_heldout300b_emo2000", start="emo2000_step19074", ppl_dirs=("olmoe3_squares_emo2000rand8/ppl_validation", "olmoe3_squares_emo2000rand4/ppl_validation"),
-                    base_runs=("olmoe3_275m_2000e_emo_30b",), start_ppl="olmoe3_275m_2000e_emo_10b", model="EMO 2000e", E=2000,
+                    base_runs=("olmoe3_275m_2000e_emo_30b", "olmoe3_275m_2000e_emo_61b"), start_ppl="olmoe3_275m_2000e_emo_10b", model="EMO 2000e", E=2000,
                     arms=[dict(k=4, lr="4e-4", sqn="olmoe3_squares_emo2000rand4", hr="runs_heldout300b_emo2000rand4", color="#2563eb"), dict(k=8, lr="4e-4", sqn="olmoe3_squares_emo2000rand8", hr="runs_heldout300b_emo2000rand8", color="#ea580c")],
                     remerge=False, take=lambda: EMO2000_TAKE, sparse=True, standalone=True,   # squares_big.sh emo2000 (2026-10-17): sub-model LR 4e-4, merges at 30000 / 38148 / 57221
                     setup_note=" The document packs are the 512e controls' (same random split of the same documents); the expert groups are a fresh random shuffle of the 2000 experts "
                                "into 4 groups of 500 / 8 groups of 250 (seed 2); the squares train at LR 4e-4 at expert parallelism 2 (layer 1 keeps all 2000 experts)."),
     "emo1000": dict(hrb="runs_heldout300b_emo1000", start="emo1000_step19074", ppl_dirs=("olmoe3_squares_emo1000rand8/ppl_validation", "olmoe3_squares_emo1000rand4/ppl_validation"),
-                    base_runs=("olmoe3_275m_1000e_emo_30b",), start_ppl="olmoe3_275m_1000e_emo_10b", model="EMO 1000e", E=1000,
+                    base_runs=("olmoe3_275m_1000e_emo_30b", "olmoe3_275m_1000e_emo_61b"), start_ppl="olmoe3_275m_1000e_emo_10b", model="EMO 1000e", E=1000,
                     arms=[dict(k=4, lr="4e-4", sqn="olmoe3_squares_emo1000rand4", hr="runs_heldout300b_emo1000rand4", color="#2563eb"), dict(k=8, lr="4e-4", sqn="olmoe3_squares_emo1000rand8", hr="runs_heldout300b_emo1000rand8", color="#ea580c")],
                     remerge=False, take=lambda: EMO1000_TAKE, sparse=True,   # squares_emo1000.sh: sub-model LR 4e-4, merges at 30000 / 38148 / 57221 only
                     setup_note=" The document packs are the 512e controls' (same random split of the same documents); the expert groups are a fresh random "
@@ -1099,8 +1099,8 @@ def control_explorer_data():
             for k, sqn in ((4, "olmoe3_squares_emorand_lr4e-4"), (8, "olmoe3_squares_emorand8_lr4e-4")):
                 HL = R / f"runs_heldout300b_{'emorand' if k == 4 else 'emorand8'}_lr4e-4"; PL = ROOT / "sparse_experts" / sqn / "ppl_validation" / "merged"
                 if not HL.exists(): continue
-                ser[f"l{k}"] = {"h": [hb(C["start"]) if st == 19074 else (_ce(HL / f"merged_match{st}/none") if st in (30000, 38148, 57221) else None) for st in steps],
-                                "p": [ref_ppl if st == 19074 else (_ppl(PL / f"match{st}.json") if st in (30000, 38148, 57221) else None) for st in steps]}
+                ser[f"l{k}"] = {"h": [hb(C["start"]) if st == 19074 else (_ce(HL / f"merged_match{st}/none") if st in (30000, 38148, 57221, 116479) else None) for st in steps],
+                                "p": [ref_ppl if st == 19074 else (_ppl(PL / f"match{st}.json") if st in (30000, 38148, 57221, 116479) else None) for st in steps]}
             for tag, key in (("router", "f8r"), ("router_attn", "f8ra"), ("non_expert", "f8e")):  # freeze ablations of the 8-square 4e-4 arm
                 HF = R / f"runs_heldout300b_emorand8_lr4e-4_frz{tag}"; PF = ROOT / f"sparse_experts/olmoe3_squares_emorand8_lr4e-4_frz{tag}/ppl_validation/merged"
                 if not HF.exists(): continue
@@ -1242,7 +1242,7 @@ def repartition_section():
     base_steps = [38148, 57221, 66481, 116479, 166478, 216477, 247956]
     base = {st: _ce(R / f"runs_heldout300b_emo/baseline_step{st}/none") for st in base_steps}
     main = {st: _ce(R / f"runs_heldout300b_emorand/merged_match{st}/none") for st in base_steps}
-    pw = {38148: rp[38148], 57221: _ce(R / "runs_heldout300b_emorand_lr4e-4/merged_match57221/none")}
+    pw = {38148: rp[38148], 57221: _ce(R / "runs_heldout300b_emorand_lr4e-4/merged_match57221/none"), 116479: _ce(R / "runs_heldout300b_emorand_lr4e-4/merged_match116479/none")}   # 116479: window 3 to 61B (2026-10-18)
     xs = sorted(set(RP_ENDS) | set(base_steps)); X = [round(tok(st), 1) for st in xs]
     ch = CHART_CSS + line_chart(X, [{"name": "baseline (joint training)", "y": [base.get(st) for st in xs], "color": "#059669", "gap": True},
                                     {"name": "merged, 4 squares, LR 8e-4 (main run, no re-partition)", "y": [main.get(st) for st in xs], "color": "#2563eb", "gap": True},
@@ -1493,9 +1493,11 @@ def _points_table(which, arm):
         fin = st_pack["tokens_per_group"][g] // 524288
         if st == 30000: return f"{rp}{g}/step{max(1, round(fin * 10926 / 19074))}"
         if st == 38148: return f"{rp}{g}/step{fin}"
+        if st == 116479: return f"{rp}{g}_w3/step{57221 + g * 47684 + 14815}"   # window 3 to the 61B point (squares_big_w3.sh)
         return f"{rp}{g}_w2/step{st_pack2['tokens_per_group'][g] // 524288}" if st_pack2 else None
     rows = []
-    for st, lab in ((19074, "10B (start)"), (30000, "15.7B"), (38148, "20B"), (57221, "30B")):
+    pts = [(19074, "10B (start)"), (30000, "15.7B"), (38148, "20B"), (57221, "30B")] + ([(116479, "61B")] if K == 4 and ((HR / "merged_match116479/none").exists() or (SQ / "merged/match116479").exists()) else [])
+    for st, lab in pts:
         if st == 19074:   # the untrained slices scored alone (init_point_evals.sh: sub<g>_match19074, ppl of init_ckpt/group<g>); the merged slices reproduce the start model
             sh = [_ce(HR / f"sub{g}_match19074/none") for g in range(K)]; sp = [_ppl(SQ / "ppl_validation/init_ckpt" / f"group{g}.json") for g in range(K)]
             mean = lambda v: sum(v) / len(v) if v and all(x is not None for x in v) else None
