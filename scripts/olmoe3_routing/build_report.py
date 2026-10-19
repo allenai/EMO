@@ -263,7 +263,8 @@ VARIANTS = [("A", "EMO 512e, 4 sub-models", "#2563eb", "the main experiment"),
             ("5D", "Random-pool EMO 512e", "#7c3aed", "the two EMO 512e models pretrained with random per-document expert pools ([16, 512] and [64, 512]), 4 and 8 random sub-models, 10B &rarr; 30B"),
             ("5E", "EMO 1000e", "#b45309", "the 1000-expert EMO arm of the expert-count ladder (same expert size and data as the 512e model, top-16 of 1000), 8 random sub-models of 125 experts at sub-model LR 4e-4 on the same document packs, 10B &rarr; 30B"),
             ("5F", "Half-size-expert EMO 1024e (top-16 and top-32)", "#0f766e", "the 512e recipe with 1024 routed experts of half the width (hidden 272), same total parameters; four and eight squares at sub-model LR 4e-4, 10B &rarr; 30B"),
-            ("5G", "EMO 2000e", "#9333ea", "the 2000-expert EMO arm of the expert-count ladder (same expert size and data as the 512e model, top-16 of 2000, 9.6B total), four and eight random sub-models at sub-model LR 4e-4 on the same document packs, 10B &rarr; 30B")]
+            ("5G", "EMO 2000e", "#9333ea", "the 2000-expert EMO arm of the expert-count ladder (same expert size and data as the 512e model, top-16 of 2000, 9.6B total), four and eight random sub-models at sub-model LR 4e-4 on the same document packs, 10B &rarr; 30B"),
+            ("5H", "Load balancing of the joint baselines (512e / 1000e / 2000e)", "#475569", "how evenly the jointly trained EMO models use their experts as the expert count grows, from the held-out passes and from the in-loop load-balancing metrics; and whether the merged four-square models balance differently")]
 
 
 def variant(letter, inner, tab="q3"):
@@ -1441,8 +1442,8 @@ def build_q5_controls():
         "<p>The same random expert groups and document packs are used for every 512-expert start model, so the boxes differ only in the start model; "
         "the 1000-expert model (box 5E) uses the same document packs with its own random groups of 125 experts.</p>")
     body += CX_CSS + control_explorer()
-    boxes = [L for L in ("5A", "5B", "5C", "5D", "5E", "5F", "5G") if (L != "5E" or (ROOT / "sparse_experts/olmoe3_squares_emo1000rand8/groups.json").exists()) and (L != "5F" or half_size_experts_card())
-             and (L != "5G" or (ROOT / "sparse_experts/olmoe3_squares_emo2000rand8/groups.json").exists())]
+    boxes = [L for L in ("5A", "5B", "5C", "5D", "5E", "5F", "5G", "5H") if (L != "5E" or (ROOT / "sparse_experts/olmoe3_squares_emo1000rand8/groups.json").exists()) and (L != "5F" or half_size_experts_card())
+             and (L != "5G" or (ROOT / "sparse_experts/olmoe3_squares_emo2000rand8/groups.json").exists()) and (L != "5H" or (OUT / "load_balance.json").exists())]
     body += VARIANT_CSS + card("info", "Start models",
         '<ul class="q3index">' + "".join(f'<li><a href="#q5-{L}"><b>{L}</b> &middot; {t}</a> &mdash; {bl}</li>' for L, t, _, bl in VARIANTS if L in boxes) + "</ul>")
     body += variant("5A", random_control("emo", with_charts=False) + lr_sweep_section() + repartition_section() + freeze_section() + router_norm_section(), tab="q5")
@@ -1481,7 +1482,89 @@ def build_q5_controls():
                                    "documents of the 10B &rarr; 20B window and then of the 20B &rarr; 30B window from its own window-1 final. Merged and evaluated at the window-1 mid point "
                                    "(matched step 30,000, 15.7B), 20B (38,148) and 30B (57,221) on the 300B held-out sample and the ppl sets; each square is also scored alone.</p>")
                         + random_control("emo2000", with_charts=True) + emo1000_table("emo2000"), tab="q5")
+    if "5H" in boxes: body += variant("5H", load_balance_section(), tab="q5")
     return body
+
+
+LB_TAKE = ("Balance is good at every expert count and gets only mildly worse as the model gets sparser. On the held-out sample the joint baselines use "
+           "98% / 98% / 96% of their experts effectively (512e / 1000e / 2000e), no expert is near-dead (under a tenth of its share: 0.0% / 0.0% / 0.1%), and the "
+           "spread of the loads grows slowly with E: CV 0.19 / 0.22 / 0.28, busiest expert 1.8&times; / 2.1&times; / 3.1&times; its fair share, 13.7% / 14.6% / 15.8% of "
+           "the tokens on the busiest tenth of the experts (uniform: 10%), stable from 10B to 61B. The in-loop picture agrees: the optimised load-balancing loss sits at "
+           "1.01&ndash;1.03 for all three (1 = perfect), and the global imbalance the loss acts on is 2.0 / 2.5 / 3.1 throughout training, matching the held-out busiest-expert "
+           "ratio. The loss values are comparable across E (the loss is normalised to 1 at balance and measures relative imbalance), but they are also uninformative here: "
+           "with a 0.01 weight they are within 1&ndash;3% of their floor for every model, so the models differ in balance less than the direct load statistics show, and "
+           "none is balance-starved. The merged four-square models are consistently a little <i>less</i> balanced than the baselines they beat or match (CV 0.26 / 0.29 / 0.34 "
+           "vs 0.19 / 0.22 / 0.28, busiest expert 2.0&times; / 2.4&times; / 3.1&times;), so the growing advantage of the four-square merge from 512e to 2000e is not a "
+           "load-balancing effect: it comes with slightly less balance, not more. What does change with E is per-expert data: at the same top-16, a 2000e expert sees "
+           "0.8% of the tokens against 3.1% for a 512e expert, inside a square it sees exactly the same share (a quarter of the experts on a quarter of the documents), "
+           "and with 500-expert squares the split keeps more of the start model intact; the routing and balance statistics on both sides of the split are nearly the same.")
+
+
+def load_balance_section():
+    """Box 5H: expert-load balance of the joint EMO baselines (512e / 1000e / 2000e) and of their merged four-square models (load_balance.py, from the
+    held-out passes' per-expert token counts), plus the in-loop load-balancing loss / load-imbalance metrics of the joint runs (load_balance_wandb.py)."""
+    J = _jload(OUT / "load_balance.json"); W = _jload(OUT / "load_balance_wandb.json") or {}
+    if not J: return ""
+    f3 = lambda v: "&ndash;" if v is None else f"{v:.3f}"; f2 = lambda v: "&ndash;" if v is None else f"{v:.2f}"; pct = lambda v: "&ndash;" if v is None else f"{100 * v:.1f}%"
+    pts = [(19074, "10B"), (30000, "15.7B"), (38148, "20B"), (57221, "30B"), (116479, "61B")]; models = list(J.keys()); COL = {"EMO 512e": "#2563eb", "EMO 1000e": "#b45309", "EMO 2000e": "#9333ea"}
+    what = ("<p><b>What is measured.</b> Two views of how evenly the experts are used. <b>Held-out (free routing)</b>: the per-expert token counts of every MoE layer "
+            "from the 300B-sample routing passes (65.5M tokens, eval pools = all experts, exactly the models evaluated everywhere else in Q5), turned into "
+            "expert-count-free statistics: the coefficient of variation of the loads (std / mean; 0 = uniform), the busiest expert's load in multiples of its fair share, "
+            "the share of tokens on the busiest 10% of the experts (uniform: 10%), the fraction of experts receiving less than half their fair share, and the effective "
+            "number of experts exp(H) as a fraction of E; all averaged over layers 1&ndash;9. <b>In-loop (training batches)</b>: the trainer's per-block metrics from W&amp;B, "
+            "averaged over the nine MoE blocks and over the 1,000 steps before each matched checkpoint: the load-balancing loss as optimised (weight 0.01, local-batch "
+            "granularity with global balancing for EMO), the local-batch load imbalance (busiest expert / mean, max over ranks) and the global load imbalance (the same with "
+            "the counts summed over all ranks, the quantity EMO's global balancing acts on).</p>"
+            "<p><b>Is the load-balancing loss comparable across expert counts?</b> As implemented (olmo_core.nn.moe.loss.load_balancing_loss) the loss is "
+            "(E / k) &middot; &sum;<sub>e</sub> f<sub>e</sub> P<sub>e</sub>, with f<sub>e</sub> the share of routed tokens on expert e and P<sub>e</sub> its mean router "
+            "probability. At perfect balance f<sub>e</sub> = k / E and P<sub>e</sub> = 1 / E, so the loss is exactly 1 for any E, and in general it equals "
+            "1 + (E<sup>2</sup> / k) &middot; cov<sub>e</sub>(f, P): a dimensionless measure of the relative imbalance (the same relative pattern of over- and under-used "
+            "experts gives the same value with 512 or 2000 experts). So the <i>numbers</i> are comparable in that sense. Three caveats: it is an interaction term "
+            "(routing share &times; probability), not the load spread itself, so the direct statistics above are the cleaner comparison; the <i>pressure</i> it exerts is "
+            "not the same, because with more experts each expert's share is smaller and a fixed loss weight corrects a given relative imbalance with a gradient spread over "
+            "more experts; and EMO's per-document pools make part of the imbalance in a local batch a property of which documents happened to land in it, which the global "
+            "variant averages away. The active fraction k / E itself falls from 3.1% (512e) to 1.6% (1000e) to 0.8% (2000e).</p>")
+    # table 1: held-out statistics, baseline and merged four squares
+    rows = []
+    for m in models:
+        for kind, lab in (("baseline", "joint baseline"), ("merged4", "merged 4 squares (LR 4e-4)")):
+            for st, tl in pts:
+                r = J[m].get(kind, {}).get(str(st))
+                if not r: continue
+                mm = r["mean"]; rows.append([m, lab, tl, f3(mm["cv"]), f2(mm["max_rel"]), pct(mm["top10_share"]), pct(mm["under_half"]), pct(mm["under_tenth"]), pct(mm["eff_frac"]), f3(r["mean_ce"])])
+    t1 = table(["model", "which", "tokens", "CV of expert loads", "busiest expert (&times; fair share)", "tokens on busiest 10%", "experts under &frac12; share", "under 1/10", "effective experts (% of E)", "held-out CE"], rows)
+    xs = [st * 524288 / 1e9 for st, _ in pts]; labels = [tl for _, tl in pts]
+    def ser(key, kind, dashed):
+        return [{"name": f"{m}, {'baseline' if kind == 'baseline' else 'merged 4 squares'}", "y": [J[m].get(kind, {}).get(str(st), {}).get("mean", {}).get(key) for st, _ in pts], "color": COL.get(m, "#64748b"), "dashed": dashed, "gap": True} for m in models]
+    charts = CHART_CSS + line_chart(xs, ser("cv", "baseline", False) + ser("cv", "merged4", True), title="Held-out expert loads: coefficient of variation (0 = uniform), mean over layers", y_label="CV", xlabels=labels, x_label="tokens trained", xfmt=lambda v: f"{v:.0f}B")
+    charts += line_chart(xs, ser("max_rel", "baseline", False) + ser("max_rel", "merged4", True), title="Held-out expert loads: busiest expert in multiples of its fair share, mean over layers", y_label="max / mean", xlabels=labels, x_label="tokens trained", xfmt=lambda v: f"{v:.0f}B")
+    # per-layer CV at 30B
+    lrows = [[m, kind] + [f3(J[m][kind]["57221"]["layers"][i]["cv"]) for i in range(9)] for m in models for kind in ("baseline", "merged4") if J[m].get(kind, {}).get("57221")]
+    t1b = table(["model", "which (30B)"] + [f"layer {i}" for i in range(1, 10)], lrows)
+    html = card("results", "Held-out expert loads (free routing on the 300B sample)", t1 + "<p><b>Per layer at 30B</b> (CV of the expert loads):</p>" + t1b + charts)
+    # in-loop metrics
+    if W:
+        wrows = []
+        for m in models:
+            for st, tl in pts:
+                d = W.get(m, {}).get("at", {}).get(str(st))
+                if d: wrows.append([m, tl, f3(d.get("lb_loss") / 0.01 if d.get("lb_loss") is not None else None), f2(d.get("imbalance")), f2(d.get("global_imbalance"))])   # W&B logs weight x loss (weight 0.01)
+        t2 = table(["model", "tokens", "load-balancing loss (1 = balanced; logged value / 0.01)", "local-batch load imbalance (max / mean)", "global load imbalance (max / mean)"], wrows)
+        brows = [[m] + [f3(v / 0.01 if v is not None else None) for v in (W.get(m, {}).get("at", {}).get("57221", {}).get("blocks", {}).get("lb_loss") or [None] * 9)] for m in models]
+        t2b = table(["model (30B)"] + [f"block {i}" for i in range(1, 10)], brows)
+        # loss over training, binned every 2,000 steps
+        bins = list(range(0, 118000, 2000)); bx = [b * 524288 / 1e9 for b in bins]
+        def binned(m, key):
+            pts_ = W.get(m, {}).get("series", {}).get(key, []); out = []
+            for b in bins:
+                v = [y for s_, y in pts_ if b <= s_ < b + 2000]; out.append(sum(v) / len(v) if v else None)
+            return out
+        c2 = line_chart(bx, [{"name": m, "y": [v / 0.01 if v is not None else None for v in binned(m, "lb_loss")], "color": COL.get(m, "#64748b"), "gap": True} for m in models], title="In-loop load-balancing loss of the joint runs (mean over blocks, 2,000-step bins; 1 = balanced)", y_label="loss", x_label="tokens trained", xfmt=lambda v: f"{v:.0f}B")
+        c3 = line_chart(bx, [{"name": m, "y": binned(m, "global_imbalance"), "color": COL.get(m, "#64748b"), "gap": True} for m in models], title="In-loop global load imbalance (busiest expert / mean, counts over all ranks; 2,000-step bins)", y_label="max / mean", x_label="tokens trained", xfmt=lambda v: f"{v:.0f}B")
+        html += card("results", "In-loop load balancing of the joint runs (W&amp;B)", "<p>The local-batch imbalance is a per-rank, per-micro-batch quantity (2 sequences = 16k tokens, a handful of documents and "
+                     "their pools) and the 512e model's 20B and 30B continuations ran on one node instead of four, so only the global imbalance and the loss itself are comparable across rows.</p>"
+                     + t2 + "<p><b>Per block at 30B</b> (load-balancing loss):</p>" + t2b + CHART_CSS + c2 + c3)
+    return section("Load balancing vs expert count", what, html, LB_TAKE)
 
 
 def emo1000_table(which="emo1000"):
