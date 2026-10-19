@@ -51,12 +51,44 @@ def sanitized(model: str) -> str:
     return re.sub(r"[^a-zA-Z0-9_-]", "", model)
 
 
+# Beaker jobs see the Weka buckets under /weka/...; this host mounts them at short paths.
+# Output directories are named after the short spelling so both sides agree.
+CANONICAL_MOUNTS = {"/weka/olmo-3p5-checkpoints": "/ckpts", "/weka/oe-training-default/ryanwang": "/root"}
+
+
+def canonical(model: str) -> str:
+    for job, local in CANONICAL_MOUNTS.items():
+        if model == job or model.startswith(job + "/"):
+            return local + model[len(job):]
+    return model
+
+
 def relative_dir(model: str, task: str, keep_k: str) -> str:
-    return f"{sanitized(model)}/{task}_keepk_{keep_k}_bs-{BATCH_SIZE}_lr-{LR}_epoch-{EPOCHS}_selectivemode-layerwise"
+    return f"{sanitized(canonical(model))}/{task}_keepk_{keep_k}_bs-{BATCH_SIZE}_lr-{LR}_epoch-{EPOCHS}_selectivemode-layerwise"
 
 
 def metrics_done(results_dir: Path, task: str) -> bool:
     return any(results_dir.glob("task-*-metrics.json"))
+
+
+def src_shim() -> Path:
+    """A directory exposing only the ``src/`` packages the eval path needs.
+
+    ``src/`` also holds this repository's vendored ``olmo_core`` fork; putting ``src/`` itself
+    on ``PYTHONPATH`` would shadow the installed OLMo-core that the OLMo 3.5 transformers /
+    vLLM plugins import (``olmo_core.nn.moe.v2``).
+    """
+    shim = Path(os.environ.get("TMPDIR", "/tmp")) / f"emo-src-shim-{os.getuid()}"
+    shim.mkdir(parents=True, exist_ok=True)
+    for name in ("hf_training", "offline_evals", "scripts"):
+        link = shim / name
+        target = REPO / "src" / name
+        if link.is_symlink() and link.resolve() == target.resolve():
+            continue
+        if link.exists() or link.is_symlink():
+            link.unlink()
+        link.symlink_to(target)
+    return shim
 
 
 def run(cmd: list[str], env: dict, log: Path) -> None:
@@ -92,7 +124,9 @@ def main() -> None:
         return
 
     env = dict(os.environ)
-    env["PYTHONPATH"] = f"{REPO / 'src'}:{REPO}" + (":" + env["PYTHONPATH"] if env.get("PYTHONPATH") else "")
+    # launch_eval shells out to a bare ``python``; make sure it is this interpreter
+    env["PATH"] = str(Path(sys.executable).parent) + ":" + env.get("PATH", "")
+    env["PYTHONPATH"] = f"{src_shim()}:{REPO}" + (":" + env["PYTHONPATH"] if env.get("PYTHONPATH") else "")
     env.setdefault("TOKENIZERS_PARALLELISM", "false")
     env.setdefault("HF_HUB_DISABLE_XET", "1")
     t0 = time.time()
@@ -121,7 +155,10 @@ def main() -> None:
     bs = args.eval_batch_size or (16 if "gsm8k_generation_8shot" in args.task else 4 if "history" in args.task else 32)
     model_args = "trust_remote_code=true"
     if backend == "vllm":
-        model_args += ",dtype=bfloat16,gpu_memory_utilization=0.75,enforce_eager=true"
+        # max_length=2048 mirrors the HF path's default context (OLMES MODEL_DEFAULTS); the rest
+        # are the vLLM engine options the OLMo 3.5 eval recipe uses for these exports.
+        model_args += (",dtype=bfloat16,max_length=2048,gpu_memory_utilization=0.75,enforce_eager=true"
+                       ",max_num_seqs=32,max_num_batched_tokens=4096,mamba_ssm_cache_dtype=float32,attention_backend=FLASH_ATTN")
     env_eval = dict(env)
     env_eval.setdefault("HF_DATASETS_OFFLINE", "0")
     env_eval.update(OLMO_VLLM_TORCH_GROUPED_MOE="1", OLMO_VLLM_FLA_KDA="1")

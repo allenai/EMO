@@ -190,6 +190,7 @@ def compute_layerwise_keep_sets(
     prompts: Optional[List[str]] = None,
     num_shots_override: Optional[int] = None,
     prune_seed: int = 0,
+    progress_file: Optional[str] = None,
 ) -> Tuple[List[Optional[List[int]]], List[Optional[List[float]]]]:
     """
     Run greedy layer-by-layer pruning on a preloaded model (in-place) and return the
@@ -273,6 +274,28 @@ def compute_layerwise_keep_sets(
     experts_kept_per_layer: List[Optional[List[int]]] = []
     avg_probs_per_layer: List[Optional[List[float]]] = []
 
+    # Optional per-layer checkpoint so an interrupted run (long calibration pools take
+    # hours) resumes after the last finished layer instead of starting over.  Finished
+    # layers are re-pruned from the saved selections; the greedy result is identical.
+    progress: Dict[str, Any] = {}
+    if progress_file and os.path.isfile(progress_file):
+        with open(progress_file) as f:
+            progress = json.load(f)
+        if progress.get("prune_keep_k") != prune_keep_k or progress.get("num_prompts") != len(prompts):
+            logger.warning(f"Ignoring {progress_file}: it belongs to a different selection setup")
+            progress = {}
+        else:
+            logger.info(f"Resuming selection from {progress_file} ({len(progress.get('layers', {}))} layers done)")
+
+    def _save_progress():
+        if not progress_file:
+            return
+        progress.update({"prune_keep_k": prune_keep_k, "num_prompts": len(prompts)})
+        tmp = progress_file + ".tmp"
+        with open(tmp, "w") as f:
+            json.dump(progress, f)
+        os.replace(tmp, progress_file)
+
     for layer_idx in tqdm(range(num_layers), desc="Pruning layers"):
         layer = model.model.layers[layer_idx]
 
@@ -285,6 +308,16 @@ def compute_layerwise_keep_sets(
         # Expert counts for this layer before pruning
         current_num_experts, current_num_shared = expert_counts(layer)
         current_num_standard = current_num_experts - current_num_shared
+
+        done = progress.get("layers", {}).get(str(layer_idx))
+        if done is not None:
+            experts_to_keep = list(done["experts_to_keep"])
+            logger.info(f"Layer {layer_idx}: resuming with saved selection {experts_to_keep}")
+            experts_kept_per_layer.append(experts_to_keep)
+            avg_probs_per_layer.append(done.get("avg_probs"))
+            target_shared = num_shared_experts if current_num_shared > 0 else 0
+            prune_moe_layer_inplace(layer, experts_to_keep, prune_keep_k, target_shared)
+            continue
 
         logger.info(
             f"Layer {layer_idx}: collecting activations "
@@ -413,6 +446,12 @@ def compute_layerwise_keep_sets(
                 f"max hidden-state difference before/after pruning = {max_diff:.6f}"
             )
 
+        progress.setdefault("layers", {})[str(layer_idx)] = {
+            "experts_to_keep": experts_to_keep,
+            "avg_probs": avg_probs.tolist(),
+        }
+        _save_progress()
+
     return experts_kept_per_layer, avg_probs_per_layer
 
 
@@ -450,6 +489,7 @@ def greedy_prune_layerwise(
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
+    os.makedirs(save_path, exist_ok=True)
     experts_kept_per_layer, _ = compute_layerwise_keep_sets(
         model=model,
         tokenizer=tokenizer,
@@ -461,6 +501,7 @@ def greedy_prune_layerwise(
         num_calibration=num_calibration,
         num_shots_override=num_shots_override,
         prune_seed=prune_seed,
+        progress_file=os.path.join(save_path, "selection_progress.json"),
     )
 
     # -------------------------------------------------------------------------
