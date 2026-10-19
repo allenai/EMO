@@ -42,6 +42,18 @@ logging.basicConfig(format="%(asctime)s [%(levelname)s] %(message)s", level=logg
 logger = logging.getLogger(__name__)
 
 
+from src.hf_training.moe_arch import (
+    copy_remote_code,
+    expert_counts,
+    finalize_pruned_config,
+    is_moe_layer,
+    make_unpadded_batches,
+    model_is_olmo3moe,
+    prune_layer_inplace,
+    register_router_logit_capture,
+)
+
+
 class EarlyExit(Exception):
     """Raised by a pre-forward hook to abort the model forward pass after a target layer."""
 
@@ -63,25 +75,11 @@ def prune_moe_layer_inplace(
         prune_keep_k: Total number of experts to keep (standard + shared)
         target_num_shared_experts: Number of shared experts in the pruned layer
     """
-    moe = layer.mlp
-
-    # Prune expert MLPs
-    moe.experts = torch.nn.ModuleList([moe.experts[i] for i in experts_to_keep])
-
-    # Prune router/gate weights  (shape: num_experts x hidden_size -> prune_keep_k x hidden_size)
-    moe.gate.weight = torch.nn.Parameter(moe.gate.weight.data[experts_to_keep, :])
-    if moe.gate.bias is not None:
-        moe.gate.bias = torch.nn.Parameter(moe.gate.bias.data[experts_to_keep])
-    moe.gate.out_features = prune_keep_k
-
-    # Update module-level expert counts so subsequent forward passes are correct
-    moe.num_experts = prune_keep_k
-    moe.num_shared_experts = target_num_shared_experts
-    moe.top_k = min(moe.top_k, prune_keep_k)
+    prune_layer_inplace(layer, experts_to_keep, prune_keep_k, target_num_shared_experts)
 
 
 def _is_moe_layer(layer) -> bool:
-    return hasattr(layer, "mlp") and hasattr(layer.mlp, "experts")
+    return is_moe_layer(layer)
 
 
 def snapshot_model_state(model) -> Dict[str, Any]:
@@ -252,17 +250,22 @@ def compute_layerwise_keep_sets(
 
     logger.info("Tokenizing prompts into batches...")
     all_batches = []
-    for i in range(0, len(prompts), batch_size):
-        chunk = prompts[i : i + batch_size]
-        inputs = tokenizer(
-            chunk,
-            return_tensors="pt",
-            padding=True,
-            truncation=True,
-            max_length=4096,
-        )
-        all_batches.append(inputs)
-    logger.info(f"Created {len(all_batches)} batches")
+    if model_is_olmo3moe(model):
+        # These exports cannot take padded batches; group prompts by token length instead.
+        all_batches = make_unpadded_batches(tokenizer, prompts, batch_size)
+        logger.info(f"Created {len(all_batches)} unpadded batches (grouped by length)")
+    else:
+        for i in range(0, len(prompts), batch_size):
+            chunk = prompts[i : i + batch_size]
+            inputs = tokenizer(
+                chunk,
+                return_tensors="pt",
+                padding=True,
+                truncation=True,
+                max_length=4096,
+            )
+            all_batches.append(inputs)
+        logger.info(f"Created {len(all_batches)} batches")
 
     # -------------------------------------------------------------------------
     # Layer-by-layer greedy pruning
@@ -280,8 +283,7 @@ def compute_layerwise_keep_sets(
             continue
 
         # Expert counts for this layer before pruning
-        current_num_experts = layer.mlp.num_experts
-        current_num_shared = layer.mlp.num_shared_experts
+        current_num_experts, current_num_shared = expert_counts(layer)
         current_num_standard = current_num_experts - current_num_shared
 
         logger.info(
@@ -293,14 +295,6 @@ def compute_layerwise_keep_sets(
         # Capture hook: fires after layer.mlp.forward(), grabs router_logits
         captured_logits: List[torch.Tensor] = []
 
-        def make_capture_hook():
-            def hook(module, input, output):
-                # SparseMoeBlock returns (final_hidden_states, router_logits)
-                # router_logits shape: (batch_size * seq_len, num_experts)
-                captured_logits.append(output[1].detach().cpu())
-
-            return hook
-
         # Early-exit hook: fires before layer l+1.forward(), aborts the pass
         def make_early_exit_hook():
             def hook(module, input):
@@ -308,7 +302,8 @@ def compute_layerwise_keep_sets(
 
             return hook
 
-        h_capture = layer.mlp.register_forward_hook(make_capture_hook())
+        # Router logits (batch_size * seq_len, num_experts), captured per architecture.
+        h_capture = register_router_logit_capture(layer, captured_logits)
         h_exit = (
             model.model.layers[layer_idx + 1].register_forward_pre_hook(make_early_exit_hook())
             if layer_idx + 1 < num_layers
@@ -471,34 +466,7 @@ def greedy_prune_layerwise(
     # -------------------------------------------------------------------------
     # Update global model config to reflect pruned expert counts
     # -------------------------------------------------------------------------
-    if (
-        hasattr(model.config, "num_experts_per_tok")
-        and model.config.num_experts_per_tok > prune_keep_k
-    ):
-        model.config.num_experts_per_tok = prune_keep_k
-    model.config.num_experts = prune_keep_k
-    if hasattr(model.config, "num_local_experts"):
-        model.config.num_local_experts = prune_keep_k
-    model.config.num_shared_experts = num_shared_experts
-
-    # Update per-layer expert counts for densefirst (mixed dense/MoE) models
-    if (
-        hasattr(model.config, "num_experts_per_layer")
-        and model.config.num_experts_per_layer is not None
-    ):
-        model.config.num_experts_per_layer = [
-            prune_keep_k if n > 0 else 0 for n in model.config.num_experts_per_layer
-        ]
-    if (
-        hasattr(model.config, "num_shared_experts_per_layer")
-        and model.config.num_shared_experts_per_layer is not None
-    ):
-        model.config.num_shared_experts_per_layer = [
-            num_shared_experts if n > 0 else 0 for n in model.config.num_shared_experts_per_layer
-        ]
-
-    # Enable router logit output so load-balancing loss is active during finetuning
-    model.config.output_router_logits = True
+    finalize_pruned_config(model, prune_keep_k, num_shared_experts)
 
     # -------------------------------------------------------------------------
     # Save pruned model
@@ -507,6 +475,9 @@ def greedy_prune_layerwise(
     os.makedirs(save_path, exist_ok=True)
     model.save_pretrained(save_path)
     tokenizer.save_pretrained(save_path)
+    copied = copy_remote_code(model_name, save_path)
+    if copied:
+        logger.info(f"Copied remote-code files next to the pruned model: {copied}")
 
     metadata = {
         "original_model": model_name,
