@@ -463,7 +463,9 @@ EMO2000_TAKE = ("The 2000-expert model is the easiest of all start models to spl
                 "Across the ladder the picture is monotone in the number of full-width experts: with 512, 1000 and 2000 experts the four-square merge goes from 0.009 behind to "
                 "level to 0.012 ahead, and the eight-square gap from 0.10 to 0.10 to 0.09, while halving the expert width at fixed total size moves both the other way. Every "
                 "square keeps a quarter (eighth) of the experts, so the squares of a bigger model are themselves bigger models (500 or 250 experts here), and more of the "
-                "start model's capacity survives the split. The 2000e merges also stay well below their 10B start model (2.429) from the first point on.")
+                "start model's capacity survives the split. The 2000e merges also stay well below their 10B start model (2.429) from the first point on. "
+                "Continued to 61B (window 3 on contiguous quarters of the stream, 14,815 steps per square) the four-square merge's lead over joint training grows to "
+                "0.018 (2.280 vs 2.298; ppl sets 2.816 vs 2.841), while its squares alone sit at 2.342.")
 EMO1000_TAKE = ("Eight squares: more experts do not make the random split cheaper. The eight-square merge of the 1000e model trails its joint baseline by 0.08 at 15.7B, "
                 "0.09 at 20B and 0.10 at 30B (2.452 vs 2.350), the same gaps as the 512e model's eight squares at the same sub-model LR (0.08 / 0.09 / 0.10; "
                 "2.477 vs 2.376 at 30B). The 1000e start model is 0.02 better than the 512e one (2.444 vs 2.465) and its merges keep that 0.02 lead at every "
@@ -474,7 +476,9 @@ EMO1000_TAKE = ("Eight squares: more experts do not make the random split cheape
                 "back reproduces the start model exactly (2.444); the first 1.25B tokens per square recover most of that (2.547 at 15.7B). "
                 "<b>Four squares</b> (blue, LR 4e-4): the merge is <i>ahead</i> of joint training at 15.7B and 20B (2.391 vs 2.397, 2.373 vs 2.379) and level at 30B "
                 "(2.351 vs 2.350; ppl sets 2.874 vs 2.893, also ahead), the best result of any full-width four-square control (512e at the same LR: level at 20B, 0.009 "
-                "behind at 30B). Each square sees a quarter of the tokens and keeps 250 experts; the merge is 0.05 ahead of the squares alone (2.351 vs 2.401).")
+                "behind at 30B). Each square sees a quarter of the tokens and keeps 250 experts; the merge is 0.05 ahead of the squares alone (2.351 vs 2.401). "
+                "Continued to 61B on contiguous quarters of the stream (window 3, 14,815 steps per square) the four-square merge is still level with joint training "
+                "(2.315 vs 2.313; ppl sets 2.837 vs 2.853, ahead) and 0.05 ahead of its squares alone (2.369).")
 S128_TAKE = ("Fewer experts change nothing: the cost is set by the number of squares, not the number of experts. Four squares: gap 0.055 at 20B, "
              "0.13 at 130B; eight: 0.13 and 0.19. Both merges end level with their best single square.")
 def random_control(which, with_charts=True):
@@ -1226,7 +1230,9 @@ RP_ENDS = [38148, 57221, 76295, 95368, 114442, 133515, 152589, 171662, 190736, 2
 RP_TAKE = ("Re-merging and re-partitioning every 10B keeps the merge close to the baseline all the way to 130B: the gap is 0.008 at 30B "
            "(2.384 vs 2.376) and then about 0.02 for the rest of training (2.352 vs 2.331 at 61B, 2.323 vs 2.301 at 113B, 2.315 vs 2.295 at "
            "130B; ppl sets 2.836 vs 2.825), while the 8e-4 merge that never re-partitions drifts to 0.078 at 130B (2.373) and ends behind its "
-           "own best single square (2.412 is the best square, the merge 2.373). Re-partitioning does not close the last 0.02, but it stops the divergence.")
+           "own best single square (2.412 is the best square, the merge 2.373). Re-partitioning does not close the last 0.02, but it stops the divergence. "
+           "At 61B the 4e-4 four-square merge that was never re-partitioned (window 3 on contiguous quarters of the stream) reaches the same 2.351 as the "
+           "re-partitioned one (2.352; baseline 2.331): up to 61B the lower sub-model LR, not the re-partitioning, is what keeps the merge close.")
 
 
 def repartition_section():
