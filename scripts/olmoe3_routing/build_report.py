@@ -1151,8 +1151,9 @@ def control_explorer():
 
 CX_CSS = ("<style>.cx-ctl{display:flex;flex-wrap:wrap;gap:18px 34px;margin:4px 0 12px;font-size:13px}.cx-ctl label{display:block;margin:2px 0;cursor:pointer}"
                 ".cx-ctl .sw{display:inline-block;width:22px;height:0;border-top:3px solid;vertical-align:middle;margin-right:6px}"
-                ".cx-panels{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start}.cx-panel{flex:1 1 320px;min-width:300px;max-width:560px}"
-                ".cx-panel h4{margin:0 0 2px;font-size:14px;color:#334155}.cx-panel svg{width:100%;height:auto;display:block}"
+                ".cx-panels{display:grid;grid-template-columns:repeat(auto-fill,400px);gap:10px 14px;align-items:start}.cx-panel{width:400px}"   # equal-width panels: the shared y range maps to the same pixels everywhere
+                ".cx-panel h4{margin:0 0 2px;font-size:13px;line-height:1.25;height:2.5em;overflow:hidden;color:#334155}.cx-panel svg{width:100%;height:auto;display:block}"   # fixed title height: plots start at the same y
+                ".cx-panel h4 small{display:block;font-weight:normal;color:#64748b}"
                 ".cx-tip{position:fixed;display:none;pointer-events:none;background:#fff;border:1px solid #cbd5e1;border-radius:6px;padding:6px 8px;font-size:12px;box-shadow:0 2px 8px rgba(0,0,0,.12);z-index:50}</style>")
 CX_JS = """<script>(function(){const D=JSON.parse(document.getElementById('cx-data').textContent);const box=document.querySelector('.cx');const panels=document.getElementById('cx-panels');const tip=document.getElementById('cx-tip');
 function fmtTick(v){return v.toFixed(2)}
