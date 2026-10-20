@@ -1429,6 +1429,31 @@ def router_norm_section():
     return section("Router weights of the squares vs the joint baseline at 30B", what, html, ROUTER_NORM_TAKE)
 
 
+BIG_LR_TAKE = {"1000e": "In progress (launched 2026-10-20): six pretraining LRs from scratch to 5.24B, selected on the validation sample; the table fills as the arms finish.",
+               "2000e": "In progress (launched 2026-10-20): six pretraining LRs from scratch to 5.24B, selected on the validation sample; the table fills as the arms finish."}
+
+
+def big_lr_sweep_section(tag):
+    """Pretraining-LR sweep of the EMO 1000e / 2000e model (big_lr_sweep.sh <tag>): six arms from scratch to step 10,000 (5.24B tokens), 8e-4 re-run
+    (the 10B run's step-10000 checkpoint was pruned), selected on the separate validation sample; reporting sample and ppl sets alongside."""
+    R = ROOT / "sparse_experts/olmoe3_routing"; HV = R / f"runs_heldout300b_emo{tag[:-1]}lr_val"; H = R / f"runs_heldout300b_emo{tag[:-1]}lr"; P = ROOT / f"sparse_experts/olmoe3_squares_emo{tag[:-1]}lr/ppl_validation"
+    if not HV.exists(): return ""
+    f3 = lambda v: "&ndash;" if v is None else f"{v:.3f}"
+    rows = [dict(lr=lr, val=_ce(HV / f"lr{lr}_step10000/none"), ho=_ce(H / f"lr{lr}_step10000/none"), ppl=_ppl(P / f"olmoe3_275m_{tag}_emo_lr{lr}_5b" / "step10000.json")) for lr in S128_LRS]
+    if not any(r["val"] is not None for r in rows): return ""
+    best = min((r["val"] for r in rows if r["val"] is not None), default=None)
+    tb = [[r["lr"] + (" (the recipe's LR)" if r["lr"] == "8e-4" else ""), f"<b>{f3(r['val'])}</b>" if r["val"] == best and best is not None else f3(r["val"]), f3(r["ho"]), f3(r["ppl"])] for r in rows]
+    tbl = table(["pretraining LR", "selection CE @5.24B", "held-out CE @5.24B", "ppl sets @5.24B"], tb)
+    xs = list(range(len(S128_LRS)))
+    ch = CHART_CSS + line_chart(xs, [{"name": "selection sample", "y": [r["val"] for r in rows], "color": "#7c3aed", "gap": True}, {"name": "held-out (reporting) sample", "y": [r["ho"] for r in rows], "color": "#2563eb", "gap": True}],
+                                title=f"EMO {tag} from scratch: CE at 5.24B vs pretraining LR", y_label="CE", x_label="pretraining LR", xlabels=S128_LRS)
+    what = (f"Six pretraining runs of the EMO {tag} model from scratch, identical except for the peak LR (2,000-step warmup, then constant: the WSD trunk used "
+            "everywhere in this report), stopped at step 10,000 = 5.24B tokens, 4 nodes each; the 8e-4 arm is re-run because the existing 10B run's step-10,000 "
+            "checkpoint was pruned. <b>Selection CE</b>: the separate 6,808-instance validation sample also used for the sub-model LR sweep of box 5A; "
+            "<b>held-out CE</b> and <b>ppl sets</b>: the report's usual metrics. Same protocol as the 128e sweep of box 5C (whose winner was the recipe's 8e-4).")
+    return section(f"Pretraining learning rate of the {tag} model", what, ch + tbl, BIG_LR_TAKE[tag])
+
+
 def build_q5_controls():
     """Q5: the random-partition controls, one box per start model (moved out of Q3 on 2026-09-24)."""
     body = question_card("q5")
@@ -1469,7 +1494,7 @@ def build_q5_controls():
                                    "512e controls' random document packs, each square trained at sub-model LR 4e-4 (the 512e sweep's winner) on its documents of the 10B &rarr; 20B "
                                    "window and then of the 20B &rarr; 30B window from its own window-1 final. Merged and evaluated at the freeze-ablation points only: the window-1 "
                                    "mid point (matched step 30,000, 15.7B), 20B (38,148) and 30B (57,221). Each square is also scored alone on all held-out documents and on the "
-                                   "ppl sets (mean of 8 and best of 8).</p>") + random_control("emo1000", with_charts=True) + emo1000_table(), tab="q5")
+                                   "ppl sets (mean of 8 and best of 8).</p>") + random_control("emo1000", with_charts=True) + emo1000_table() + big_lr_sweep_section("1000e"), tab="q5")
     if "5F" in boxes:
         body += variant("5F", half_size_experts_card() + card("info", "Setup of the controls", "<p>Each half-size-expert model's 10B checkpoint is continued jointly to 30B as its baseline (4 nodes, "
                                    "EP=2, constant LR) and split into 8 random sub-models of 128 experts per layer 2&ndash;9 (layer 1 whole) with the 512e controls' random document packs, "
@@ -1484,7 +1509,7 @@ def build_q5_controls():
                                    "into 8 of 250 experts per layer 2&ndash;9 (layer 1 whole) with the 512e controls' random document packs, each square trained at sub-model LR 4e-4 on its "
                                    "documents of the 10B &rarr; 20B window and then of the 20B &rarr; 30B window from its own window-1 final. Merged and evaluated at the window-1 mid point "
                                    "(matched step 30,000, 15.7B), 20B (38,148) and 30B (57,221) on the 300B held-out sample and the ppl sets; each square is also scored alone.</p>")
-                        + random_control("emo2000", with_charts=True) + emo1000_table("emo2000"), tab="q5")
+                        + random_control("emo2000", with_charts=True) + emo1000_table("emo2000") + big_lr_sweep_section("2000e"), tab="q5")
     if "5H" in boxes: body += variant("5H", load_balance_section(), tab="q5")
     return body
 

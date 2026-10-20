@@ -17,7 +17,19 @@ JOBS=("olmoe3_275m_emo_130b|247956|olmoe3_275m_emo_130b_baseline.sh|$KEEP/emo_13
       "olmoe3_275m_1024e_h272_k32_emo_30b|57221|olmoe3_275m_1024e_h272_k32_emo_30b_baseline.sh|$S/olmoe3_squares_h272k32rand8/logs/baseline_launched"
       "olmoe3_275m_2000e_emo_30b|57221|olmoe3_275m_2000e_emo_30b_baseline.sh|$S/olmoe3_squares_emo2000rand8/logs/baseline_launched"
       "olmoe3_275m_1000e_emo_61b|116479|olmoe3_275m_1000e_emo_61b_baseline.sh|$S/olmoe3_squares_emo1000rand4/logs/baseline61_launched"
-      "olmoe3_275m_2000e_emo_61b|116479|olmoe3_275m_2000e_emo_61b_baseline.sh|$S/olmoe3_squares_emo2000rand4/logs/baseline61_launched")
+      "olmoe3_275m_2000e_emo_61b|116479|olmoe3_275m_2000e_emo_61b_baseline.sh|$S/olmoe3_squares_emo2000rand4/logs/baseline61_launched"
+      "olmoe3_275m_1000e_emo_lr1e-4_5b|10000|olmoe3_275m_1000e_emo_lrsweep_5b.sh|$S/olmoe3_squares_emo1000lr/logs/lr1e-4_launched|OLMOE3_LR=1e-4"
+      "olmoe3_275m_1000e_emo_lr2e-4_5b|10000|olmoe3_275m_1000e_emo_lrsweep_5b.sh|$S/olmoe3_squares_emo1000lr/logs/lr2e-4_launched|OLMOE3_LR=2e-4"
+      "olmoe3_275m_1000e_emo_lr4e-4_5b|10000|olmoe3_275m_1000e_emo_lrsweep_5b.sh|$S/olmoe3_squares_emo1000lr/logs/lr4e-4_launched|OLMOE3_LR=4e-4"
+      "olmoe3_275m_1000e_emo_lr8e-4_5b|10000|olmoe3_275m_1000e_emo_lrsweep_5b.sh|$S/olmoe3_squares_emo1000lr/logs/lr8e-4_launched|OLMOE3_LR=8e-4"
+      "olmoe3_275m_1000e_emo_lr1.6e-3_5b|10000|olmoe3_275m_1000e_emo_lrsweep_5b.sh|$S/olmoe3_squares_emo1000lr/logs/lr1.6e-3_launched|OLMOE3_LR=1.6e-3"
+      "olmoe3_275m_1000e_emo_lr3.2e-3_5b|10000|olmoe3_275m_1000e_emo_lrsweep_5b.sh|$S/olmoe3_squares_emo1000lr/logs/lr3.2e-3_launched|OLMOE3_LR=3.2e-3"
+      "olmoe3_275m_2000e_emo_lr1e-4_5b|10000|olmoe3_275m_2000e_emo_lrsweep_5b.sh|$S/olmoe3_squares_emo2000lr/logs/lr1e-4_launched|OLMOE3_LR=1e-4"
+      "olmoe3_275m_2000e_emo_lr2e-4_5b|10000|olmoe3_275m_2000e_emo_lrsweep_5b.sh|$S/olmoe3_squares_emo2000lr/logs/lr2e-4_launched|OLMOE3_LR=2e-4"
+      "olmoe3_275m_2000e_emo_lr4e-4_5b|10000|olmoe3_275m_2000e_emo_lrsweep_5b.sh|$S/olmoe3_squares_emo2000lr/logs/lr4e-4_launched|OLMOE3_LR=4e-4"
+      "olmoe3_275m_2000e_emo_lr8e-4_5b|10000|olmoe3_275m_2000e_emo_lrsweep_5b.sh|$S/olmoe3_squares_emo2000lr/logs/lr8e-4_launched|OLMOE3_LR=8e-4"
+      "olmoe3_275m_2000e_emo_lr1.6e-3_5b|10000|olmoe3_275m_2000e_emo_lrsweep_5b.sh|$S/olmoe3_squares_emo2000lr/logs/lr1.6e-3_launched|OLMOE3_LR=1.6e-3"
+      "olmoe3_275m_2000e_emo_lr3.2e-3_5b|10000|olmoe3_275m_2000e_emo_lrsweep_5b.sh|$S/olmoe3_squares_emo2000lr/logs/lr3.2e-3_launched|OLMOE3_LR=3.2e-3")
 RETIRED=$S/olmoe3_routing/twin_scheduler/retired.txt   # same retired-run globs as twin_scheduler.py: a listed run is never relaunched
 retired() { [ -f $RETIRED ] && python -c "
 import fnmatch,sys; pats=[l.strip() for l in open('$RETIRED') if l.strip() and not l.startswith('#')]; sys.exit(0 if any(fnmatch.fnmatch('$1', p) for p in pats) else 1)"; }
@@ -28,12 +40,12 @@ state() { beaker experiment get "$1" --format=json 2>/dev/null | python -c "
 import json,sys; d=json.load(sys.stdin)[0]; js=d.get('jobs') or []; s=(js[-1] if js else {}).get('status',{}); print([k for k in ('created','scheduled','started','exited','canceled','finalized') if s.get(k)][-1] if s else 'none')"; }
 while true; do
   alldone=1
-  for spec in "${JOBS[@]}"; do IFS='|' read -r run final script urlf <<< "$spec"
+  for spec in "${JOBS[@]}"; do IFS='|' read -r run final script urlf envs <<< "$spec"   # optional 5th column: env assignments the relaunch needs (LR-sweep arms)
     [ -f $S/$run/step$final/train/rank0.pt ] && continue; retired $run && continue; alldone=0; [ -f $urlf ] || continue   # not launched yet: nothing to keep (but not done either)
     id=$(sed 's|.*/||' $urlf); st=$(state $id)
     if [ "$st" = exited ] || [ "$st" = finalized ] || [ "$st" = canceled ]; then
       rm -rf $S/$run/*-tmp 2>/dev/null; u=""
-      for attempt in 1 2 3; do OLMOE3_FOLLOW=0 bash scripts/sparse_experts/model_scripts/$script launch > $SP/keeper_$run.log 2>&1; u=$(sed 's/\x1b\[[0-9;]*m//g' $SP/keeper_$run.log | grep -aoE 'beaker.org/ex/[A-Z0-9]+' | head -1); [ -n "$u" ] && break; sleep 60; done
+      for attempt in 1 2 3; do env ${envs:-} OLMOE3_FOLLOW=0 bash scripts/sparse_experts/model_scripts/$script launch > $SP/keeper_$run.log 2>&1; u=$(sed 's/\x1b\[[0-9;]*m//g' $SP/keeper_$run.log | grep -aoE 'beaker.org/ex/[A-Z0-9]+' | head -1); [ -n "$u" ] && break; sleep 60; done
       say "$run: experiment $id $st -> relaunched: ${u:-FAILED} (latest checkpoint $(ls $S/$run 2>/dev/null | grep -E '^step[0-9]+$' | sed 's/step//' | sort -n | tail -1))"; [ -n "$u" ] && echo "$u" > $urlf
     fi
   done
