@@ -1063,7 +1063,9 @@ def control_explorer_data():
     interactive explorer of Q5. Same loaders and same points as random_control()."""
     out = []
     R = ROOT / "sparse_experts/olmoe3_routing"
-    for which, C in RANDOM_CONTROL.items():
+    order = ["std", "emo", "s128", "randsel", "randsel64", "emo1024h272k32", "emo1024h272k16", "emo1000", "emo2000"]   # panel order (user: 1000e before 2000e, 2026-10-20)
+    for which in sorted(RANDOM_CONTROL, key=lambda w: order.index(w) if w in order else len(order)):
+        C = RANDOM_CONTROL[which]
         HRB = R / C["hrb"]; arms = [dict(a, HR=R / a["hr"], SQ=ROOT / "sparse_experts" / a["sqn"]) for a in C["arms"] if (ROOT / "sparse_experts" / a["sqn"] / "groups.json").exists()]
         hb = lambda tag: _ce(HRB / f"{tag}/none")
         if not arms and not (C.get("standalone") and hb(C["start"]) is not None): continue
