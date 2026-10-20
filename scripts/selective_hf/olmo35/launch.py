@@ -159,6 +159,7 @@ def main() -> None:
     ap.add_argument("--retries", type=int, default=2)
     ap.add_argument("--timeout", default=None, help="Beaker task timeout (default: 3x the job's estimated hours, at least 12h)")
     ap.add_argument("--job-prefix", default="emosel")
+    ap.add_argument("--from-jobs", nargs="*", default=None, help="only relaunch the unfinished items of these earlier jobs (names or launch.json paths)")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
 
@@ -170,10 +171,19 @@ def main() -> None:
 
     pools = json.loads(Path(args.pool_sizes).read_text()) if Path(args.pool_sizes).is_file() else {}
     durations = json.loads(Path(args.durations).read_text()) if Path(args.durations).is_file() else {}
+    wanted = None  # (model_key, task, keep_k) triples when --from-jobs restricts the relaunch
+    if args.from_jobs:
+        wanted = set()
+        for ref in args.from_jobs:
+            path = Path(ref) if ref.endswith(".json") else Path(args.base_dir) / "__jobs__" / ref / "launch.json"
+            for it in json.loads(path.read_text())["items"]:
+                wanted.add((it["model_key"], it["task"], str(it["keep_k"])))
     items = []
     for m in args.models:
         for k in args.keep_k:
             for t in tasks:
+                if wanted is not None and (m, t, str(k)) not in wanted:
+                    continue
                 out = Path(args.base_dir) / relative_dir(MODELS[m], t, k)
                 if metrics_done(out / "results" / "checkpoint-0", t):
                     continue

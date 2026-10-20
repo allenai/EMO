@@ -1260,4 +1260,14 @@ def run_eval(args_dict: dict):
 if __name__ == "__main__":
     args = _parser.parse_args()
     args_dict = vars(args)
-    run_eval(args_dict)
+    try:
+        run_eval(args_dict)
+    except BaseException:
+        # A live vLLM engine-core child would otherwise keep this interpreter from exiting
+        # (non-daemon multiprocessing child), hanging the caller forever on a failed eval.
+        import traceback
+
+        traceback.print_exc()
+        sys.stdout.flush()
+        sys.stderr.flush()
+        os._exit(1)
