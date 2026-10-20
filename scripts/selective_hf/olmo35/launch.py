@@ -60,7 +60,16 @@ EVAL_HOURS = 0.25  # vLLM load + test-split eval, per item (generous)
 ENV_HOURS = 0.3  # per job: venv build
 
 
-def est_hours(task: str, keep_k: str, pools: dict) -> float:
+# Measured item durations (item_summary.json of finished items, aggregated per task / keep-k by
+# the launcher's --durations file) take precedence over the character-count estimate.
+DURATIONS_FILE = POOL_SIZES_FILE.parent / "item_durations.json"
+MEASURED_SAFETY = 1.15
+
+
+def est_hours(task: str, keep_k: str, pools: dict, durations: dict | None = None) -> float:
+    m = (durations or {}).get(f"{task}|{keep_k}")
+    if m and m.get("total_min"):
+        return m["total_min"] / 60 * MEASURED_SAFETY
     if keep_k == "full":
         return EVAL_HOURS
     chars = pools.get(task, {}).get("validation_chars")
@@ -140,8 +149,9 @@ def main() -> None:
     ap.add_argument("--base-dir", default="/root/scaling-ladders/output/emo_selective/selective_evals_final")
     ap.add_argument("--pylib", default="/root/scaling-ladders/output/emo_selective/pylib")
     ap.add_argument("--ladders-repo", default="/root/scaling-ladders")
-    ap.add_argument("--pack", type=float, default=6.0, help="target estimated hours of work per job (an item above it gets its own job)")
+    ap.add_argument("--pack", type=float, default=7.0, help="target estimated hours of work per job (an item above it gets its own job)")
     ap.add_argument("--pool-sizes", default=str(POOL_SIZES_FILE))
+    ap.add_argument("--durations", default=str(DURATIONS_FILE), help="measured per task|keep_k durations (see est_hours)")
     ap.add_argument("--cluster", default="ai2/jupiter,ai2/ceres,ai2/saturn")
     ap.add_argument("--workspace", default="ai2/flex2")
     ap.add_argument("--budget", default="ai2/oe-other")
@@ -159,6 +169,7 @@ def main() -> None:
     from run_item import metrics_done, relative_dir  # noqa: E402  (same directory)
 
     pools = json.loads(Path(args.pool_sizes).read_text()) if Path(args.pool_sizes).is_file() else {}
+    durations = json.loads(Path(args.durations).read_text()) if Path(args.durations).is_file() else {}
     items = []
     for m in args.models:
         for k in args.keep_k:
@@ -166,7 +177,7 @@ def main() -> None:
                 out = Path(args.base_dir) / relative_dir(MODELS[m], t, k)
                 if metrics_done(out / "results" / "checkpoint-0", t):
                     continue
-                items.append({"model_key": m, "model": to_job(MODELS[m]), "task": t, "keep_k": k, "weight": round(est_hours(t, k, pools), 2)})
+                items.append({"model_key": m, "model": to_job(MODELS[m]), "task": t, "keep_k": k, "weight": round(est_hours(t, k, pools, durations), 2)})
     if not items:
         print("nothing to launch (all items have metrics)")
         return
@@ -217,7 +228,7 @@ def main() -> None:
         m = re.search(r"\b(01[A-Z0-9]{24})\b", out)
         eid = m.group(1) if m else None
         (job_dir / "launch.json").write_text(json.dumps({"name": name, "experiment_id": eid, "url": f"https://beaker.org/ex/{eid}",
-                                                        "items": chunk, "launched_at": dt.datetime.utcnow().isoformat(timespec="seconds")}, indent=1))
+                                                        "items": chunk, "launched_at": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")}, indent=1))
         print(f"LAUNCHED {name}  https://beaker.org/ex/{eid}  ({len(chunk)} items: {summary[:160]})")
 
 
