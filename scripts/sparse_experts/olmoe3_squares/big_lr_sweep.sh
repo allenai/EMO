@@ -37,7 +37,9 @@ ppl() { local ckpt=$1 json=$2 name=$3; [ -f $SQ/ppl_validation/$json ] || launch
 evals() { local lr=$1 run=olmoe3_275m_${ARM}_emo_lr${lr}_5b; heldout $HRV lr${lr}_step10000 $W/$run/step10000 $VSAMPLE; heldout $HR lr${lr}_step10000 $W/$run/step10000 $SAMPLE; ppl $W/$run/step10000 $run/step10000.json lr${lr}; }
 for lr in $LRS; do launch_train $LOG/lr${lr}_launched $LOG/launch_lr$lr.log $SCRIPT OLMOE3_LR=$lr; done
 pgrep -f "^bash scripts/sparse_experts/olmoe3_squares/baseline_keeper.sh" > /dev/null || { ( setsid nohup bash scripts/sparse_experts/olmoe3_squares/baseline_keeper.sh >> $S/olmoe3_routing/baseline_keeper/log.txt 2>&1 < /dev/null & ); say "baseline keeper started"; }
-for lr in $LRS; do until [ -f $S/olmoe3_275m_${ARM}_emo_lr${lr}_5b/step10000/train/rank0.pt ]; do sleep 300; done; say "lr $lr: step 10000 present"; evals $lr; done
+# evaluate every arm as soon as ITS checkpoint lands (not in list order: 2026-10-27 both drivers sat behind one relaunched arm while 5 finished
+# checkpoints waited); evals() is idempotent, so a restarted driver only submits what is missing
+pending="$LRS"; while [ -n "$pending" ]; do rest=""; for lr in $pending; do if [ -f $S/olmoe3_275m_${ARM}_emo_lr${lr}_5b/step10000/train/rank0.pt ]; then say "lr $lr: step 10000 present"; evals $lr; else rest="$rest $lr"; fi; done; pending="${rest# }"; [ -n "$pending" ] && sleep 300; done
 for lr in $LRS; do for hr in $HRV $HR; do until have $S/olmoe3_routing/$hr/lr${lr}_step10000/none; do sleep 300; done; done; until [ -f $SQ/ppl_validation/olmoe3_275m_${ARM}_emo_lr${lr}_5b/step10000.json ]; do sleep 300; done; done
 for d in $S/olmoe3_routing/$HRV/*/none $S/olmoe3_routing/$HR/*/none; do [ -f $d/rank0/DONE ] && [ ! -f $d/meta.json ] && python scripts/sparse_experts/olmoe3_routing/merge_routing.py $d 2>&1 | tail -1; done
 say "selection CE at 5.24B (lower is better):"; for lr in $LRS; do echo "  $lr $(python -c "import json; print(round(json.load(open('$S/olmoe3_routing/$HRV/lr${lr}_step10000/none/meta.json'))['mean_ce'], 4))")"; done
