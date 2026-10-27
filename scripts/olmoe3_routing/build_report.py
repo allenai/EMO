@@ -1433,7 +1433,7 @@ BIG_LR_TAKE = {"1000e": ("The recipe's LR is already the optimum: 8e-4 wins the 
                          "close behind and the outer LRs clearly worse (2e-4 2.692, 3.2e-3 2.698, 1e-4 2.876); the held-out sample and the ppl sets rank the "
                          "arms the same way (8e-4 2.544 / 3.079). Same optimum as the 128e sweep of box 5C, so the 1000e baseline and all its controls stand; "
                          "nothing is re-trained. Completed 2026-10-27 (two arms had to be relaunched after Beaker failed to start them)."),
-               "2000e": ("Same answer for the 2000e model: 8e-4 wins the selection sample at 5.24B (2.581), 4e-4 (2.589) and 1.6e-3 (2.608) close behind, "
+               "2000e": ("Same answer for the 2000e model: 8e-4 wins the selection sample at 5.24B (2.580), 4e-4 (2.589) and 1.6e-3 (2.608) close behind, "
                          "the outer LRs clearly worse (2e-4 2.650, 3.2e-3 2.687, 1e-4 2.798); held-out sample and ppl sets agree (8e-4 2.528 / 3.065). The "
                          "optimum does not move with the expert count (128e, 1000e and 2000e all pick 8e-4), so the 2000e baseline stands and its lead "
                          "over the 1000e model (0.016 at 5.24B at the common LR) is not an LR artefact. Completed 2026-10-27.")}
