@@ -1545,9 +1545,10 @@ def load_balance_section():
             return out
         def squares(m, K):
             d = {b: v for b, v, _ in Q.get(m, {}).get(str(K), {}).get("series", [])}; return [d.get(b) for b in bins]
-        per = {m: [{"name": "joint training", "y": joint(m), "color": COL.get(m, "#64748b"), "gap": True},
-                   {"name": "4 squares, combined (LR 4e-4)", "y": squares(m, 4), "color": COL.get(m, "#64748b"), "dashed": True, "gap": True},
-                   {"name": "8 squares, combined (LR 4e-4)", "y": squares(m, 8), "color": COL.get(m, "#64748b"), "dotted": True, "gap": True}] for m in models}
+        # one colour per training mode (the same in every panel; the panel title names the model): joint black, 4 squares orange, 8 squares teal
+        per = {m: [{"name": "joint training", "y": joint(m), "color": "#111827", "gap": True},
+                   {"name": "4 squares, combined (LR 4e-4)", "y": squares(m, 4), "color": "#ea580c", "dashed": True, "gap": True},
+                   {"name": "8 squares, combined (LR 4e-4)", "y": squares(m, 8), "color": "#0d9488", "dotted": True, "gap": True}] for m in models}
         ys = [v for S in per.values() for s_ in S for v in s_["y"] if v is not None]
         if ys:
             lo, hi = min(ys), max(ys); pad = max(0.005, 0.08 * (hi - lo)); yr = (lo - pad, hi + pad)
