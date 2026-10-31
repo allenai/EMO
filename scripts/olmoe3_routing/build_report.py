@@ -1537,7 +1537,7 @@ def load_balance_section():
                     y_label="CV", xlabels=labels, x_label="tokens trained", xfmt=lambda v: f"{v:.0f}B", W=720, H=300)
     html = CHART_CSS + c1
     if W:
-        bins = list(range(0, 118000, 1000)); bx = [b * 524288 / 1e9 for b in bins]
+        bins = list(range(19000, 118000, 1000)); bx = [b * 524288 / 1e9 for b in bins]   # from the 10B start model (the warm-up transient of the first steps is not the point)
         def joint(m):
             pts_ = W.get(m, {}).get("series", {}).get("lb_loss", []); out = []
             for b in bins:
@@ -1552,7 +1552,10 @@ def load_balance_section():
         ys = [v for S in per.values() for s_ in S for v in s_["y"] if v is not None]
         if ys:
             lo, hi = min(ys), max(ys); pad = max(0.005, 0.08 * (hi - lo)); yr = (lo - pad, hi + pad)
-            panels = "".join(line_chart(bx, per[m], title=f"{m}: load-balancing loss (1 = balanced), 1,000-step bins", y_label="LB loss", x_label="tokens trained", xfmt=lambda v: f"{v:.0f}B", W=400, H=300, yrange=yr) for m in models)
+            # the 512e joint run's 10B -> 30B continuations ran on ONE node (8 ranks) instead of four (32): with DP-global balancing at local-batch granularity the loss
+            # is evaluated over 8 x 16k instead of 32 x 16k tokens there, so its finite-sample level is higher; the global imbalance (max / mean) is unchanged (2.0)
+            band = {"EMO 512e": [(19074 * 524288 / 1e9, 57221 * 524288 / 1e9, "joint run on 1 node (loss over 8 ranks, not 32)")]}
+            panels = "".join(line_chart(bx, per[m], title=f"{m}: load-balancing loss (1 = balanced), 1,000-step bins", y_label="LB loss", x_label="tokens trained", xfmt=lambda v: f"{v:.0f}B", W=400, H=300, yrange=yr, shade=band.get(m)) for m in models)
             html += '<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">' + panels + "</div>"
     return card("results", "Load balancing", html)
 
