@@ -482,7 +482,7 @@ EMO1000_TAKE = ("Eight squares: more experts do not make the random split cheape
                 "(2.315 vs 2.313; ppl sets 2.837 vs 2.853, ahead) and 0.05 ahead of its squares alone (2.369).")
 S128_TAKE = ("Fewer experts change nothing: the cost is set by the number of squares, not the number of experts. Four squares: gap 0.055 at 20B, "
              "0.13 at 130B; eight: 0.13 and 0.19. Both merges end level with their best single square.")
-def random_control(which, with_charts=True, routing=True):
+def random_control(which, with_charts=True, routing=True, take=None):
     """Control for a squares block: K random expert groups of equal size and documents split uniformly at random, same 300B-token
     held-out sample. Squares are scored on ALL held-out documents (a random partition gives a held-out document no 'own' square),
     so the square line is the mean of the K (plus the best one). Several arms (K = 4, 8) share the charts."""
@@ -513,20 +513,17 @@ def random_control(which, with_charts=True, routing=True):
         if a.get("lr") == "4e-4": a["color"] = "#0891b2" if a["k"] == 4 else "#d97706"   # the explorer's 4e-4 colours
     arms = [a for i, a in enumerate(arms) if i == 0 or any(v is not None for v in a["mr"] + a["sqm"])]  # arms without any result yet stay out of the charts
     toks = [st * 524288 / 1e9 for st in steps]; labels = [f"{t:.3g}B" for t in toks]
-    end = "130B" if w3 else ("30B" if w2 else "20B"); E = C["E"]; ks = " and ".join(str(a["k"]) for a in arms)
+    end = f"{steps[-1] * 524288 / 1e9:.3g}B"; E = C["E"]; ks = " and ".join(str(a["k"]) for a in arms)   # last point with a result
     groups_txt = " / ".join(f"{a['k']} groups of {E // a['k']}" for a in arms)
-    setup = (f"Same {C['model']} start model (10B), same window" + (" and the same second window (stream steps 38,147&ndash;57,221, each square continuing from its own window-1 final on a fresh random quarter)" if w2 else "")
-             + (", then a third window of 100B tokens (stream steps 57,221&ndash;247,956) in which each square continues on a contiguous slice of the stream (1/K of the "
-                "window), a uniformly random share of its documents since the stream is a global shuffle, while the baseline continues to 130B" if w3 else "") + " (stream steps 19,074&ndash;38,147), same held-out sample, but the split has no "
-             f"structure: in every layer 2&ndash;9 the {E} experts are shuffled into {groups_txt} (layer 1 whole, as before), and every document "
-             f"of the window goes to a uniformly random group, so each of the K = {ks} squares owns 1/K of the experts and a random 1/K of the tokens. Squares are merged with equal weights. "
-             "Because a held-out document has no 'own' square under a random split, the square line is the mean CE of the squares each scored "
-             "on all held-out documents." + (C["setup_note"] if C.get("setup_note") else (" The same random groups and the same random document packs are used for every start model." if which != "std" else "")))
-    title = f"Control: random expert groups, random document split (10B &rarr; {end})" + (f" &mdash; {C['model']}" if which.startswith("randsel") else "")
+    lr = next((a.get("lr") for a in arms if a.get("lr")), None)
+    setup = (f"{C['model']} start model (10B) &rarr; {end}: K = {ks} random sub-models ({groups_txt} experts per layer 2&ndash;9, layer 1 whole), "
+             f"sub-model LR {lr or '8e-4 (the pretraining LR)'}.")
+    title = f"{C['model']}: {ks} random sub-models, 10B &rarr; {end}"
+    tk = lambda: take if take is not None else C["take"]()
     if not any(v is not None for a in arms for v in a["mr"] + a["sqm"]):
-        return section(title, setup, "", C["take"]())
+        return section(title, setup, "", tk())
     if not with_charts:
-        return section(title, setup, "", C["take"]()) + (routing_similarity_section(arms[0]["SQ"], C["model"], arms[0]["k"]) if which == "std" and routing else "")
+        return section(title, setup, "", tk()) + (routing_similarity_section(arms[0]["SQ"], C["model"], arms[0]["k"]) if which == "std" and routing else "")
     # re-merge + re-partition at 61.1B (standard control only): the 116,479 merge re-split into new random groups, trained on to 130B
     rm_h = rm_p = rm_sq = None; a0 = arms[0]
     RM = R / "runs_heldout300b_stdremerge"; RMP = ROOT / "sparse_experts/olmoe3_squares_stdremerge/ppl_validation"
@@ -556,7 +553,7 @@ def random_control(which, with_charts=True, routing=True):
         sq_series + rml(rm_h, "merged, re-partitioned at 61B") + ([{"name": "squares, re-partitioned at 61B (mean of 4)", "y": rm_sq, "color": "#7c3aed", "dashed": True}] if rm_sq is not None else [])
         + [{"name": "baseline", "y": b_h, "dashed": True, "color": "#059669"}, {"name": "start model", "y": [start] * len(toks), "const": True, "dashed": True, "color": "#64748b"}],
         title="All held-out documents (300B sample)", xlabels=labels, x_label="tokens trained")
-    return section(title, setup, charts, C["take"]()) + (routing_similarity_section(arms[0]["SQ"], C["model"], arms[0]["k"]) if routing else "")
+    return section(title, setup, charts, tk()) + (routing_similarity_section(arms[0]["SQ"], C["model"], arms[0]["k"]) if routing else "")
 
 
 ROUTING_SIM_TAKE = {"olmoe3_squares_stdrand": (
@@ -1454,10 +1451,8 @@ def big_lr_sweep_section(tag):
     xs = list(range(len(S128_LRS)))
     ch = CHART_CSS + line_chart(xs, [{"name": "selection sample", "y": [r["val"] for r in rows], "color": "#7c3aed", "gap": True}, {"name": "held-out (reporting) sample", "y": [r["ho"] for r in rows], "color": "#2563eb", "gap": True}],
                                 title=f"EMO {tag} from scratch: CE at 5.24B vs pretraining LR", y_label="CE", x_label="pretraining LR", xlabels=S128_LRS)
-    what = (f"Six pretraining runs of the EMO {tag} model from scratch, identical except for the peak LR (2,000-step warmup, then constant: the WSD trunk used "
-            "everywhere in this report), stopped at step 10,000 = 5.24B tokens, 4 nodes each; the 8e-4 arm is re-run because the existing 10B run's step-10,000 "
-            "checkpoint was pruned. <b>Selection CE</b>: the separate 6,808-instance validation sample also used for the sub-model LR sweep of box 5C; "
-            "<b>held-out CE</b> and <b>ppl sets</b>: the report's usual metrics. Same protocol as the 128e sweep above (whose winner was the recipe's 8e-4).")
+    what = (f"The 128e sweep's protocol for the EMO {tag} model (six peak LRs from scratch to step 10,000 = 5.24B tokens, 4 nodes each, same three metrics); "
+            "the 8e-4 arm is re-run because the existing 10B run's step-10,000 checkpoint was pruned.")
     return section(f"Pretraining learning rate of the {tag} model", what, ch + tbl, BIG_LR_TAKE[tag])
 
 
@@ -1506,50 +1501,44 @@ def build_q5_controls():
         "<li><b>Merge.</b> Experts side by side, shared parameters averaged with equal weights; the untrained slices merge back to exactly the "
         "start model (the 10B point on every chart).</li>"
         "<li><b>Compare.</b> Against the same start model continued jointly on all documents, at matched checkpoints, on the 300B-token held-out "
-        "sample and the v3-small ppl sets. The squares are also scored alone (mean of the K and the best one).</li></ol>"
+        "sample and the v3-small ppl sets. The squares are also scored alone, each on all held-out documents (a random split gives a held-out document no "
+        "'own' square), as the mean of the K and the best one. The 10B point of every chart is the start model (untrained slices merge back to it exactly).</li></ol>"
         "<p>The same random expert groups and document packs are used for every 512-expert start model, so the boxes differ only in the start model; "
         "the 1000- and 2000-expert and half-size-expert models (box 5B) use the same document packs with their own random groups.</p>")
     body += CX_CSS + control_explorer()
-    setup = lambda text: card("info", "Setup", f"<p>{text}</p>")
     has = lambda d: (ROOT / "sparse_experts" / d / "groups.json").exists()
+    SM_COLS = ["start model (10B tokens)", "routed experts", "top-k", "total / active", "joint baseline continued to", "sub-models: K &times; experts per group", "sub-model LR", "merge points"]
+    def start_models(rows, note):
+        return card("info", "Start models", table(SM_COLS, rows) + f"<p>{note}</p>")
     boxes = {}
     # 5A: the four 512-expert start models under the same random split
-    boxes["5A"] = (random_control("emo", with_charts=False) + random_control("std", with_charts=False, routing=False)
-                   + (setup("The EMO 512e model pretrained with <i>random</i> per-document expert pools (debug_validation arm: pool size uniform in "
-                            "[16, 512] as in EMO, but the pool is a random set of experts instead of the most relevant ones; 3.036 vs 3.000 in-loop CE at 10B): its 10B "
-                            "checkpoint is continued jointly to 30B as the baseline (same random-pool recipe), and split into 4 and into 8 random sub-models with the "
-                            "same random expert groups and document packs as the 512e controls, trained with the same random-pool recipe, at exactly the 512e "
-                            "controls' matched checkpoints of windows 1 and 2. The same is done for the [64, 512]-pool variant (no pool smaller than an eighth of the "
-                            "experts; 3.019 in-loop CE at 10B), with its own baseline.") + random_control("randsel", with_charts=False) + random_control("randsel64", with_charts=False) if has("olmoe3_squares_randsel4") else ""))
+    rows = [["EMO 512e (the main model)", "512 &times; hidden 544", "16", "2.61B / 276.7M", "130B", "4 &times; 128 / 8 &times; 64", "8e-4 (4e-4 arms: boxes 5C, 5E, 5F)", "every matched checkpoint, 10B &rarr; 130B"],
+            ["standard MoE 512e", "512 &times; 544", "16", "2.61B / 276.7M", "130B", "4 &times; 128 / 8 &times; 64", "8e-4", "every matched checkpoint, 10B &rarr; 130B"]]
+    if has("olmoe3_squares_randsel4"):
+        rows += [["random-pool EMO 512e, pools [16, 512] (each document's pool is a <i>random</i> set of experts of the EMO pool size; in-loop CE 3.036 vs 3.000 at 10B)", "512 &times; 544", "16", "2.61B / 276.7M", "130B (random-pool recipe)", "4 &times; 128 / 8 &times; 64", "8e-4", "every matched checkpoint, 10B &rarr; 130B"],
+                 ["random-pool EMO 512e, pools [64, 512] (no pool smaller than an eighth of the experts; 3.019 at 10B)", "512 &times; 544", "16", "2.61B / 276.7M", "130B (random-pool recipe)", "4 &times; 128 / 8 &times; 64", "8e-4", "every matched checkpoint, 10B &rarr; 130B"]]
+    boxes["5A"] = (start_models(rows, "All four share the random expert groups (per group size) and the random document packs; the random-pool models' squares and baselines train with their own random-pool recipe.")
+                   + random_control("emo", with_charts=False) + random_control("std", with_charts=False, routing=False)
+                   + (random_control("randsel", with_charts=False) + random_control("randsel64", with_charts=False) if has("olmoe3_squares_randsel4") else ""))
     # 5B: expert count (128e / 1000e / 2000e) and expert width (half-size 1024e)
-    b = ""
+    rows = []; b = ""
     if has("olmoe3_squares_s128rand4"):
-        b += setup("The 128-expert standard-routing model of the expert-count ladder (same expert size as the 512e model, top-16 of 128, "
-                   "so a quarter of the total parameters): its 10B checkpoint is continued jointly to 130B as the baseline, and split into 4 and into 8 random "
-                   "sub-models with the same random document groups as the 512e controls, at exactly the 512e controls' matched checkpoints.") + random_control("s128", with_charts=False)
+        rows.append(["standard MoE 128e (expert-count ladder: same expert size, a quarter of the total)", "128 &times; 544", "16", "0.80B / 274.5M", "130B", "4 &times; 32 / 8 &times; 16", "8e-4", "every matched checkpoint, 10B &rarr; 130B"])
+        b += random_control("s128", with_charts=False)
     if has("olmoe3_squares_emo1000rand8"):
-        b += setup("The 1000-expert EMO arm of the expert-count ladder (olmoe3_275m_1000e_emo_10b: the 512e recipe with 1000 routed experts of the same "
-                   "size, top-16, per-document pools uniform in [16, 1000], the same 10B of data, LR 8e-4): its 10B checkpoint is continued jointly to 30B on the same "
-                   "stream as the baseline (4 nodes, constant LR), and split into 8 random sub-models of 125 experts per layer 2&ndash;9 (layer 1 whole) with the "
-                   "512e controls' random document packs, each square trained at sub-model LR 4e-4 (the 512e sweep's winner, box 5C) on its documents of the 10B &rarr; 20B "
-                   "window and then of the 20B &rarr; 30B window from its own window-1 final. Merged and evaluated at the freeze-ablation points only: the window-1 "
-                   "mid point (matched step 30,000, 15.7B), 20B (38,148) and 30B (57,221). Each square is also scored alone on all held-out documents and on the "
-                   "ppl sets (mean of 8 and best of 8).") + random_control("emo1000", with_charts=True) + emo1000_table()
+        rows.append(["EMO 1000e (ladder: the 512e recipe with 1000 experts, pools uniform in [16, 1000])", "1000 &times; 544", "16", "4.90B / 279.5M", "61B", "4 &times; 250 / 8 &times; 125 (seed 2)", "4e-4", "15.7B / 20B / 30B (+ 61B, 4 squares)"])
+        b += random_control("emo1000", with_charts=True) + emo1000_table()
     if has("olmoe3_squares_emo2000rand8"):
-        b += setup("The 2000-expert EMO arm of the expert-count ladder (olmoe3_275m_2000e_emo_10b: the 512e recipe with 2000 routed experts of the same size, "
-                   "top-16, per-document pools uniform in [16, 2000], the same 10B of data, LR 8e-4; 9.61B total / 285.2M active parameters, trained at expert parallelism 2). Its 10B "
-                   "checkpoint is continued jointly to 30B on the same stream as the baseline (4 nodes, EP=2, constant LR), and split into 4 random sub-models of 500 experts and "
-                   "into 8 of 250 experts per layer 2&ndash;9 (layer 1 whole) with the 512e controls' random document packs, each square trained at sub-model LR 4e-4 on its "
-                   "documents of the 10B &rarr; 20B window and then of the 20B &rarr; 30B window from its own window-1 final. Merged and evaluated at the window-1 mid point "
-                   "(matched step 30,000, 15.7B), 20B (38,148) and 30B (57,221) on the 300B held-out sample and the ppl sets; each square is also scored alone.") + random_control("emo2000", with_charts=True) + emo1000_table("emo2000")
+        rows.append(["EMO 2000e (ladder: 2000 experts, pools uniform in [16, 2000], expert parallelism 2)", "2000 &times; 544", "16", "9.61B / 285.2M", "61B", "4 &times; 500 / 8 &times; 250 (seed 2)", "4e-4", "15.7B / 20B / 30B (+ 61B, 4 squares)"])
+        b += random_control("emo2000", with_charts=True) + emo1000_table("emo2000")
     if half_size_experts_card():
-        b += half_size_experts_card() + card("info", "Setup of the half-size-expert controls", "<p>Each half-size-expert model's 10B checkpoint is continued jointly to 30B as its baseline (4 nodes, "
-                   "EP=2, constant LR) and split into 8 random sub-models of 128 experts per layer 2&ndash;9 (layer 1 whole) with the 512e controls' random document packs, "
-                   "each square trained at sub-model LR 4e-4 with the model's own shape (hidden 272, top-16 or top-32) on its documents of the 10B &rarr; 20B window and then "
-                   "of the 20B &rarr; 30B window from its own window-1 final. Merged and evaluated at the window-1 mid point (matched step 30,000, 15.7B), 20B (38,148) and "
-                   "30B (57,221); each square is also scored alone (mean of 8 and best of 8). Launched 2026-10-15 (squares_h272.sh k16 | k32).</p>") \
-             + random_control("emo1024h272k32", with_charts=True) + emo1000_table("emo1024h272k32") + random_control("emo1024h272k16", with_charts=True) + emo1000_table("emo1024h272k16")
-    boxes["5B"] = b
+        rows += [["EMO 1024e half-size experts, top-32 (routed parameters = 512e; the 512e model's active FFN width; EP 2)", "1024 &times; 272", "32", "2.61B / 279.6M", "30B", "4 &times; 256 / 8 &times; 128 (seed 2)", "4e-4", "15.7B / 20B / 30B"],
+                 ["EMO 1024e half-size experts, top-16 (half the active FFN width)", "1024 &times; 272", "16", "2.61B / 242.0M", "30B", "4 &times; 256 / 8 &times; 128 (seed 2)", "4e-4", "15.7B / 20B / 30B"]]
+        b += half_size_experts_card() + random_control("emo1024h272k32", with_charts=True) + emo1000_table("emo1024h272k32") \
+             + random_control("emo1024h272k16", with_charts=True, take="Same picture as the top-32 arm; the takeaway above covers both half-size arms.") + emo1000_table("emo1024h272k16")
+    boxes["5B"] = start_models(rows, "Same random document packs as the 512e controls; each model's expert groups are a fresh random shuffle of its own experts into K equal groups. "
+                               "The 1000e, 2000e and half-size squares train at sub-model LR 4e-4, the winner of the 512e sweep (box 5C), and are merged at the freeze-ablation points only "
+                               "(window-1 mid point = matched step 30,000 = 15.7B; 20B = 38,148; 30B = 57,221). Each square is also scored alone (mean of the K and the best one).") + b if b else ""
     boxes["5C"] = lr_sweep_section()
     boxes["5D"] = s128_lr_sweep_section() + big_lr_sweep_section("1000e") + big_lr_sweep_section("2000e")
     boxes["5E"] = repartition_section() + std_remerge_section()
