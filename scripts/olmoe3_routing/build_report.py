@@ -1849,24 +1849,55 @@ def build_next():
                 "<li>Use the persistent document-level blocks as the expert subsets for selective-expert finetuning, as in the sparse_experts plan.</li></ul>")
 
 
+Q5_BACKUP = OUT / "q5_backup.html"
+EXTRA_CSS = "<style>.muted{color:var(--muted);font-weight:normal;font-size:0.85em} .what{color:#475569;font-size:0.93em;border-left:3px solid #cbd5e1;padding-left:10px;margin:4px 0 10px}</style>"
+
+
+def freeze_q5(body):
+    """Write a frozen, self-contained copy of the Q5 tab (claude_outputs/olmoe3_routing/q5_backup.html). Taken 2026-11-02 before the Q5
+    clean-up so the old and new Q5 can be compared side by side; `build_report.py --freeze-q5` overwrites it with the current Q5."""
+    import datetime; stamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    Q5_BACKUP.write_text(f"""<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Q5 backup ({stamp})</title><style>{CSS}</style>{EXTRA_CSS}
+<style>body{{padding:0 8px}}</style></head><body><p class="muted">Frozen copy of the Q5 tab, built {stamp}.</p><main><section class="tab active" id="q5">{body}</section></main>{CHART_JS}</body></html>""")
+    print(f"Froze Q5 -> {Q5_BACKUP} ({Q5_BACKUP.stat().st_size/1e6:.1f} MB)")
+
+
+def build_q5_backup():
+    """The Q5_backup tab: the frozen snapshot rendered in an isolated iframe (its own ids, scripts and explorer, independent of the live Q5)."""
+    if not Q5_BACKUP.exists(): return ""
+    import datetime; stamp = datetime.datetime.fromtimestamp(Q5_BACKUP.stat().st_mtime, datetime.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    doc = html.escape(Q5_BACKUP.read_text(), quote=True)
+    return (card("info", "Frozen copy of Q5", f"<p>Verbatim snapshot of the Q5 tab as built on <b>{stamp}</b>, kept for comparison while Q5 is cleaned up. It is rendered in an "
+                 "isolated frame, so its charts and explorer work on their own and nothing here changes when Q5 does. Refresh it with "
+                 "<code>python scripts/olmoe3_routing/build_report.py --freeze-q5</code>; delete <code>claude_outputs/olmoe3_routing/q5_backup.html</code> to drop this tab.</p>")
+            + f'<iframe id="q5b-frame" srcdoc="{doc}" style="width:100%;height:1200px;border:1px solid #cbd5e1;border-radius:6px;background:#fff"></iframe>'
+            "<script>(function(){const f=document.getElementById('q5b-frame');setInterval(()=>{try{const h=f.contentDocument&&f.contentDocument.documentElement.scrollHeight;"
+            "if(h&&Math.abs(h-f.clientHeight)>8)f.style.height=(h+24)+'px';}catch(e){}},800);})();</script>")
+
+
 def main():
+    import argparse; ap = argparse.ArgumentParser(); ap.add_argument("--freeze-q5", action="store_true", help="overwrite the frozen Q5 snapshot (Q5_backup tab) with the current Q5"); a = ap.parse_args()
+    q5_body = build_q5_controls()
+    if a.freeze_q5: freeze_q5(q5_body)
     tabs = [
         ("overview", "Overview", build_overview()),
         ("q1", QUESTIONS[0][1], build_q5()),
         ("q2", QUESTIONS[1][1], build_q6()),
         ("q3", QUESTIONS[2][1], build_q3()),
         ("q4", QUESTIONS[3][1], build_q4()),
-        ("q5", QUESTIONS[4][1], build_q5_controls()),
+        ("q5", QUESTIONS[4][1], q5_body),
+        ("q5b", "Q5_backup", build_q5_backup()),
         ("explorer", "Explorer", build_explorer()),
         ("next", "Next steps", build_next()),
     ]
+    tabs = [t for t in tabs if t[2]]   # a tab with no body (e.g. Q5_backup without its snapshot file) is left out
     nav = "".join(f'<button data-target="{tid}">{name}</button>' for tid, name, _ in tabs)
     sections = "".join(f'<section class="tab" id="{tid}">{body}</section>' for tid, _, body in tabs)
     import datetime; stamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     title = "OLMoE3-ladder 275M: document-level expert blocks, standard MoE vs EMO"
     page = f"""<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{html.escape(title)}</title><style>{CSS}</style><style>.muted{{color:var(--muted);font-weight:normal;font-size:0.85em}} .what{{color:#475569;font-size:0.93em;border-left:3px solid #cbd5e1;padding-left:10px;margin:4px 0 10px}}</style></head>
+<title>{html.escape(title)}</title><style>{CSS}</style>{EXTRA_CSS}</head>
 <body><header><a class="home-link" href="/">&larr; all reports</a><h1>{html.escape(title)}</h1>
 <p>olmoe3_routing &mdash; document-level expert blocks in the 275M-active OLMoE3-ladder models trained here (standard MoE vs EMO; 128 / 512 / 1000 experts),
 from routing statistics on 65.5M unseen training-stream tokens &middot;
