@@ -36,17 +36,37 @@ def plan():
     return jobs
 
 
+def reap():
+    """For every finished checkpoint, stop the copies still live on Beaker (the allocated original and/or the unallocated twin)."""
+    import os; env = dict(os.environ, PYTHONPATH="external/OLMo-core/src" + (":" + os.environ["PYTHONPATH"] if os.environ.get("PYTHONPATH") else ""))
+    n = 0
+    for f in sorted(R.glob("*/*/lb_loss.json")):
+        for mark in (f.parent.parent / f"{f.parent.name}.launched", f.parent.parent / f"{f.parent.name}.launched_u"):
+            if not mark.exists() or mark.with_suffix(mark.suffix + ".reaped").exists(): continue
+            eid = mark.read_text().strip().split("/")[-1]
+            r = subprocess.run(["beaker", "experiment", "get", eid, "--format", "json"], capture_output=True, text=True, env=env)
+            try: st = json.loads(r.stdout)[0]["jobs"][-1]["status"]
+            except Exception: continue
+            if not (st.get("exited") or st.get("finalized") or st.get("canceled")):
+                subprocess.run(["beaker", "experiment", "stop", eid], capture_output=True, text=True, env=env); print(f"stopped {eid} ({mark.name}: result exists)"); n += 1
+            mark.with_suffix(mark.suffix + ".reaped").touch()
+    print(f"{n} live copies stopped")
+
+
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument("--dry-run", action="store_true"); ap.add_argument("--smoke", action="store_true", help="one short job (512 instances) into runs_lbloss_smoke")
-    ap.add_argument("--relaunch", action="store_true", help="ignore .launched markers (a job died)"); a = ap.parse_args()
+    ap.add_argument("--relaunch", action="store_true", help="ignore .launched markers (a job died)")
+    ap.add_argument("--twin", action="store_true", help="launch UNALLOCATED twins (-u1) of the jobs without a result yet (2026-11-02: 34 allocated 1-GPU jobs sat >2 h in 'created'); marker <name>.launched_u")
+    ap.add_argument("--reap", action="store_true", help="stop the still-live copy (allocated or twin) of every checkpoint that has its lb_loss.json"); a = ap.parse_args()
+    if a.reap: return reap()
     jobs = plan(); print(f"{len(jobs)} checkpoints to score")
     if a.smoke: jobs = jobs[:1]
     n = 0
     for tag, name, ck, bs in jobs:
-        root = R.parent / ("runs_lbloss_smoke" if a.smoke else "runs_lbloss"); out = root / tag / name; mark = out.parent / f"{name}.launched"
+        root = R.parent / ("runs_lbloss_smoke" if a.smoke else "runs_lbloss"); out = root / tag / name; mark = out.parent / (f"{name}.launched_u" if a.twin else f"{name}.launched")
         if (out / "lb_loss.json").exists(): continue
         if mark.exists() and not a.relaunch: continue
-        cmd = ["python", "scripts/sparse_experts/olmoe3_beaker_cmd.py", "--name", f"lbloss-{tag}-{name}", "--gpus", "1", "--allocated", "--",
+        cmd = ["python", "scripts/sparse_experts/olmoe3_beaker_cmd.py", "--name", f"lbloss-{tag}-{name}" + ("-u1" if a.twin else ""), "--gpus", "1"] + ([] if a.twin else ["--allocated"]) + ["--",
                "python", "scripts/sparse_experts/olmoe3_routing/extract_routing.py", "--checkpoint", f"{W}/{ck}", "--instances", SAMPLE, "--out-dir", f"{W}/olmoe3_routing/{root.name}/{tag}/{name}",
                "--restrict", "none", "--batch-size", str(bs), "--log-every", "100", "--lb-only"] + (["--max-instances", "512"] if a.smoke else [])
         if a.dry_run: print("would launch:", " ".join(cmd[3:5]), "...", ck); continue
