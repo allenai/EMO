@@ -1557,6 +1557,32 @@ def load_balance_section():
             band = {"EMO 512e": [(19074 * 524288 / 1e9, 57221 * 524288 / 1e9, "joint run on 1 node (loss over 8 ranks, not 32)")]}
             panels = "".join(line_chart(bx, per[m], title=f"{m}: load-balancing loss (1 = balanced), 1,000-step bins", y_label="LB loss", x_label="tokens trained", xfmt=lambda v: f"{v:.0f}B", W=400, H=300, yrange=yr, shade=band.get(m)) for m in models)
             html += '<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">' + panels + "</div>"
+    # (3) the same loss recomputed OFFLINE on the held-out sample in fixed 524k-token blocks (lb_loss_passes.py -> extract_routing.py --lb-only): every model is
+    # scored on the same tokens with the same block size, so the GPU-count effect of the in-loop numbers is gone and differences are real balance differences
+    LB = ROOT / "sparse_experts/olmoe3_routing/runs_lbloss"; TAG = {"EMO 512e": "emo512", "EMO 1000e": "emo1000", "EMO 2000e": "emo2000"}
+    BLOCKS = [("16384", "16k tokens (one rank's micro-batch)"), ("131072", "131k tokens (8 ranks = 1 node)"), ("524288", "524k tokens (32 ranks = 4 nodes, the global batch)"), ("all", "whole sample (65.5M tokens)")]
+    def off(m, kind, st, block):
+        f = LB / TAG[m] / f"{kind}_step{st}" / "lb_loss.json"
+        if kind != "joint" and st == 19074: f = LB / TAG[m] / f"joint_step{st}" / "lb_loss.json"   # a merged model at 10B is the start model
+        if not f.exists(): return None
+        b = _jload(f).get("blocks", {}).get(block); return None if not b else b["mean"]
+    rows3 = []
+    for block, blabel in BLOCKS:
+        per3 = {m: [{"name": "joint training", "y": [off(m, "joint", st, block) for st, _ in pts], "color": "#111827", "gap": True},
+                    {"name": "merged 4 squares (LR 4e-4)", "y": [off(m, "merged4", st, block) for st, _ in pts], "color": "#ea580c", "dashed": True, "gap": True},
+                    {"name": "merged 8 squares (LR 4e-4)", "y": [off(m, "merged8", st, block) for st, _ in pts], "color": "#0d9488", "dotted": True, "gap": True}] for m in models if m in TAG}
+        ys3 = [v for S_ in per3.values() for s_ in S_ for v in s_["y"] if v is not None]
+        if not ys3: continue
+        lo, hi = min(ys3), max(ys3); pad = max(0.005, 0.08 * (hi - lo)); yr3 = (lo - pad, hi + pad)
+        panels3 = "".join(line_chart(xs, per3[m], title=f"{m}: held-out load-balancing loss in blocks of {blabel.split(' (')[0]} (same tokens for every model)", y_label="LB loss", xlabels=labels,
+                                     x_label="tokens trained", xfmt=lambda v: f"{v:.0f}B", W=400, H=300, yrange=yr3) for m in per3)
+        rows3.append((block, blabel, panels3))
+    if rows3:
+        default = "524288" if any(b == "524288" for b, _, _ in rows3) else rows3[0][0]
+        html += ('<style>.lbb .lbrow{display:none}.lbb .lbrow.on{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.lbb .ctl{margin:10px 0 4px;font-size:0.95em}</style>'
+                 '<div class="lbb"><div class="ctl"><b>Held-out load-balancing loss, block size:</b> ' + " ".join(f'<label><input type="radio" name="lbblock" value="{b}"{" checked" if b == default else ""}> {bl}</label>' for b, bl, _ in rows3) + "</div>"
+                 + "".join(f'<div class="lbrow{" on" if b == default else ""}" data-b="{b}">{pn}</div>' for b, _, pn in rows3)
+                 + "</div><script>document.querySelectorAll('.lbb input[name=lbblock]').forEach(r=>r.addEventListener('change',e=>{document.querySelectorAll('.lbb .lbrow').forEach(d=>d.classList.toggle('on',d.dataset.b===e.target.value));}));</script>")
     return card("results", "Load balancing", html)
 
 
