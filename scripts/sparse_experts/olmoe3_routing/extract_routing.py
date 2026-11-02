@@ -316,6 +316,49 @@ class Accum:
 # --------------------------------------------------------------------------------------------
 # main pass
 # --------------------------------------------------------------------------------------------
+class LBAccum:
+    """Load-balancing loss of the model's free routing on the held-out tokens at FIXED token-block sizes (box 5H, user request 2026-11-01).
+    For every complete block of T tokens and MoE layer l: (E_l / k) * sum_e (count_e / T) * (psum_e / T), the trainer's local-batch formula
+    (olmo_core.nn.moe.loss.load_balancing_loss: count_e = top-k assignments to e, psum_e = summed softmax probability of e) with the block as the
+    batch, so 1 = perfect balance for any E. Counts and probability sums are accumulated per instance (S tokens); every T must be a multiple of S.
+    Reported per block size: the mean over blocks per layer and over layers; plus the whole-sample value. The block size is what the number of
+    training GPUs sets in the in-loop loss (16k = one rank's micro-batch; 131k = 8 ranks; 524k = 32 ranks = the global batch)."""
+
+    def __init__(self, E_layer: List[int], k: int, S: int, blocks: List[int], device):
+        self.E = torch.tensor(E_layer, dtype=torch.float64, device=device); self.k = k; self.S = S; L, E = len(E_layer), max(E_layer)
+        for T in blocks: assert T % S == 0, f"block {T} is not a multiple of the instance length {S}"
+        z = lambda: torch.zeros(L, E, dtype=torch.float64, device=device)
+        self.st = {T: dict(cnt=z(), ps=z(), n=0, losses=[]) for T in sorted(set(blocks))}
+        self.tot = dict(cnt=z(), ps=z(), n=0); self.L, self.Emax = L, E
+
+    def _loss(self, cnt, ps, T):
+        return (self.E / self.k) * ((cnt / T) * (ps / T)).sum(1)   # (L,)
+
+    def add_batch(self, idx: torch.Tensor, scores: List[torch.Tensor]):
+        """idx: (B, S, L, k) long; scores[l]: (B*S, E) fp32 softmax (zero-padded to E for narrower layers)."""
+        B, S, L, k = idx.shape
+        cnt = torch.zeros(B, L, self.Emax, dtype=torch.float64, device=idx.device)
+        cnt.scatter_add_(2, idx.permute(0, 2, 1, 3).reshape(B, L, S * k), torch.ones(B, L, S * k, dtype=torch.float64, device=idx.device))
+        ps = torch.stack([sc.view(B, S, -1).double().sum(1) for sc in scores], 1)   # (B, L, E)
+        for b in range(B):
+            self.tot["cnt"] += cnt[b]; self.tot["ps"] += ps[b]; self.tot["n"] += S
+            for T, st in self.st.items():
+                st["cnt"] += cnt[b]; st["ps"] += ps[b]; st["n"] += S
+                if st["n"] == T:
+                    st["losses"].append(self._loss(st["cnt"], st["ps"], T).cpu()); st["cnt"].zero_(); st["ps"].zero_(); st["n"] = 0
+
+    def result(self) -> dict:
+        out = {}
+        for T, st in self.st.items():
+            if st["losses"]:
+                m = torch.stack(st["losses"]).mean(0)
+                out[str(T)] = dict(n_blocks=len(st["losses"]), per_layer=[float(v) for v in m], mean=float(m.mean()))
+        if self.tot["n"]:
+            m = self._loss(self.tot["cnt"], self.tot["ps"], self.tot["n"]).cpu()
+            out["all"] = dict(n_tokens=int(self.tot["n"]), per_layer=[float(v) for v in m], mean=float(m.mean()))
+        return out
+
+
 def doc_table(tokens: np.ndarray):
     """Global doc ids per token: doc = (instance, EOS-segment). Returns (doc_of (N,S) int64, n_doc, doc_inst)."""
     eos = (tokens == EOS).astype(np.int64)
@@ -398,9 +441,11 @@ def run(args):
     hooks = [routers[l].register_forward_hook(make_hook(l)) for l in MOE_LAYERS]
 
     acc = Accum(L, E, k, n_doc, device)
+    lb = LBAccum([E_layer[l] for l in MOE_LAYERS], k, S, [int(t) for t in args.lb_blocks.split(",") if t], device)
+    ce_sum, ce_n = 0.0, 0   # running CE for --lb-only (Accum is skipped there)
     args.out_dir.mkdir(parents=True, exist_ok=True)
     raw_n = min(args.raw_instances, N)
-    raw = np.lib.format.open_memmap(args.out_dir / "raw_topk.npy", mode="w+", dtype=np.int16, shape=(raw_n, S, L, k)) if raw_n else None
+    raw = np.lib.format.open_memmap(args.out_dir / "raw_topk.npy", mode="w+", dtype=np.int16, shape=(raw_n, S, L, k)) if raw_n and not args.lb_only else None
     t0 = time.time(); B = args.batch_size
     with torch.no_grad(), torch.autocast("cuda", dtype=torch.bfloat16):
         for b0 in range(0, N, B):
@@ -443,8 +488,11 @@ def run(args):
             # per-token loss at position t predicts token t+1 -> attribute to the doc of t+1
             loss_doc = torch.roll(doc, shifts=-1, dims=1)
             valid = labels != -100
-            acc.add_batch(idx.view(Tn, L, k), [s.view(Tn, E) for s in scores], doc.view(Tn),
-                          loss[valid], loss_doc[valid])
+            lb.add_batch(idx, [s.view(Tn, E) for s in scores])
+            ce_sum += float(loss[valid].sum()); ce_n += int(valid.sum())
+            if not args.lb_only:
+                acc.add_batch(idx.view(Tn, L, k), [s.view(Tn, E) for s in scores], doc.view(Tn),
+                              loss[valid], loss_doc[valid])
             if raw is not None and b0 < raw_n:
                 n = min(B, raw_n - b0)
                 raw[b0 : b0 + n] = idx[:n].to(torch.int16).cpu().numpy()
@@ -456,6 +504,12 @@ def run(args):
                 el = time.time() - t0
                 log(f"{done}/{N} instances, {done*S/el/1e3:.0f}k tok/s, loss {loss[valid].mean().item():.3f}, eta {(N-done)*S/(done*S/el)/60:.1f} min")
     for h in hooks: h.remove()
+    json.dump(dict(checkpoint=str(args.checkpoint), restrict=args.restrict, E=E, E_layer={str(l): E_layer[l] for l in MOE_LAYERS}, top_k=k, n_instances=int(N), n_tokens=int(N * S),
+                   mean_ce=ce_sum / max(1, ce_n), blocks=lb.result()), open(args.out_dir / "lb_loss.json", "w"), indent=1)
+    if args.lb_only:
+        json.dump({"checkpoint": str(args.checkpoint), "restrict": args.restrict, "kinds": kinds, "n_instances": int(N), "n_tokens": int(N * S), "n_docs": n_doc, "mean_ce": ce_sum / max(1, ce_n),
+                   "E": E, "top_k": k, "rank": args.rank, "world": args.world, "lb_only": True, "elapsed_s": time.time() - t0}, open(args.out_dir / "meta.json", "w"), indent=1)
+        (args.out_dir / "DONE").touch(); log(f"done (lb-only): mean CE {ce_sum / max(1, ce_n):.4f}; LB loss {json.dumps({T: round(v['mean'], 4) for T, v in lb.result().items()})}; saved to {args.out_dir}"); return
     acc.finalize_doc_coact()
     acc.save(args.out_dir)
     if raw is not None: raw.flush()
@@ -537,7 +591,19 @@ def selftest():
     ref_dc = used0.T @ used0
     assert np.array_equal(acc.coact_doc[0].numpy(), ref_dc)
     assert np.allclose(acc.doc_scores[:, 0].numpy(), np.stack([sc[0].numpy()[D_ == d].sum(0) for d in range(n_doc)]))
-    log("selftest OK: pool-masked router == EmoRouterV2; accumulators == brute force")
+    # 6) fixed-block load-balancing loss vs brute force (blocks of 1 and 2 instances; layer 1 narrower)
+    lba = LBAccum([E // 2, E], k, S, [S, 2 * S], torch.device("cpu"))
+    sc2 = [torch.cat([torch.rand(B * S, E // 2).softmax(-1), torch.zeros(B * S, E // 2)], 1), torch.rand(B * S, E).softmax(-1)]
+    idx2 = torch.stack([torch.randint(0, E // 2, (B, S, k)), torch.randint(0, E, (B, S, k))], 2)
+    lba.add_batch(idx2, sc2); res = lba.result()
+    def brute(lo, hi, El, i, sc):   # tokens lo..hi of the flattened batch
+        T = hi - lo; cnt = np.bincount(i.reshape(B * S, k)[lo:hi].reshape(-1).numpy(), minlength=E); ps = sc[lo:hi].sum(0).numpy()
+        return El / k * float((cnt / T * ps / T).sum())
+    for li, (El, i, sc) in enumerate([(E // 2, idx2[:, :, 0], sc2[0]), (E, idx2[:, :, 1], sc2[1])]):
+        assert abs(res[str(S)]["per_layer"][li] - np.mean([brute(b * S, (b + 1) * S, El, i, sc) for b in range(B)])) < 1e-6
+        assert abs(res[str(2 * S)]["per_layer"][li] - brute(0, 2 * S, El, i, sc)) < 1e-6 and abs(res["all"]["per_layer"][li] - brute(0, B * S, El, i, sc)) < 1e-6
+    assert res[str(S)]["n_blocks"] == B and res[str(2 * S)]["n_blocks"] == 1
+    log("selftest OK: pool-masked router == EmoRouterV2; accumulators == brute force; fixed-block LB loss == brute force")
 
 
 def main():
@@ -557,6 +623,8 @@ def main():
     ap.add_argument("--log-every", type=int, default=10)
     ap.add_argument("--max-first-ce", type=float, default=4.0, help="guard against mis-loaded weights")
     ap.add_argument("--selftest", action="store_true")
+    ap.add_argument("--lb-blocks", default="16384,131072,524288", help="token-block sizes for the fixed-granularity load-balancing loss (lb_loss.json; multiples of the instance length)")
+    ap.add_argument("--lb-only", action="store_true", help="only the load-balancing loss + mean CE (skips the routing statistics; much faster for the big models)")
     ap.add_argument("--ld-eval", default="predicted", choices=["predicted", "fixed"],
                     help="learned-d checkpoints: route with the head's predicted pool, or with the fixed eval pool (--restrict)")
     args = ap.parse_args()
