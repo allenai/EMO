@@ -1892,52 +1892,56 @@ def q5_page(body, path, title, lead):
     print(f"Wrote Q5 page -> {path} ({path.stat().st_size/1e6:.1f} MB)")
 
 ARTIFACT_CSS = """<style>
-:root { /* Disjoint Training Report: one reading column with a sticky contents rail; charts may run wider than the text measure */
-  --paper:#f3f5f7; --panel:#ffffff; --ink:#172029; --muted:#5d6975; --line:#d8dee5; --accent:#1d5b86; --accent-soft:#e6eff6;
+:root { /* Disjoint Training Report: one reading column with a sticky contents rail; charts may run wider than the text measure. Complete stylesheet: nothing inherited from the parent report */
+  --paper:#f3f5f7; --panel:#ffffff; --ink:#172029; --muted:#5d6975; --line:#d8dee5; --accent:#1d5b86; --accent-soft:#e6eff6; --good:#2a7f62; --bad:#b4232c;
   --font-display:"IBM Plex Serif",Georgia,"Times New Roman",serif; --font-body:"IBM Plex Sans","Helvetica Neue",Arial,sans-serif; --font-mono:"IBM Plex Mono",Menlo,Consolas,monospace;
   color-scheme:light; }
-html { scroll-behavior:smooth; } @media (prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } }
-body { margin:0; background:var(--paper); color:var(--ink); font-family:var(--font-body); font-size:15px; line-height:1.55; padding:0; }
-.rp-head { background:var(--panel); border-bottom:1px solid var(--line); padding:36px 24px 28px; }
+* { box-sizing:border-box; }
+html { scroll-behavior:smooth; background:var(--paper); } @media (prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } }
+body { margin:0; background:var(--paper); color:var(--ink); font-family:var(--font-body); font-size:15px; line-height:1.55; }
+a { color:var(--accent); }
+.rp-head { background:var(--panel); color:var(--ink); border-bottom:1px solid var(--line); padding:36px 24px 28px; }
 .rp-head > div { max-width:1400px; margin:0 auto; }
 .rp-head .eyebrow { margin:0 0 10px; font-size:12.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); }
-.rp-head h1 { margin:0 0 12px; font:600 40px/1.1 var(--font-display); letter-spacing:-.01em; text-wrap:balance; }
+.rp-head h1 { margin:0 0 12px; font:600 40px/1.1 var(--font-display); color:var(--ink); letter-spacing:-.01em; text-wrap:balance; }
 .rp-head .dek { margin:0; max-width:68ch; font-size:18px; line-height:1.45; color:var(--ink); }
 .rp-head .meta { margin:14px 0 0; max-width:80ch; font-size:13px; color:var(--muted); }
 .rp-wrap { max-width:1400px; margin:0 auto; padding:24px 24px 96px; display:grid; grid-template-columns:minmax(0,1fr); gap:32px; }
-.rp-toc { font-size:13.5px; }
+.rp-toc { display:block; background:transparent; padding:0; font-size:13.5px; }
 .rp-toc h2 { margin:0 0 8px; font:600 12.5px var(--font-body); letter-spacing:.06em; text-transform:uppercase; color:var(--muted); }
-.rp-toc ol { list-style:none; margin:0; padding:0; display:flex; flex-wrap:wrap; gap:4px 18px; }
+.rp-toc ol { list-style:none; margin:0; padding:0; max-width:none; display:flex; flex-wrap:wrap; gap:4px 18px; }
 .rp-toc li { margin:0; }
 .rp-toc a { color:var(--ink); text-decoration:none; display:inline-block; padding:3px 0; border-left:2px solid transparent; }
 .rp-toc a .n { display:inline-block; min-width:1.6em; color:var(--muted); font-variant-numeric:tabular-nums; }
-.rp-toc a:hover { color:var(--accent); }
-.rp-toc a.current { color:var(--accent); }
-.rp-toc a:focus-visible, .card a:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
-main { min-width:0; max-width:1120px; }
-main p, main ul, main ol { max-width:72ch; }
-main h3 { text-wrap:balance; }
+.rp-toc a:hover, .rp-toc a.current { color:var(--accent); }
+a:focus-visible, input:focus-visible, button:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+main { min-width:0; max-width:1120px; margin:0; padding:0; }
+section.tab { display:block; }
+main p, main ul, main ol { max-width:72ch; } main li { margin:4px 0; }
+main h3, main h4 { text-wrap:balance; }
 .card { background:var(--panel); border:1px solid var(--line); border-left:3px solid var(--line); border-radius:6px; padding:18px 22px; margin:18px 0; }
-.card h3 { margin:0 0 10px; font:600 15.5px/1.3 var(--font-body); letter-spacing:0; text-transform:none; color:var(--ink); scroll-margin-top:16px; }
-.card.ok { border-left-color:var(--accent); background:var(--accent-soft); }
-.card.ok h3 { color:var(--accent); }
-.card.ok p { font-size:16.5px; line-height:1.5; max-width:70ch; }
-.card.results { border-left-color:#2a7f62; }
+.card h3 { margin:0 0 10px; font:600 15.5px/1.3 var(--font-body); color:var(--ink); scroll-margin-top:16px; }
+.card.ok { border-left-color:var(--accent); background:var(--accent-soft); } .card.ok h3 { color:var(--accent); } .card.ok p { font-size:16.5px; line-height:1.5; max-width:70ch; }
+.card.results { border-left-color:var(--good); } .card.results h3 { color:var(--good); }
+.card.goal { border-left-color:var(--accent); } .card.method { border-left-color:#6b4fa3; }
 .what { color:var(--muted); font-size:14px; border-left:3px solid var(--line); padding-left:12px; margin:4px 0 12px; }
+.muted { color:var(--muted); font-weight:normal; font-size:.85em; }
+.note { font-size:13px; color:var(--muted); } .missing { color:var(--bad); font-size:13px; }
 .variant { margin:56px 0 8px; padding:0; border-left:0; border-top:3px solid var(--vc); scroll-margin-top:16px; }
 .variant > h2 { margin:16px 0 6px; font:600 26px/1.2 var(--font-display); color:var(--ink); letter-spacing:-.005em; text-wrap:balance; }
 .variant > h2 .vb { display:inline-block; min-width:30px; height:30px; line-height:30px; padding:0 6px; margin-right:12px; border-radius:4px; background:var(--vc); color:#fff; text-align:center; font:600 14px/30px var(--font-body); vertical-align:4px; }
 .variant > p.lead { margin:0 0 16px; color:var(--muted); font-size:15.5px; max-width:72ch; }
-.rp-index { display:block; }
-table { border-collapse:collapse; margin:12px 0; font-size:13.5px; font-variant-numeric:tabular-nums; }
+.rp-index { display:block; } .q3index li { margin:3px 0; }
+.scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; margin:12px 0; } .scroll table { margin:0; }
+table { border-collapse:collapse; margin:12px 0; font-size:13.5px; font-variant-numeric:tabular-nums; width:auto; max-width:100%; }
 th, td { border:0; border-bottom:1px solid var(--line); padding:7px 12px; text-align:left; vertical-align:top; }
 th { background:transparent; border-bottom:2px solid var(--ink); font-weight:600; }
-tbody tr:nth-child(even) { background:transparent; }
 tbody tr:hover { background:var(--accent-soft); }
-.scroll { overflow-x:auto; }
 code { font-family:var(--font-mono); font-size:.88em; background:var(--accent-soft); color:var(--ink); padding:1px 5px; border-radius:3px; }
-.lc svg, .rs-panel svg { font-family:var(--font-body); }
-.lc .lc-title, .rs-panel h4 { font-family:var(--font-body); }
+.figrow { display:flex; gap:16px; flex-wrap:wrap; margin:14px 0; }
+figure { flex:1 1 380px; min-width:0; max-width:720px; margin:0; } figure img { width:100%; max-width:100%; border:1px solid var(--line); border-radius:6px; background:#fff; }
+figcaption { font-size:12.5px; color:var(--muted); margin-top:4px; }
+.lc svg, .rs-panel svg { font-family:var(--font-body); } .lc .lc-title, .rs-panel h4 { font-family:var(--font-body); }
 @media (min-width:1100px) {
   .rp-wrap { grid-template-columns:230px minmax(0,1fr); gap:44px; }
   .rp-toc { position:sticky; top:20px; align-self:start; max-height:calc(100vh - 40px); overflow:auto; }
@@ -1972,16 +1976,14 @@ def artifact_page(body, path):
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Disjoint Training Report</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&family=IBM+Plex+Mono&display=swap" rel="stylesheet">
-<style>{CSS}</style>{EXTRA_CSS}</head>
+{ARTIFACT_CSS}</head>
 <body><header class="rp-head"><div><p class="eyebrow">OLMoE3-ladder 275M-active MoE &middot; EMO and standard routing &middot; 128 to 2000 experts</p>
 <h1>Disjoint Training Report</h1>
-<p class="dek">Split a mixture-of-experts model into K sub-models, each owning 1/K of the experts and a random 1/K of the documents, train them apart and merge them back. "
-"How far is the merged model from joint training, for which start models, and what closes the gap?</p>
-<p class="meta">Every number is held-out cross-entropy (nats per token) on a 300B-stream sample of 8,000 unseen documents, or the mean over the v3-small ppl sets; 1 = perfect balance for the load-balancing loss. "
-f"Built {stamp} by scripts/olmoe3_routing/build_report.py; the Overview, Q1&ndash;Q4 and the Explorer of the parent report stay on emo-reports.</p></div></header>
+<p class="dek">Split a mixture-of-experts model into K sub-models, each owning 1/K of the experts and a random 1/K of the documents, train them apart and merge them back. How far is the merged model from joint training, for which start models, and what closes the gap?</p>
+<p class="meta">Every number is held-out cross-entropy (nats per token) on a 300B-stream sample of 8,000 unseen documents, or the mean over the v3-small ppl sets; 1 = perfect balance for the load-balancing loss. Built {stamp} by scripts/olmoe3_routing/build_report.py; the Overview, Q1&ndash;Q4 and the Explorer of the parent report stay on emo-reports.</p></div></header>
 <div class="rp-wrap"><nav class="rp-toc" aria-label="Contents"><h2>Contents</h2><ol>{toc}</ol></nav>
 <main><section class="tab active" id="q5">{body}</section></main></div>
-{CHART_JS}{ARTIFACT_CSS}{ARTIFACT_JS}</body></html>""")
+{CHART_JS}{ARTIFACT_CSS}{ARTIFACT_JS}</body></html>""")   # the stylesheet is repeated after the body so it also wins over the inline <style> blocks of the sections)
     print(f"Wrote Disjoint Training Report -> {path} ({path.stat().st_size/1e6:.1f} MB)")
 
 
