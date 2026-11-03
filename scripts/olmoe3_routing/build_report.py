@@ -1884,13 +1884,18 @@ Q5_BACKUP = OUT / "q5_backup.html"
 EXTRA_CSS = "<style>.muted{color:var(--muted);font-weight:normal;font-size:0.85em} .what{color:#475569;font-size:0.93em;border-left:3px solid #cbd5e1;padding-left:10px;margin:4px 0 10px}</style>"
 
 
-def freeze_q5(body):
-    """Write a frozen, self-contained copy of the Q5 tab (claude_outputs/olmoe3_routing/q5_backup.html). Taken 2026-11-02 before the Q5
-    clean-up so the old and new Q5 can be compared side by side; `build_report.py --freeze-q5` overwrites it with the current Q5."""
+def q5_page(body, path, title, lead):
+    """A self-contained single-page copy of the Q5 tab (its own CSS, inline SVG charts, explorer and scripts; no external resources)."""
     import datetime; stamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
-    Q5_BACKUP.write_text(f"""<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Q5 backup ({stamp})</title><style>{CSS}</style>{EXTRA_CSS}
-<style>body{{padding:0 8px}}</style></head><body><p class="muted">Frozen copy of the Q5 tab, built {stamp}.</p><main><section class="tab active" id="q5">{body}</section></main>{CHART_JS}</body></html>""")
-    print(f"Froze Q5 -> {Q5_BACKUP} ({Q5_BACKUP.stat().st_size/1e6:.1f} MB)")
+    path.write_text(f"""<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{html.escape(title)}</title><style>{CSS}</style>{EXTRA_CSS}
+<style>body{{padding:0 8px}}</style></head><body><p class="muted">{lead} Built {stamp} by scripts/olmoe3_routing/build_report.py.</p><main><section class="tab active" id="q5">{body}</section></main>{CHART_JS}</body></html>""")
+    print(f"Wrote Q5 page -> {path} ({path.stat().st_size/1e6:.1f} MB)")
+
+
+def freeze_q5(body):
+    """Frozen copy of the Q5 tab (claude_outputs/olmoe3_routing/q5_backup.html), taken 2026-11-02 before the Q5 clean-up so the old and new Q5
+    can be compared side by side (Q5_backup tab); `build_report.py --freeze-q5` overwrites it with the current Q5."""
+    q5_page(body, Q5_BACKUP, "Q5 backup", "Frozen copy of the Q5 tab.")
 
 
 def build_q5_backup():
@@ -1907,9 +1912,12 @@ def build_q5_backup():
 
 
 def main():
-    import argparse; ap = argparse.ArgumentParser(); ap.add_argument("--freeze-q5", action="store_true", help="overwrite the frozen Q5 snapshot (Q5_backup tab) with the current Q5"); a = ap.parse_args()
+    import argparse; ap = argparse.ArgumentParser(); ap.add_argument("--freeze-q5", action="store_true", help="overwrite the frozen Q5 snapshot (Q5_backup tab) with the current Q5")
+    ap.add_argument("--q5-page", metavar="PATH", help="also write the current Q5 as a self-contained single page (published as a Claude artifact)"); a = ap.parse_args()
     q5_body = build_q5_controls()
     if a.freeze_q5: freeze_q5(q5_body)
+    if a.q5_page: q5_page(q5_body, Path(a.q5_page), "OLMoE3-ladder 275M \u00b7 Q5: random partition of experts and documents",
+                          "Q5 of the olmoe3_routing report (the Overview, Q1&ndash;Q4 and the Explorer stay on the emo-reports page).")
     tabs = [
         ("overview", "Overview", build_overview()),
         ("q1", QUESTIONS[0][1], build_q5()),
