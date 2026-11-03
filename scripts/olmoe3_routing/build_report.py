@@ -1891,6 +1891,99 @@ def q5_page(body, path, title, lead):
 <style>body{{padding:0 8px}}</style></head><body><p class="muted">{lead} Built {stamp} by scripts/olmoe3_routing/build_report.py.</p><main><section class="tab active" id="q5">{body}</section></main>{CHART_JS}</body></html>""")
     print(f"Wrote Q5 page -> {path} ({path.stat().st_size/1e6:.1f} MB)")
 
+ARTIFACT_CSS = """<style>
+:root { /* Disjoint Training Report: one reading column with a sticky contents rail; charts may run wider than the text measure */
+  --paper:#f3f5f7; --panel:#ffffff; --ink:#172029; --muted:#5d6975; --line:#d8dee5; --accent:#1d5b86; --accent-soft:#e6eff6;
+  --font-display:"IBM Plex Serif",Georgia,"Times New Roman",serif; --font-body:"IBM Plex Sans","Helvetica Neue",Arial,sans-serif; --font-mono:"IBM Plex Mono",Menlo,Consolas,monospace;
+  color-scheme:light; }
+html { scroll-behavior:smooth; } @media (prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } }
+body { margin:0; background:var(--paper); color:var(--ink); font-family:var(--font-body); font-size:15px; line-height:1.55; padding:0; }
+.rp-head { background:var(--panel); border-bottom:1px solid var(--line); padding:36px 24px 28px; }
+.rp-head > div { max-width:1400px; margin:0 auto; }
+.rp-head .eyebrow { margin:0 0 10px; font-size:12.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); }
+.rp-head h1 { margin:0 0 12px; font:600 40px/1.1 var(--font-display); letter-spacing:-.01em; text-wrap:balance; }
+.rp-head .dek { margin:0; max-width:68ch; font-size:18px; line-height:1.45; color:var(--ink); }
+.rp-head .meta { margin:14px 0 0; max-width:80ch; font-size:13px; color:var(--muted); }
+.rp-wrap { max-width:1400px; margin:0 auto; padding:24px 24px 96px; display:grid; grid-template-columns:minmax(0,1fr); gap:32px; }
+.rp-toc { font-size:13.5px; }
+.rp-toc h2 { margin:0 0 8px; font:600 12.5px var(--font-body); letter-spacing:.06em; text-transform:uppercase; color:var(--muted); }
+.rp-toc ol { list-style:none; margin:0; padding:0; display:flex; flex-wrap:wrap; gap:4px 18px; }
+.rp-toc li { margin:0; }
+.rp-toc a { color:var(--ink); text-decoration:none; display:inline-block; padding:3px 0; border-left:2px solid transparent; }
+.rp-toc a .n { display:inline-block; min-width:1.6em; color:var(--muted); font-variant-numeric:tabular-nums; }
+.rp-toc a:hover { color:var(--accent); }
+.rp-toc a.current { color:var(--accent); }
+.rp-toc a:focus-visible, .card a:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+main { min-width:0; max-width:1120px; }
+main p, main ul, main ol { max-width:72ch; }
+main h3 { text-wrap:balance; }
+.card { background:var(--panel); border:1px solid var(--line); border-left:3px solid var(--line); border-radius:6px; padding:18px 22px; margin:18px 0; }
+.card h3 { margin:0 0 10px; font:600 15.5px/1.3 var(--font-body); letter-spacing:0; text-transform:none; color:var(--ink); scroll-margin-top:16px; }
+.card.ok { border-left-color:var(--accent); background:var(--accent-soft); }
+.card.ok h3 { color:var(--accent); }
+.card.ok p { font-size:16.5px; line-height:1.5; max-width:70ch; }
+.card.results { border-left-color:#2a7f62; }
+.what { color:var(--muted); font-size:14px; border-left:3px solid var(--line); padding-left:12px; margin:4px 0 12px; }
+.variant { margin:56px 0 8px; padding:0; border-left:0; border-top:3px solid var(--vc); scroll-margin-top:16px; }
+.variant > h2 { margin:16px 0 6px; font:600 26px/1.2 var(--font-display); color:var(--ink); letter-spacing:-.005em; text-wrap:balance; }
+.variant > h2 .vb { display:inline-block; min-width:30px; height:30px; line-height:30px; padding:0 6px; margin-right:12px; border-radius:4px; background:var(--vc); color:#fff; text-align:center; font:600 14px/30px var(--font-body); vertical-align:4px; }
+.variant > p.lead { margin:0 0 16px; color:var(--muted); font-size:15.5px; max-width:72ch; }
+.rp-index { display:block; }
+table { border-collapse:collapse; margin:12px 0; font-size:13.5px; font-variant-numeric:tabular-nums; }
+th, td { border:0; border-bottom:1px solid var(--line); padding:7px 12px; text-align:left; vertical-align:top; }
+th { background:transparent; border-bottom:2px solid var(--ink); font-weight:600; }
+tbody tr:nth-child(even) { background:transparent; }
+tbody tr:hover { background:var(--accent-soft); }
+.scroll { overflow-x:auto; }
+code { font-family:var(--font-mono); font-size:.88em; background:var(--accent-soft); color:var(--ink); padding:1px 5px; border-radius:3px; }
+.lc svg, .rs-panel svg { font-family:var(--font-body); }
+.lc .lc-title, .rs-panel h4 { font-family:var(--font-body); }
+@media (min-width:1100px) {
+  .rp-wrap { grid-template-columns:230px minmax(0,1fr); gap:44px; }
+  .rp-toc { position:sticky; top:20px; align-self:start; max-height:calc(100vh - 40px); overflow:auto; }
+  .rp-toc ol { display:block; }
+  .rp-toc a { display:block; padding:5px 0 5px 10px; margin-left:-12px; }
+  .rp-toc a.current { border-left-color:var(--accent); }
+  .rp-index { display:none; }
+}
+@media (max-width:640px) {
+  .rp-head { padding:24px 16px 20px; } .rp-head h1 { font-size:30px; } .rp-head .dek { font-size:16px; }
+  .rp-wrap { padding:16px 16px 64px; } .card { padding:14px 16px; } table { font-size:12.5px; } th, td { padding:5px 8px; }
+}
+</style>"""
+ARTIFACT_JS = """<script>(function(){const links=[...document.querySelectorAll('.rp-toc a')];const secs=links.map(a=>document.querySelector(a.getAttribute('href'))).filter(Boolean);
+if(!secs.length||!('IntersectionObserver' in window))return;const set=id=>links.forEach(a=>a.classList.toggle('current',a.getAttribute('href')==='#'+id));
+const io=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting)set(e.target.id);});},{rootMargin:'-10% 0px -70% 0px'});secs.forEach(s=>io.observe(s));})();</script>"""
+
+
+def artifact_page(body, path):
+    """The Disjoint Training Report: Q5 as its own page (a Claude artifact). Same content as the Q5 tab, renumbered 1-8 (the 5A-5H
+    letters only mean something inside the parent report), with a header, a sticky contents rail and its own stylesheet."""
+    import datetime, re
+    letters = "ABCDEFGH"; num = lambda L: str(letters.index(L) + 1)
+    for L in letters:
+        body = body.replace(f'id="q5-5{L}"', f'id="s{num(L)}"').replace(f'href="#q5-5{L}"', f'href="#s{num(L)}"').replace(f'<span class="vb">5{L}</span>', f'<span class="vb">{num(L)}</span>').replace(f'<b>5{L}</b> &middot;', f'<b>{num(L)}</b> &middot;')
+    body = re.sub(r"boxes 5([A-H])((?:, 5[A-H])+)", lambda m: "sections " + ", ".join(num(x) for x in re.findall(r"5([A-H])", m.group(0))), body)
+    body = re.sub(r"box 5([A-H])", lambda m: "section " + num(m.group(1)), body)
+    body = body.replace('<div class="card info"><h3>Experiments</h3>', '<div class="card info rp-index"><h3>Experiments</h3>')
+    toc = "".join(f'<li><a href="#s{num(L[1])}"><span class="n">{num(L[1])}</span> {t}</a></li>' for L, t, _, _ in VARIANTS if L.startswith("5") and f'id="s{num(L[1])}"' in body)
+    stamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    path.write_text(f"""<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Disjoint Training Report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&family=IBM+Plex+Mono&display=swap" rel="stylesheet">
+<style>{CSS}</style>{EXTRA_CSS}</head>
+<body><header class="rp-head"><div><p class="eyebrow">OLMoE3-ladder 275M-active MoE &middot; EMO and standard routing &middot; 128 to 2000 experts</p>
+<h1>Disjoint Training Report</h1>
+<p class="dek">Split a mixture-of-experts model into K sub-models, each owning 1/K of the experts and a random 1/K of the documents, train them apart and merge them back. "
+"How far is the merged model from joint training, for which start models, and what closes the gap?</p>
+<p class="meta">Every number is held-out cross-entropy (nats per token) on a 300B-stream sample of 8,000 unseen documents, or the mean over the v3-small ppl sets; 1 = perfect balance for the load-balancing loss. "
+f"Built {stamp} by scripts/olmoe3_routing/build_report.py; the Overview, Q1&ndash;Q4 and the Explorer of the parent report stay on emo-reports.</p></div></header>
+<div class="rp-wrap"><nav class="rp-toc" aria-label="Contents"><h2>Contents</h2><ol>{toc}</ol></nav>
+<main><section class="tab active" id="q5">{body}</section></main></div>
+{CHART_JS}{ARTIFACT_CSS}{ARTIFACT_JS}</body></html>""")
+    print(f"Wrote Disjoint Training Report -> {path} ({path.stat().st_size/1e6:.1f} MB)")
+
 
 def freeze_q5(body):
     """Frozen copy of the Q5 tab (claude_outputs/olmoe3_routing/q5_backup.html), taken 2026-11-02 before the Q5 clean-up so the old and new Q5
@@ -1913,11 +2006,10 @@ def build_q5_backup():
 
 def main():
     import argparse; ap = argparse.ArgumentParser(); ap.add_argument("--freeze-q5", action="store_true", help="overwrite the frozen Q5 snapshot (Q5_backup tab) with the current Q5")
-    ap.add_argument("--q5-page", metavar="PATH", help="also write the current Q5 as a self-contained single page (published as a Claude artifact)"); a = ap.parse_args()
+    ap.add_argument("--q5-page", metavar="PATH", help="also write the current Q5 as the Disjoint Training Report, a self-contained single page (published as a Claude artifact)"); a = ap.parse_args()
     q5_body = build_q5_controls()
     if a.freeze_q5: freeze_q5(q5_body)
-    if a.q5_page: q5_page(q5_body, Path(a.q5_page), "OLMoE3-ladder 275M \u00b7 Q5: random partition of experts and documents",
-                          "Q5 of the olmoe3_routing report (the Overview, Q1&ndash;Q4 and the Explorer stay on the emo-reports page).")
+    if a.q5_page: artifact_page(q5_body, Path(a.q5_page))
     tabs = [
         ("overview", "Overview", build_overview()),
         ("q1", QUESTIONS[0][1], build_q5()),
