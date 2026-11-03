@@ -1900,12 +1900,12 @@ ARTIFACT_CSS = """<style>
 html { scroll-behavior:smooth; background:var(--paper); } @media (prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } }
 body { margin:0; background:var(--paper); color:var(--ink); font-family:var(--font-body); font-size:15px; line-height:1.55; }
 a { color:var(--accent); }
-.rp-head { background:var(--panel); color:var(--ink); border-bottom:1px solid var(--line); padding:36px 24px 28px; }
+.rp-head { background:var(--panel); color:var(--ink); border-bottom:1px solid var(--line); padding:32px 24px 26px; }
 .rp-head > div { max-width:1400px; margin:0 auto; }
 .rp-head .eyebrow { margin:0 0 10px; font-size:12.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); }
-.rp-head h1 { margin:0 0 12px; font:600 40px/1.1 var(--font-display); color:var(--ink); letter-spacing:-.01em; text-wrap:balance; }
+.rp-head h1 { margin:0; font:600 40px/1.1 var(--font-display); color:var(--ink); letter-spacing:-.01em; text-wrap:balance; }
 .rp-head .dek { margin:0; max-width:68ch; font-size:18px; line-height:1.45; color:var(--ink); }
-.rp-head .meta { margin:14px 0 0; max-width:80ch; font-size:13px; color:var(--muted); }
+.rp-foot { margin:48px 0 0; max-width:80ch; font-size:12.5px; color:var(--muted); border-top:1px solid var(--line); padding-top:12px; }
 .rp-wrap { max-width:1400px; margin:0 auto; padding:24px 24px 96px; display:grid; grid-template-columns:minmax(0,1fr); gap:32px; }
 .rp-toc { display:block; background:transparent; padding:0; font-size:13.5px; }
 .rp-toc h2 { margin:0 0 8px; font:600 12.5px var(--font-body); letter-spacing:.06em; text-transform:uppercase; color:var(--muted); }
@@ -1970,6 +1970,7 @@ def artifact_page(body, path):
     body = re.sub(r"boxes 5([A-H])((?:, 5[A-H])+)", lambda m: "sections " + ", ".join(num(x) for x in re.findall(r"5([A-H])", m.group(0))), body)
     body = re.sub(r"box 5([A-H])", lambda m: "section " + num(m.group(1)), body)
     body = body.replace('<div class="card info"><h3>Experiments</h3>', '<div class="card info rp-index"><h3>Experiments</h3>')
+    body = re.sub(r'<div class="card ok"><h3>Question</h3>.*?</div>', "", body, count=1, flags=re.S)   # the question card (user 2026-11-03: title only, no question box)
     toc = "".join(f'<li><a href="#s{num(L[1])}"><span class="n">{num(L[1])}</span> {t}</a></li>' for L, t, _, _ in VARIANTS if L.startswith("5") and f'id="s{num(L[1])}"' in body)
     stamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     path.write_text(f"""<!DOCTYPE html>
@@ -1977,12 +1978,9 @@ def artifact_page(body, path):
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&family=IBM+Plex+Mono&display=swap" rel="stylesheet">
 {ARTIFACT_CSS}</head>
-<body><header class="rp-head"><div><p class="eyebrow">OLMoE3-ladder 275M-active MoE &middot; EMO and standard routing &middot; 128 to 2000 experts</p>
-<h1>Disjoint Training Report</h1>
-<p class="dek">Split a mixture-of-experts model into K sub-models, each owning 1/K of the experts and a random 1/K of the documents, train them apart and merge them back. How far is the merged model from joint training, for which start models, and what closes the gap?</p>
-<p class="meta">Every number is held-out cross-entropy (nats per token) on a 300B-stream sample of 8,000 unseen documents, or the mean over the v3-small ppl sets; 1 = perfect balance for the load-balancing loss. Built {stamp} by scripts/olmoe3_routing/build_report.py; the Overview, Q1&ndash;Q4 and the Explorer of the parent report stay on emo-reports.</p></div></header>
+<body><header class="rp-head"><div><h1>Disjoint Training Report</h1></div></header>
 <div class="rp-wrap"><nav class="rp-toc" aria-label="Contents"><h2>Contents</h2><ol>{toc}</ol></nav>
-<main><section class="tab active" id="q5">{body}</section></main></div>
+<main><section class="tab active" id="q5">{body}</section><p class="rp-foot">Built {stamp} by scripts/olmoe3_routing/build_report.py. Held-out cross-entropy in nats per token on a 300B-stream sample of 8,000 unseen documents and on the v3-small ppl sets.</p></main></div>
 {CHART_JS}{ARTIFACT_CSS}{ARTIFACT_JS}</body></html>""")   # the stylesheet is repeated after the body so it also wins over the inline <style> blocks of the sections)
     print(f"Wrote Disjoint Training Report -> {path} ({path.stat().st_size/1e6:.1f} MB)")
 
