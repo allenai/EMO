@@ -1531,15 +1531,10 @@ def build_q5_controls():
         rows += [["random-pool EMO 512e, pools [16, 512] (each document's pool is a <i>random</i> set of experts of the EMO pool size; in-loop CE 3.036 vs 3.000 at 10B)", "2.61B / 276.7M", "130B (random-pool recipe)", "8e-4"],
                  ["random-pool EMO 512e, pools [64, 512] (no pool smaller than an eighth of the experts; 3.019 at 10B)", "2.61B / 276.7M", "130B (random-pool recipe)", "8e-4"]]
     models_5a = ["emo", "std"] + (["randsel", "randsel64"] if has("olmoe3_squares_randsel4") else [])
-    takes_5a = [
-        "<b>Four sub-models work for every start model.</b> The merge keeps improving with training and ends 0.03&ndash;0.10 behind joint training at 130B "
-        "(standard 0.10, EMO 0.08, random-pool 0.043, random-pool with pools of at least 64 0.028), ahead of its best single square for the EMO and random-pool models.",
-        "<b>Eight sub-models do not work for standard 512e or EMO 512e.</b> The gap to joint training is 0.18 and 0.15 at 130B and the merge ends no better than its best "
-        "single square (standard 2.458 vs 2.458, EMO 2.442 vs 2.473); the random-pool models cost 0.07 and 0.11.",
-        "<b>The standard model spikes right after the split.</b> Its first merge jumps above the start model by 0.04 with four squares (2.446 &rarr; 2.483 at 10.5B) and by 0.11 with eight "
-        "(2.558) before coming down; the EMO merges move by 0.00 and 0.045.",
-        "<b>Random pools remove the spike, but the model is worse overall.</b> The random-pool four-square merge is below its start model from the first point (2.488 vs 2.514), "
-        "yet the random-pool models trail throughout: 2.514 / 2.498 at 10B against 2.465 (EMO) and 2.446 (standard), and their joint baselines reach 2.354 / 2.336 at 130B against 2.295 / 2.278."]
+    takes_5a = ["Four sub-models work for every start model.",
+                "Eight sub-models do not work for standard 512e or EMO 512e.",
+                "The standard model spikes right after the split.",
+                "Random pools remove the spike, but the model is worse overall."]
     boxes["5A"] = (start_models(rows, "All four are 512 experts of hidden size 544, top-16, split into 4 groups of 128 or 8 groups of 64 with the same random expert groups and random document packs, "
                                       "merged and evaluated at every matched checkpoint from 10B to 130B; the random-pool models' squares and baselines train with their own random-pool recipe.",
                                 cols=["start model (10B tokens)", "total / active", "joint baseline continued to", "sub-model LR"])
