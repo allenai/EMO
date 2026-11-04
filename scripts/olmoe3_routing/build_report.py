@@ -1488,6 +1488,19 @@ def std_routing_section():
     C = RANDOM_CONTROL["std"]; a = C["arms"][0]; SQ = ROOT / "sparse_experts" / a["sqn"]
     return routing_similarity_section(SQ, C["model"], a["k"]) if (SQ / "groups.json").exists() else ""
 
+CX_PRESET_JS = ("<style>.cx-go{font:600 14px/1 inherit;font-family:inherit;color:#fff;background:#1d5b86;border:0;border-radius:6px;padding:10px 16px;cursor:pointer}"
+                ".cx-go:hover{background:#174a6d}.cx-go:focus-visible{outline:2px solid #1d5b86;outline-offset:2px}.cx-go-note{font-size:13px;color:#5d6975;margin:6px 0 0}</style>"
+                "<script>document.addEventListener('click',e=>{const b=e.target.closest('.cx-go');if(!b)return;const box=document.querySelector('.cx');if(!box)return;"
+                "const M=b.dataset.models.split(','),L=b.dataset.lines.split(',');box.querySelectorAll('input[data-m]').forEach(i=>{i.checked=M.includes(i.dataset.m);});"
+                "box.querySelectorAll('input[data-l]').forEach(i=>{i.checked=L.includes(i.dataset.l);});const r=box.querySelector('input[name=cx-metric][value='+(b.dataset.metric||'h')+']');if(r)r.checked=true;"
+                "const first=box.querySelector('input');first.dispatchEvent(new Event('change',{bubbles:true}));box.closest('.card').scrollIntoView({behavior:'smooth',block:'start'});});</script>")   # delegated: the buttons sit below this script
+
+
+def explorer_button(label, models, lines, metric="h", note=""):
+    """A button that configures the explorer at the top of Q5 (start models, lines, metric) and scrolls to it."""
+    return (f'<p><button type="button" class="cx-go" data-models="{",".join(models)}" data-lines="{",".join(lines)}" data-metric="{metric}">{label}</button></p>'
+            + (f'<p class="cx-go-note">{note}</p>' if note else ""))
+
 
 def build_q5_controls():
     """Q5: the random-partition controls, one box per start model (moved out of Q3 on 2026-09-24)."""
@@ -1505,7 +1518,7 @@ def build_q5_controls():
         "'own' square), as the mean of the K and the best one. The 10B point of every chart is the start model (untrained slices merge back to it exactly).</li></ol>"
         "<p>The same random expert groups and document packs are used for every 512-expert start model, so the boxes differ only in the start model; "
         "the 1000- and 2000-expert and half-size-expert models (box 5B) use the same document packs with their own random groups.</p>")
-    body += CX_CSS + control_explorer()
+    body += CX_CSS + control_explorer() + CX_PRESET_JS
     has = lambda d: (ROOT / "sparse_experts" / d / "groups.json").exists()
     SM_COLS = ["start model (10B tokens)", "routed experts", "top-k", "total / active", "joint baseline continued to", "sub-models: K &times; experts per group", "sub-model LR", "merge points"]
     def start_models(rows, note, cols=SM_COLS):
@@ -1517,11 +1530,14 @@ def build_q5_controls():
     if has("olmoe3_squares_randsel4"):
         rows += [["random-pool EMO 512e, pools [16, 512] (each document's pool is a <i>random</i> set of experts of the EMO pool size; in-loop CE 3.036 vs 3.000 at 10B)", "2.61B / 276.7M", "130B (random-pool recipe)", "8e-4"],
                  ["random-pool EMO 512e, pools [64, 512] (no pool smaller than an eighth of the experts; 3.019 at 10B)", "2.61B / 276.7M", "130B (random-pool recipe)", "8e-4"]]
+    models_5a = ["emo", "std"] + (["randsel", "randsel64"] if has("olmoe3_squares_randsel4") else [])
+    takes_5a = [("EMO 512e", EMORAND_TAKE), ("standard MoE 512e", STDRAND_TAKE)] + ([("random-pool EMO, pools [16, 512]", RANDSEL_TAKE), ("random-pool EMO, pools [64, 512]", RANDSEL64_TAKE)] if has("olmoe3_squares_randsel4") else [])
     boxes["5A"] = (start_models(rows, "All four are 512 experts of hidden size 544, top-16, split into 4 groups of 128 or 8 groups of 64 with the same random expert groups and random document packs, "
                                       "merged and evaluated at every matched checkpoint from 10B to 130B; the random-pool models' squares and baselines train with their own random-pool recipe.",
                                 cols=["start model (10B tokens)", "total / active", "joint baseline continued to", "sub-model LR"])
-                   + random_control("emo", with_charts=False) + random_control("std", with_charts=False, routing=False)
-                   + (random_control("randsel", with_charts=False) + random_control("randsel64", with_charts=False) if has("olmoe3_squares_randsel4") else ""))
+                   + card("results", "Results", explorer_button("Show these models in the explorer", models_5a, ["baseline", "m4", "m8", "start"],
+                                                                note="Opens the explorer above with the four start models, one panel each: joint baseline, merged 4 and merged 8 sub-models, and the start model.")
+                          + "<ul>" + "".join(f"<li><b>{m}.</b> {t}</li>" for m, t in takes_5a) + "</ul>"))
     # 5B: expert count (128e / 1000e / 2000e) and expert width (half-size 1024e)
     rows = []; b = ""
     if has("olmoe3_squares_s128rand4"):
