@@ -1508,16 +1508,18 @@ def build_q5_controls():
     body += CX_CSS + control_explorer()
     has = lambda d: (ROOT / "sparse_experts" / d / "groups.json").exists()
     SM_COLS = ["start model (10B tokens)", "routed experts", "top-k", "total / active", "joint baseline continued to", "sub-models: K &times; experts per group", "sub-model LR", "merge points"]
-    def start_models(rows, note):
-        return card("info", "Start models", table(SM_COLS, rows) + f"<p>{note}</p>")
+    def start_models(rows, note, cols=SM_COLS):
+        return card("info", "Start models", table(cols, rows) + f"<p>{note}</p>")
     boxes = {}
     # 5A: the four 512-expert start models under the same random split
-    rows = [["EMO 512e (the main model)", "512 &times; hidden 544", "16", "2.61B / 276.7M", "130B", "4 &times; 128 / 8 &times; 64", "8e-4 (4e-4 arms: boxes 5C, 5E, 5F)", "every matched checkpoint, 10B &rarr; 130B"],
-            ["standard MoE 512e", "512 &times; 544", "16", "2.61B / 276.7M", "130B", "4 &times; 128 / 8 &times; 64", "8e-4", "every matched checkpoint, 10B &rarr; 130B"]]
+    rows = [["EMO 512e (the main model)", "2.61B / 276.7M", "130B", "8e-4 (4e-4 arms: sections 3, 5, 6)"],
+            ["standard MoE 512e", "2.61B / 276.7M", "130B", "8e-4"]]
     if has("olmoe3_squares_randsel4"):
-        rows += [["random-pool EMO 512e, pools [16, 512] (each document's pool is a <i>random</i> set of experts of the EMO pool size; in-loop CE 3.036 vs 3.000 at 10B)", "512 &times; 544", "16", "2.61B / 276.7M", "130B (random-pool recipe)", "4 &times; 128 / 8 &times; 64", "8e-4", "every matched checkpoint, 10B &rarr; 130B"],
-                 ["random-pool EMO 512e, pools [64, 512] (no pool smaller than an eighth of the experts; 3.019 at 10B)", "512 &times; 544", "16", "2.61B / 276.7M", "130B (random-pool recipe)", "4 &times; 128 / 8 &times; 64", "8e-4", "every matched checkpoint, 10B &rarr; 130B"]]
-    boxes["5A"] = (start_models(rows, "All four share the random expert groups (per group size) and the random document packs; the random-pool models' squares and baselines train with their own random-pool recipe.")
+        rows += [["random-pool EMO 512e, pools [16, 512] (each document's pool is a <i>random</i> set of experts of the EMO pool size; in-loop CE 3.036 vs 3.000 at 10B)", "2.61B / 276.7M", "130B (random-pool recipe)", "8e-4"],
+                 ["random-pool EMO 512e, pools [64, 512] (no pool smaller than an eighth of the experts; 3.019 at 10B)", "2.61B / 276.7M", "130B (random-pool recipe)", "8e-4"]]
+    boxes["5A"] = (start_models(rows, "All four are 512 experts of hidden size 544, top-16, split into 4 groups of 128 or 8 groups of 64 with the same random expert groups and random document packs, "
+                                      "merged and evaluated at every matched checkpoint from 10B to 130B; the random-pool models' squares and baselines train with their own random-pool recipe.",
+                                cols=["start model (10B tokens)", "total / active", "joint baseline continued to", "sub-model LR"])
                    + random_control("emo", with_charts=False) + random_control("std", with_charts=False, routing=False)
                    + (random_control("randsel", with_charts=False) + random_control("randsel64", with_charts=False) if has("olmoe3_squares_randsel4") else ""))
     # 5B: expert count (128e / 1000e / 2000e) and expert width (half-size 1024e)
