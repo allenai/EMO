@@ -82,3 +82,19 @@ def test_router_with_bias_gamma(device: torch.device):
     assert router1.score_bias.nonzero().sum().item() > 0  # type: ignore
     assert router1.score_bias_batch_size_per_expert is not None
     assert router1.score_bias_batch_size_per_expert.nonzero().sum().item() == 0
+
+
+@pytest.mark.parametrize("device", DEVICES)
+def test_router_token_level_entropy_is_averaged_over_batches(device: torch.device):
+    router = MoELinearRouter(d_model=128, num_experts=4, top_k=2).to(device)
+    x = torch.randn((2, 4, 128), device=device)
+
+    router(x)
+    entropy_one_batch, _ = router.compute_metrics()["router token-level expert entropy"]
+
+    # Same input over three batches, so the per-batch average should not change.
+    for _ in range(3):
+        router(x)
+    entropy_three_batches, _ = router.compute_metrics()["router token-level expert entropy"]
+
+    torch.testing.assert_close(entropy_three_batches, entropy_one_batch)

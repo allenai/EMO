@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Removed redundant `hf auth login` CLI call in `launch_eval.py` that was triggering `/whoami-v2` rate limits when many Beaker eval jobs launched concurrently.
 - Fixed LM in-loop evaluator data-order drift across repeated runs by resetting loader bookkeeping before each pass and making deterministic reshuffling the default.
+- Fixed `router token-level expert entropy` being summed over micro-batches instead of averaged.
 
 ### Changed
 

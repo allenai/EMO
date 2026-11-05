@@ -615,7 +615,10 @@ class MoERouter(nn.Module):
 
         if self._router_tokenlevel_expert_entropy != 0.0:
             out["router token-level expert entropy"] = (
-                torch.tensor(self._router_tokenlevel_expert_entropy, device=self.device),
+                torch.tensor(
+                    self._router_tokenlevel_expert_entropy / self._num_batches_tracked,
+                    device=self.device,
+                ),
                 ReduceType.mean,
             )
 
