@@ -29,7 +29,8 @@ SP=/tmp/claude-0/-root-EMO/c7db74f2-bbe3-4a2c-9d37-93c64250d7c6/scratchpad; mkdi
 say() { echo "$(date -u +%m-%d\ %H:%M) [lr $KV $LR $MODE${5:+ $5}] $*"; }
 launch() { local name=$1; shift; local log=$SP/launch_$name.log; local u=""
   for attempt in 1 2 3 4 5 6; do
-    PYTHONPATH=external/OLMo-core/src python scripts/sparse_experts/olmoe3_beaker_cmd.py --name "$name" --gpus 1 --allocated -- "$@" > "$log" 2>&1
+    if [ "${OLMOE3_LAUNCHER:-python}" = cli ]; then python3 scripts/sparse_experts/olmoe3_beaker_cmd_cli.py --name "$name" --gpus 1 -- "$@" > "$log" 2>&1   # cold host: no olmo_core import
+    else PYTHONPATH=external/OLMo-core/src python scripts/sparse_experts/olmoe3_beaker_cmd.py --name "$name" --gpus 1 --allocated -- "$@" > "$log" 2>&1; fi
     u=$(sed 's/\x1b\[[0-9;]*m//g' "$log" | grep -aoE 'beaker.org/ex/[A-Z0-9]+' | head -1); [ -n "$u" ] && break; sleep 45; done
   say "$name: ${u:-LAUNCH FAILED}"; }
 launch_train() { local marker=$1 log=$2 script=$3; shift 3; [ -f "$marker" ] && return 0; local u=""
