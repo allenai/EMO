@@ -103,9 +103,11 @@ def main():
         arrays[f"logits_L{l}"] = torch.cat(samples[l]).numpy()
         assert arrays[f"logits_L{l}"].shape == (len(flat), E[l]), arrays[f"logits_L{l}"].shape
     a.out_dir.mkdir(parents=True, exist_ok=True)
-    np.savez(a.out_dir / "router_logits.npz", **arrays)
+    import os
+    tmp = a.out_dir / f"router_logits.{os.getpid()}.tmp.npz"; np.savez(tmp, **arrays); os.replace(tmp, a.out_dir / "router_logits.npz")   # atomic: an allocated and an unallocated copy of a job may run the same pass
+    mtmp = a.out_dir / f"meta.{os.getpid()}.tmp"
     json.dump({"checkpoint": str(a.checkpoint), "E_layer": E, "top_k": K, "n_instances": N, "n_tokens": T, "n_sample": int(len(flat)), "seed": a.seed,
-               "mean_ce": ce_sum / ce_n, "seconds": round(time.time() - t0, 1)}, open(a.out_dir / "meta.json", "w"))
+               "mean_ce": ce_sum / ce_n, "seconds": round(time.time() - t0, 1)}, open(mtmp, "w")); os.replace(mtmp, a.out_dir / "meta.json")
     log(f"done: mean CE {ce_sum / ce_n:.4f}, {time.time() - t0:.0f}s -> {a.out_dir}")
 
 

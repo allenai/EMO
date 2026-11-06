@@ -10,7 +10,7 @@ MODE="${1:-run}"
 S=sparse_experts; W=/weka/oe-training-default/ryanwang/EMO/sparse_experts; SAMPLE=sample_8k_300b.npz
 R=$S/olmoe3_routing/runs_routerlogits; LOGS=$R/logs; mkdir -p $LOGS
 say() { echo "$(date -u +%m-%d\ %H:%M) [rlogits] $*"; }
-launch() { local name=$1; shift; local mark=$LOGS/$name.launched log=$LOGS/launch_$name.log u=""
+launch() { local name=$1; shift; local mark=$LOGS/$name${RLOGITS_UNALLOCATED:+-u1}.launched log=$LOGS/launch_$name${RLOGITS_UNALLOCATED:+-u1}.log u=""
   [ -f $mark ] && [ $MODE != relaunch ] && return 0
   if [ $MODE = dry ]; then say "would launch $name: $(echo "$*" | grep -o 'router_logits.py' | wc -l) passes"; return 0; fi
   for attempt in 1 2 3 4 5 6; do
