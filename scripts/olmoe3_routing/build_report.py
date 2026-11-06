@@ -1509,7 +1509,12 @@ def explorer_button(label, models, lines, metric="h", note=""):
     return (f'<p><button type="button" class="cx-go" data-models="{",".join(models)}" data-lines="{",".join(lines)}" data-metric="{metric}">{label}</button></p>'
             + (f'<p class="cx-go-note">{note}</p>' if note else ""))
 
-SPARSE_SQ_TAKE = []   # short observations, filled in when the merges are evaluated (user: one line each, no numbers)
+SPARSE_SQ_TAKE = [   # short observations, one line each, no numbers (user rule 2026-11-04)
+    "Run as the normal 16-active model, both sparser merges are worse than the existing arm, and the one normalised over the 4 is far off.",
+    "That gap is a mismatch at merge time: run with 4 active experts, the way their squares were trained, both merges recover.",
+    "Run that way, the top-16-weights merge beats the existing arm's merge at every point, and the weights-over-the-4 merge matches it.",
+    "The existing arm's own merge also improves when run with 4 active experts under top-16 weights, and is the best merged model here.",
+    "The jointly trained model gets worse under the same truncation, so it is merged models specifically that do better with fewer active experts."]
 
 
 def sparse_squares_section():
