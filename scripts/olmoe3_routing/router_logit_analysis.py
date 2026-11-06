@@ -44,7 +44,8 @@ def load(model, tag):
 
 def groups_of(sqn, K):
     G = json.load(open(S / sqn / "groups.json"))["groups"]
-    g = {l: [np.asarray(G[str(l)][k], dtype=np.int64) for k in range(K)] for l in LAYERS if str(l) in G and len(G[str(l)]) == K and len(G[str(l)][0]) < sum(len(x) for x in G[str(l)])}
+    whole = lambda gl: len(set(gl[0])) == len(set().union(*gl))   # a layer kept whole lists ALL its experts in every group (layer 1)
+    g = {l: [np.asarray(G[str(l)][k], dtype=np.int64) for k in range(K)] for l in LAYERS if str(l) in G and len(G[str(l)]) == K and not whole(G[str(l)])}
     ref = g[2]
     return {l: g.get(l, ref) for l in LAYERS}, [l for l in LAYERS if l in g]   # groups per layer (layer 1: layer-2 groups as reference), partitioned layers
 
