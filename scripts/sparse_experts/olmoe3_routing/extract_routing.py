@@ -445,7 +445,7 @@ def run(args):
     ce_sum, ce_n = 0.0, 0   # running CE for --lb-only (Accum is skipped there)
     args.out_dir.mkdir(parents=True, exist_ok=True)
     raw_n = min(args.raw_instances, N)
-    raw = np.lib.format.open_memmap(args.out_dir / "raw_topk.npy", mode="w+", dtype=np.int16, shape=(raw_n, S, L, k)) if raw_n and not args.lb_only else None
+    raw = np.lib.format.open_memmap(args.out_dir / "raw_topk.npy", mode="w+", dtype=np.int16, shape=(raw_n, S, L, k)) if raw_n and not args.lb_only and not args.ce_only else None
     t0 = time.time(); B = args.batch_size
     with torch.no_grad(), torch.autocast("cuda", dtype=torch.bfloat16):
         for b0 in range(0, N, B):
@@ -469,6 +469,12 @@ def run(args):
             out = model(ids, labels=labels, loss_reduction="none", return_logits=False)
             loss = out.ce_loss if hasattr(out, "ce_loss") else out  # LMOutputWithLoss -> per-token CE (B, S)
             assert loss.shape == ids.shape, loss.shape
+            if args.ce_only:   # mean CE only: no routing statistics, so layers may differ in top_k (sparser-square evaluation views)
+                valid = labels != -100; ce_sum += float(loss[valid].sum()); ce_n += int(valid.sum())
+                if b0 == 0:
+                    assert loss[valid].mean().item() < args.max_first_ce, f"first-batch CE {loss[valid].mean().item():.3f} > {args.max_first_ce}: weights probably mis-loaded"
+                if (b0 // B) % args.log_every == 0: log(f"{b0 + ids.shape[0]}/{N} instances, running CE {ce_sum / max(1, ce_n):.4f}")
+                continue
             idx = torch.stack([captured[l][0] for l in MOE_LAYERS], dim=2).long()  # (B, S, L, k)
             scores = [captured[l][1] if captured[l][1].shape[-1] == E else torch.nn.functional.pad(captured[l][1], (0, E - captured[l][1].shape[-1])) for l in MOE_LAYERS]
             # sanity: restricted layers must route inside a pool of size <= P per document
@@ -504,6 +510,10 @@ def run(args):
                 el = time.time() - t0
                 log(f"{done}/{N} instances, {done*S/el/1e3:.0f}k tok/s, loss {loss[valid].mean().item():.3f}, eta {(N-done)*S/(done*S/el)/60:.1f} min")
     for h in hooks: h.remove()
+    if args.ce_only:
+        json.dump({"checkpoint": str(args.checkpoint), "restrict": args.restrict, "kinds": kinds, "n_instances": int(N), "n_tokens": int(N * S), "n_docs": n_doc, "mean_ce": ce_sum / max(1, ce_n),
+                   "E": E, "top_k": {str(l): int(routers[l].top_k) for l in MOE_LAYERS}, "rank": args.rank, "world": args.world, "ce_only": True, "elapsed_s": time.time() - t0}, open(args.out_dir / "meta.json", "w"), indent=1)
+        (args.out_dir / "DONE").touch(); log(f"done (ce-only): mean CE {ce_sum / max(1, ce_n):.4f}; saved to {args.out_dir}"); return
     json.dump(dict(checkpoint=str(args.checkpoint), restrict=args.restrict, E=E, E_layer={str(l): E_layer[l] for l in MOE_LAYERS}, top_k=k, n_instances=int(N), n_tokens=int(N * S),
                    mean_ce=ce_sum / max(1, ce_n), blocks=lb.result()), open(args.out_dir / "lb_loss.json", "w"), indent=1)
     if args.lb_only:
@@ -624,6 +634,7 @@ def main():
     ap.add_argument("--max-first-ce", type=float, default=4.0, help="guard against mis-loaded weights")
     ap.add_argument("--selftest", action="store_true")
     ap.add_argument("--lb-blocks", default="16384,131072,524288", help="token-block sizes for the fixed-granularity load-balancing loss (lb_loss.json; multiples of the instance length)")
+    ap.add_argument("--ce-only", action="store_true", help="only the mean CE (meta.json + DONE in --out-dir); works when layers differ in top_k")
     ap.add_argument("--lb-only", action="store_true", help="only the load-balancing loss + mean CE (skips the routing statistics; much faster for the big models)")
     ap.add_argument("--ld-eval", default="predicted", choices=["predicted", "fixed"],
                     help="learned-d checkpoints: route with the head's predicted pool, or with the fixed eval pool (--restrict)")
