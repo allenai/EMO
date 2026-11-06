@@ -74,18 +74,46 @@ def square_stats(zs, zm, grp, part):
     """zs: the K squares' dumps (own expert order = groups.json order); zm: the merged model at the same point (or None)."""
     out = {}
     for l in LAYERS:
-        rows, sds, zz, t1, cor = [], [], [], [], []
+        rows, sds, zz, t1, cor, qq = [], [], [], [], [], []
         for k, z in enumerate(zs):
             W = z[f"weight_L{l}"].astype(np.float32); X = z[f"logits_L{l}"].astype(np.float32)
             mx = X.max(1, keepdims=True)
+            qq.append([float(v) for v in np.percentile(X, QS)])
             rows.append(float(np.linalg.norm(W, axis=1).mean())); sds.append(float(X.std(1).mean())); zz.append(float((mx[:, 0] + np.log(np.exp(X - mx).sum(1))).mean())); t1.append(float(mx.mean()))
             if zm is not None and l in part:
                 M = zm[f"logits_L{l}"].astype(np.float32)[:, grp[l][k]]
                 a = X - X.mean(1, keepdims=True); b = M - M.mean(1, keepdims=True)
                 cor.append(float((a * b).sum() / np.sqrt((a * a).sum() * (b * b).sum())))
-        out[str(l)] = dict(sq_row_norm_g=rows, sq_logit_std_g=sds, sq_z_g=zz, sq_top1_g=t1, sq_vs_merged_corr_g=cor,
+        out[str(l)] = dict(sq_q_g=qq, sq_row_norm_g=rows, sq_logit_std_g=sds, sq_z_g=zz, sq_top1_g=t1, sq_vs_merged_corr_g=cor,
                            sq_row_norm=float(np.mean(rows)), sq_logit_std=float(np.mean(sds)), sq_z=float(np.mean(zz)), sq_vs_merged_corr=float(np.mean(cor)) if cor else None)
     return out
+
+
+def figures(res):
+    """One box-plot figure per model, K and point: per layer, the distribution (5 / 25 / 50 / 75 / 95 % of all sampled tokens x experts) of the logits
+    of each square's experts in the joint baseline (grey), in the merged model (colour) and in the square's own model (outline)."""
+    import matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot as plt
+    FIG = OUT / "router_logits_figs"; FIG.mkdir(parents=True, exist_ok=True); n = 0
+    box = lambda q, pos: dict(med=q[3], q1=q[2], q3=q[4], whislo=q[1], whishi=q[5], fliers=[])
+    for model, arms in res.items():
+        for K, r in arms.items():
+            for pt, e in r["points"].items():
+                if "merged" not in e: continue
+                K_ = int(K); fig, axes = plt.subplots(1, 9, figsize=(2.3 * 9, 3.2), sharey=False)
+                for ax, l in zip(axes, LAYERS):
+                    kinds = [("joint", "#9ca3af", -0.27), ("merged", "#ea580c" if K_ == 8 else "#2563eb", 0.0)]
+                    for kind, col, dx in kinds:
+                        if kind not in e: continue
+                        ax.bxp([box(q, i) for i, q in enumerate(e[kind][str(l)]["q_g"])], positions=[i + dx for i in range(K_)], widths=0.24, showfliers=False, patch_artist=True,
+                               boxprops=dict(facecolor=col, edgecolor=col, alpha=0.85), medianprops=dict(color="black", lw=1), whiskerprops=dict(color=col), capprops=dict(color=col))
+                    if "squares" in e:
+                        ax.bxp([box(q, i) for i, q in enumerate(e["squares"][str(l)]["sq_q_g"])], positions=[i + 0.27 for i in range(K_)], widths=0.24, showfliers=False, patch_artist=True,
+                               boxprops=dict(facecolor="white", edgecolor="#111827"), medianprops=dict(color="#111827", lw=1), whiskerprops=dict(color="#111827"), capprops=dict(color="#111827"))
+                    ax.set_title(f"layer {l}" + (" (whole)" if l not in r["partitioned_layers"] else ""), fontsize=9); ax.set_xticks(range(K_)); ax.set_xticklabels([str(i) for i in range(K_)], fontsize=7)
+                    ax.tick_params(axis="y", labelsize=7); ax.grid(axis="y", color="#e5e7eb", lw=0.6); ax.set_axisbelow(True)
+                axes[0].set_ylabel("router logit", fontsize=8); fig.supxlabel("square (expert group)", fontsize=8)
+                fig.tight_layout(); fig.savefig(FIG / f"{model}_k{K}_{pt}.png", dpi=110); plt.close(fig); n += 1
+    print(f"wrote {n} figures to {FIG}")
 
 
 def main():
@@ -113,6 +141,7 @@ def main():
     n = sum(len(p) for m in res.values() for a in m.values() for p in a["points"].values())
     print(f"wrote {OUT / 'router_logits.json'}: {n} model x point entries; missing dumps: {len(set(missing))}")
     for m in sorted(set(missing))[:40]: print("  missing", m)
+    figures(res)
 
 
 if __name__ == "__main__":
