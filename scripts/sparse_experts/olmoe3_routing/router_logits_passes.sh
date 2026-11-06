@@ -14,7 +14,8 @@ launch() { local name=$1; shift; local mark=$LOGS/$name.launched log=$LOGS/launc
   [ -f $mark ] && [ $MODE != relaunch ] && return 0
   if [ $MODE = dry ]; then say "would launch $name: $(echo "$*" | grep -o 'router_logits.py' | wc -l) passes"; return 0; fi
   for attempt in 1 2 3 4 5 6; do
-    PYTHONPATH=external/OLMo-core/src python scripts/sparse_experts/olmoe3_beaker_cmd.py --name "$name" --gpus 1 --allocated -- "$@" > "$log" 2>&1
+    if [ "${RLOGITS_LAUNCHER:-cli}" = cli ]; then python3 scripts/sparse_experts/olmoe3_beaker_cmd_cli.py --name "$name" --gpus 1 -- "$@" > "$log" 2>&1   # no olmo_core import (cold hosts)
+    else PYTHONPATH=external/OLMo-core/src python scripts/sparse_experts/olmoe3_beaker_cmd.py --name "$name" --gpus 1 --allocated -- "$@" > "$log" 2>&1; fi
     u=$(sed 's/\x1b\[[0-9;]*m//g' "$log" | grep -aoE 'beaker.org/ex/[A-Z0-9]+' | head -1); [ -n "$u" ] && break; sleep 45; done
   say "$name: ${u:-LAUNCH FAILED}"; [ -n "$u" ] && echo "$u" > $mark; }
 step_of() { local d=$1 which=$2; ls $d 2>/dev/null | grep -E '^step[0-9]+$' | sed 's/step//' | sort -n | { [ $which = min ] && head -n 1 || tail -n 1; }; }
