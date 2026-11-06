@@ -264,7 +264,9 @@ VARIANTS = [("A", "EMO 512e, 4 sub-models", "#2563eb", "the main experiment"),
             ("5E", "Re-merge and re-partition", "#be123c", "merging and re-splitting into fresh random groups during training: every 10B for the EMO 512e 4-square control at LR 4e-4, and once at 61B for the standard 512e control"),
             ("5F", "Freezing parameters in the squares", "#7c3aed", "which parameters the squares need to train: routers, attention and everything-but-the-experts frozen in the 8-square EMO 512e control at LR 4e-4, and the router weights of the squares against the joint baseline"),
             ("5G", "Routing of the merged model", "#0f766e", "how the merged standard 512e control routes compared with the continued baseline and with its own squares, checkpoint by checkpoint"),
-            ("5H", "Load balancing (512e / 1000e / 2000e)", "#475569", "expert-load CV of the joint baselines and of their merged four-square models, and the in-loop load-balancing loss of joint training against the combined four- and eight-square sub-model training (all squares at sub-model LR 4e-4)")]
+            ("5H", "Load balancing (512e / 1000e / 2000e)", "#475569", "expert-load CV of the joint baselines and of their merged four-square models, and the in-loop load-balancing loss of joint training against the combined four- and eight-square sub-model training (all squares at sub-model LR 4e-4)"),
+            ("5I", "Sparser squares", "#16a34a", "an eight-way split leaves each square with 64 experts per layer but still 16 active, far denser than the 16 of 512 it is merged back into: the same 8 squares at LR 4e-4 with only 4 of 64 active"),
+            ("5J", "Router weights and logits after disjoint training", "#9333ea", "do the squares' routers drift apart in scale or offset while they train separately: router rows and router logits of the squares, the merged models and the joint baselines, layer by layer")]
 
 
 def variant(letter, inner, tab="q3"):
@@ -1111,6 +1113,11 @@ def control_explorer_data():
                 if not HF.exists(): continue
                 ser[key] = {"h": [hb(C["start"]) if st == 19074 else (_ce(HF / f"merged_match{st}/none") if st in (30000, 38148, 57221) else None) for st in steps],
                             "p": [ref_ppl if st == 19074 else (_ppl(PF / f"match{st}.json") if st in (30000, 38148, 57221) else None) for st in steps]}
+            for tag, key in (("top4", "t8"), ("top4n16", "t8n")):  # sparser squares of the 8-square 4e-4 arm (2026-11-06): top-4 of 64 in layers 2-9
+                HT = R / f"runs_heldout300b_emorand8_lr4e-4_{tag}"; PT = ROOT / f"sparse_experts/olmoe3_squares_emorand8_lr4e-4_{tag}/ppl_validation/merged"
+                if not HT.exists() or not any(_ce(HT / f"merged_match{st}/none") is not None for st in (30000, 38148, 57221)): continue
+                ser[key] = {"h": [hb(C["start"]) if st == 19074 else (_ce(HT / f"merged_match{st}/none") if st in (30000, 38148, 57221) else None) for st in steps],
+                            "p": [ref_ppl if st == 19074 else (_ppl(PT / f"match{st}.json") if st in (30000, 38148, 57221) else None) for st in steps]}
             if rp_pts and "l4" in ser:  # re-merged + re-partitioned every 10B from the 4e-4 arm's 20B merge
                 i20 = steps.index(38148)
                 ser["rp4"] = {"h": [ser["l4"]["h"][i20] if st == 38148 else (_ce(RPH / f"merged_c{rp_pts[st]}/none") if st in rp_pts else None) for st in steps],
@@ -1128,6 +1135,7 @@ EXPLORER_LINES = [  # key, label, colour, dashed, needs-ppl
     ("rp4", "merged, 4 squares, LR 4e-4, re-merged + re-partitioned every 10B (EMO only)", "#be123c", False),
     ("f8r", "merged, 8 squares, LR 4e-4, routers frozen (EMO only)", "#7c3aed", True), ("f8ra", "merged, 8 squares, LR 4e-4, routers + attention frozen (EMO only)", "#d97706", True),
     ("f8e", "merged, 8 squares, LR 4e-4, everything frozen except experts (EMO only)", "#0891b2", True),
+    ("t8", "merged, 8 squares, LR 4e-4, squares activate 4 of 64 (EMO only)", "#16a34a", False), ("t8n", "merged, 8 squares, LR 4e-4, squares activate 4 of 64 with top-16 weights (EMO only)", "#16a34a", True),
     ("rm", "re-merged + re-partitioned at 61B (std only)", "#7c3aed", False), ("rs", "squares after re-partition, mean of 4 (std only)", "#7c3aed", True),
     ("start", "start model (10B)", "#64748b", True)]
 EXPLORER_DEFAULT = ["baseline", "m4", "m8", "l4", "l8", "s4", "s8", "start"]
@@ -1501,6 +1509,32 @@ def explorer_button(label, models, lines, metric="h", note=""):
     return (f'<p><button type="button" class="cx-go" data-models="{",".join(models)}" data-lines="{",".join(lines)}" data-metric="{metric}">{label}</button></p>'
             + (f'<p class="cx-go-note">{note}</p>' if note else ""))
 
+SPARSE_SQ_TAKE = []   # short observations, filled in when the merges are evaluated (user: one line each, no numbers)
+
+
+def sparse_squares_section():
+    """Box 5I (user request 2026-11-06): the EMO 512e eight-square control at sub-model LR 4e-4 with the squares' cut-down layers 2-9 at 4 active
+    experts of 64 instead of 16 of 64 (layer 1, whole, stays at 16 of 512; EMO pool range [16, 64] unchanged; the merged model is the stock top-16
+    model). Two weight rules: top4 = the stock router at top_k 4 (the 4 kept scores normalised to sum to 4); top4n16 = weights normalised over the
+    top 16 as in the full model, only the 4 largest kept (emo_square_topk.py). squares_lr_sweep.sh k8 4e-4 w1w2 none top4 | top4n16."""
+    d = next((x for x in control_explorer_data() if x["id"] == "emo"), None)
+    if d is None: return ""
+    ser = d["series"]; pts = [(15.729, "15.7B"), (20.0, "20B"), (30.0, "30B")]; idx = [next((i for i, t in enumerate(d["toks"]) if abs(t - v) < 0.01), None) for v, _ in pts]
+    f3 = lambda v: "&ndash;" if v is None else f"{v:.3f}"
+    val = lambda key, m, i: None if i is None or key not in ser or m not in ser[key] else ser[key][m][i]
+    arms = [("baseline", "joint training"), ("l8", "8 squares, 16 of 64 active (the existing arm)"), ("t8", "8 squares, 4 of 64 active, weights normalised over the 4"),
+            ("t8n", "8 squares, 4 of 64 active, weights normalised over the top 16")]
+    tbl = table(["model", *[f"held-out CE @{l}" for _, l in pts], *[f"ppl sets @{l}" for _, l in pts]],
+                [[lab, *[f3(val(k, "h", i)) for i in idx], *[f3(val(k, "p", i)) for i in idx]] for k, lab in arms])
+    done = any(val(k, "h", i) is not None for k in ("t8", "t8n") for i in idx)
+    what = ("EMO 512e, 8 random squares at sub-model LR 4e-4, 10B &rarr; 30B, merged at the usual three points. In the split layers 2&ndash;9 each square owns 64 experts; "
+            "the existing arm activates 16 of them per token (25%), the new arms 4 (6%), close to the full model's 16 of 512 (3%). Layer 1 is whole in every square and stays at "
+            "16 of 512, the per-document pool range stays [16, 64], and the merged model is the normal top-16 model, so only the squares' activation count changes. "
+            "Two ways to weight the 4 kept experts: normalise their scores among themselves (the router's normal rule at top-4), or compute the weights as the top-16 router does and keep the 4 largest unchanged.")
+    res = (explorer_button("Show this experiment in the explorer", ["emo"], ["baseline", "l8", "t8", "t8n", "start"]) + tbl
+           + ("<ul>" + "".join(f"<li>{t}</li>" for t in SPARSE_SQ_TAKE) + "</ul>" if SPARSE_SQ_TAKE else "" if done else "<p class=\"note\">Training in progress (launched 2026-11-06); the table fills in as the merges are evaluated.</p>"))
+    return card("info", "Setup", f"<p>{what}</p>") + card("results", "Results", res)
+
 
 def build_q5_controls():
     """Q5: the random-partition controls, one box per start model (moved out of Q3 on 2026-09-24)."""
@@ -1566,6 +1600,7 @@ def build_q5_controls():
     boxes["5F"] = freeze_section() + router_norm_section()
     boxes["5G"] = std_routing_section()
     boxes["5H"] = load_balance_section()
+    boxes["5I"] = sparse_squares_section()
     boxes = {L: inner for L, inner in boxes.items() if inner}
     body += VARIANT_CSS + card("info", "Experiments",
         '<ul class="q3index">' + "".join(f'<li><a href="#q5-{L}"><b>{L}</b> &middot; {t}</a> &mdash; {bl}</li>' for L, t, _, bl in VARIANTS if L in boxes) + "</ul>")
@@ -1985,11 +2020,11 @@ def artifact_page(body, path):
     """The Disjoint Training Report: Q5 as its own page (a Claude artifact). Same content as the Q5 tab, renumbered 1-8 (the 5A-5H
     letters only mean something inside the parent report), with a header, a sticky contents rail and its own stylesheet."""
     import datetime, re
-    letters = "ABCDEFGH"; num = lambda L: str(letters.index(L) + 1)
+    letters = "ABCDEFGHIJ"; num = lambda L: str(letters.index(L) + 1)
     for L in letters:
         body = body.replace(f'id="q5-5{L}"', f'id="s{num(L)}"').replace(f'href="#q5-5{L}"', f'href="#s{num(L)}"').replace(f'<span class="vb">5{L}</span>', f'<span class="vb">{num(L)}</span>').replace(f'<b>5{L}</b> &middot;', f'<b>{num(L)}</b> &middot;')
-    body = re.sub(r"boxes 5([A-H])((?:, 5[A-H])+)", lambda m: "sections " + ", ".join(num(x) for x in re.findall(r"5([A-H])", m.group(0))), body)
-    body = re.sub(r"box 5([A-H])", lambda m: "section " + num(m.group(1)), body)
+    body = re.sub(r"boxes 5([A-J])((?:, 5[A-J])+)", lambda m: "sections " + ", ".join(num(x) for x in re.findall(r"5([A-J])", m.group(0))), body)
+    body = re.sub(r"box 5([A-J])", lambda m: "section " + num(m.group(1)), body)
     body = body.replace('<div class="card info"><h3>Experiments</h3>', '<div class="card info rp-index"><h3>Experiments</h3>')
     body = re.sub(r'<div class="card ok"><h3>Question</h3>.*?</div>', "", body, count=1, flags=re.S)   # the question card (user 2026-11-03: title only, no question box)
     toc = "".join(f'<li><a href="#s{num(L[1])}"><span class="n">{num(L[1])}</span> {t}</a></li>' for L, t, _, _ in VARIANTS if L.startswith("5") and f'id="s{num(L[1])}"' in body)

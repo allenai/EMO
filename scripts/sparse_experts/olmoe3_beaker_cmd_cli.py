@@ -15,6 +15,7 @@ REF = "01M6F20487GRQHZ19DS2NT8JYM"   # lbloss-emo2000-merged8_step38148 (2026-11
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument("--name", required=True); ap.add_argument("--gpus", type=int, default=1); ap.add_argument("--ref", default=REF)
     ap.add_argument("--workspace", default="ai2/flex2"); ap.add_argument("--allocated", action="store_true", help="accepted for compatibility (the reference job is allocated)")
+    ap.add_argument("--unallocated", action="store_true", help="unallocated filler slot (minRuntime 0, autoResume): starts in minutes when the allocated 1-GPU queue is stuck, may be preempted")
     ap.add_argument("--dry-run", action="store_true"); ap.add_argument("cmd", nargs=argparse.REMAINDER); a = ap.parse_args()
     cmd = a.cmd[1:] if a.cmd and a.cmd[0] == "--" else a.cmd
     if not cmd: sys.exit("no command")
@@ -25,6 +26,7 @@ def main():
     if r.returncode: sys.exit(f"spec of {a.ref} failed: {(r.stdout + r.stderr)[-300:]}")
     spec = json.loads(r.stdout[r.stdout.index("{"):]); (task,) = spec["tasks"]
     task["arguments"] = cmd; task["resources"]["gpuCount"] = a.gpus; task["context"]["minRuntime"] = "8h"
+    if a.unallocated: task["context"]["minRuntime"] = "0s"; task["context"]["autoResume"] = True
     for e in task["envVars"]:
         if e["name"] == "GIT_REF": e["value"] = head
     spec["description"] = f"{a.name} ({head[:9]})"
