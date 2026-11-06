@@ -1531,8 +1531,23 @@ def sparse_squares_section():
             "the existing arm activates 16 of them per token (25%), the new arms 4 (6%), close to the full model's 16 of 512 (3%). Layer 1 is whole in every square and stays at "
             "16 of 512, the per-document pool range stays [16, 64], and the merged model is the normal top-16 model, so only the squares' activation count changes. "
             "Two ways to weight the 4 kept experts: normalise their scores among themselves (the router's normal rule at top-4), or compute the weights as the top-16 router does and keep the 4 largest unchanged.")
-    res = (explorer_button("Show this experiment in the explorer", ["emo"], ["baseline", "l8", "t8", "t8n", "start"]) + tbl
-           + ("<ul>" + "".join(f"<li>{t}</li>" for t in SPARSE_SQ_TAKE) + "</ul>" if SPARSE_SQ_TAKE else "" if done else "<p class=\"note\">Training in progress (launched 2026-11-06); the table fills in as the merges are evaluated.</p>"))
+    # the same full models run the way the sparser squares were trained: 4 active experts in layers 2-9 (sparse_eval_views.sh, --ce-only passes)
+    R = ROOT / "sparse_experts/olmoe3_routing"; A = "runs_heldout300b_emorand8_lr4e-4"; v = lambda rel: _ce(R / rel / "none")
+    RULE = {"e4": "weights normalised over the 4", "e4n16": "weights normalised over the top 16"}
+    vrows = []
+    for rule in ("e4", "e4n16"):
+        arm = "top4" if rule == "e4" else "top4n16"
+        vrows += [["joint training", RULE[rule], f3(v(f"runs_heldout300b_emo/emo_step19074_{rule}")), "&ndash;", "&ndash;", f3(v(f"runs_heldout300b_emo/baseline_step57221_{rule}"))],
+                  ["8 squares, 16 of 64 active (the existing arm), merged", RULE[rule], "&ndash;", "&ndash;", "&ndash;", f3(v(f"{A}/merged_match57221_{rule}"))],
+                  [f"8 squares, 4 of 64 active ({RULE[rule]}), merged", RULE[rule], "&ndash;", *[f3(v(f"{A}_{arm}/merged_match{st}_{rule}")) for st in (30000, 38148, 57221)]]]
+    vdone = any(c not in ("&ndash;",) for r_ in vrows for c in r_[2:])
+    vtbl = ("<p><b>The same models run with 4 active experts per token in layers 2&ndash;9</b> (layer 1 at 16), i.e. the way the sparser squares were trained; held-out CE. "
+            "The 10B column is the start model.</p>" + table(["model", "weights of the 4 kept experts", "10B", "15.7B", "20B", "30B"], vrows)) if vdone else ""
+    res = (explorer_button("Show this experiment in the explorer", ["emo"], ["baseline", "l8", "t8", "t8n", "start"])
+           + "<p><b>Merged model run as the normal model, 16 active experts per token</b>:</p>" + tbl + vtbl
+           + ("<ul>" + "".join(f"<li>{t}</li>" for t in SPARSE_SQ_TAKE) + "</ul>" if SPARSE_SQ_TAKE else "")
+           + ("" if all(val(k, "h", i) is not None for k in ("t8", "t8n") for i in idx) and vdone and not any(c == "&ndash;" for r_ in vrows[2::3] for c in r_[3:]) else
+              "<p class=\"note\">Training is complete for both arms (2026-11-06); evaluation passes are still arriving and the tables fill in as they finish.</p>"))
     return card("info", "Setup", f"<p>{what}</p>") + card("results", "Results", res)
 
 ROUTER_LOGITS_TAKE = [   # short observations, one line each, no numbers (user rule 2026-11-04)
