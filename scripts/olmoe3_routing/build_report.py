@@ -1535,7 +1535,13 @@ def sparse_squares_section():
            + ("<ul>" + "".join(f"<li>{t}</li>" for t in SPARSE_SQ_TAKE) + "</ul>" if SPARSE_SQ_TAKE else "" if done else "<p class=\"note\">Training in progress (launched 2026-11-06); the table fills in as the merges are evaluated.</p>"))
     return card("info", "Setup", f"<p>{what}</p>") + card("results", "Results", res)
 
-ROUTER_LOGITS_TAKE = []   # short observations (one line each, no numbers), filled in once the dumps are analysed
+ROUTER_LOGITS_TAKE = [   # short observations, one line each, no numbers (user rule 2026-11-04)
+    "No offsets between squares: every square's experts sit at the same logit level and share a token's top-16 evenly, in every layer and every model.",
+    "The squares' routers are sharper than a jointly trained one: larger router rows and a wider spread of logits per token.",
+    "The sharpening is complete at the first checkpoint after the split and then stays flat; with 4 squares it fades by 61B.",
+    "It is larger with 8 squares than with 4, and about the same size for 512, 1000 and 2000 experts.",
+    "A square's logits barely change when its experts are placed in the merged model.",
+    "Freezing the routers did not reduce the merge loss (box 5F), so the sharper routing accompanies the divergence rather than causing it."]
 
 
 def router_logits_section():
@@ -1589,7 +1595,8 @@ def router_logits_section():
             "<b>Row norm</b>: size of the router weight rows. <b>Logit spread</b>: std of a token's logits across experts, the scale the softmax sees. "
             "<b>Offset</b>: per token, how far apart the squares' average logits are, relative to what random groups of one jointly trained router give (1 = chance). "
             "<b>Largest square's share</b>: fraction of a token's 16 selected experts that come from one square (1/K when squares share evenly). "
-            "<b>Agreement</b>: correlation between a square's logits in its own model and the same experts' logits in the merged model.")
+            "<b>Agreement</b>: correlation between a square's logits in its own model and the same experts' logits in the merged model. "
+            "The 512e joint model at 30B comes from the one-node training segment, whose finer load-balancing granularity flattens its router; for 512e compare the merged lines with the start model or with the 61B joint point.")
     ctl = ('<style>.rl .rlpane{display:none}.rl .rlpane.on{display:block}.rl .rlrow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.rl .ctl{margin:6px 0 10px;font-size:0.95em}'
            '.rl .ctl label{margin-right:12px}.rl .rlfig img{max-width:100%}.rl .rlfig p{max-width:none;font-size:13px;margin:14px 0 2px}</style>'
            '<div class="rl"><div class="ctl"><b>Squares:</b> ' + " ".join(f'<label><input type="radio" name="rlk" value="{K}"{" checked" if K == dK else ""}> {K}</label>' for K in Ks)
