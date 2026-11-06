@@ -30,11 +30,11 @@ have() { [ -f "$1/train/rank0.pt" ]; }
 claim() { local l="$LOCKS/$1" age
   if mkdir "$l" 2>/dev/null; then echo "$ME" > "$l/owner"; touch "$l/beat"; return 0; fi
   age=$(( $(date +%s) - $(stat -c %Y "$l/beat" 2>/dev/null || stat -c %Y "$l" 2>/dev/null || date +%s) ))
-  if [ "$age" -gt $STALE ]; then say "lock $1 is stale (${age}s, owner $(cat "$l/owner" 2>/dev/null)): taking over"; rm -rf "$l"; mkdir "$l" 2>/dev/null && { echo "$ME" > "$l/owner"; touch "$l/beat"; return 0; }; fi
+  if [ "$age" -gt $STALE ]; then say "lock $1 is stale (${age}s, owner $(cat "$l/owner" 2>/dev/null)): taking over"; rm -rf "${LOCKS:?}/${1:?}"; mkdir "$l" 2>/dev/null && { echo "$ME" > "$l/owner"; touch "$l/beat"; return 0; }; fi
   return 1; }
 HB=""
 beat_start() { local l="$LOCKS/$1"; ( while [ -d "$l" ]; do touch "$l/beat" 2>/dev/null; sleep 60; done ) & HB=$!; }
-release() { [ -n "$HB" ] && kill "$HB" 2>/dev/null; HB=""; [ "$(cat "$LOCKS/$1/owner" 2>/dev/null)" = "$ME" ] && rm -rf "$LOCKS/$1"; }
+release() { [ -n "$HB" ] && kill "$HB" 2>/dev/null; HB=""; [ "$(cat "$LOCKS/$1/owner" 2>/dev/null)" = "$ME" ] && rm -rf "${LOCKS:?}/${1:?}"; }
 train() { local run=$1; say "training $run: $OLMOE3_TOKENS tokens, checkpoints at $OLMOE3_FIXED_STEPS"
   torchrun --standalone --nproc-per-node 8 scripts/sparse_experts/olmoe3_275m.py train "$run" "$CLUSTER"; }
 all_done() { local g; for g in $(seq 0 $((K-1))); do have "$W/${RP}${g}_w2/step$(( $(tok pack2 $g) / 524288 ))" || return 1; done; }
