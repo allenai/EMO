@@ -73,9 +73,9 @@ fi
 if [ $MODE = w2 ] || [ $MODE = w1w2 ]; then   # w2: window 2 for the chosen LR, from this arm's window-1 finals
   SH2=$(shares_of $SQ/pack2/stats.json); subs=()
   for g in $GS; do t=$(python -c "import json; print(json.load(open('$SQ/pack/stats.json'))['tokens_per_group'][$g])"); fin=$((t / 524288))
-    [ -f $SQ/init2/group$g/model_and_optim/.metadata ] || { PYTHONPATH=external/OLMo-core/src python scripts/sparse_experts/olmoe3_squares/rewrite_checkpoint.py --src $S/${RP}$g/step$fin --out $SQ/init2/group$g --overwrite 2>&1 | tail -1; say "init2 group$g done"; }
+    [ "${OLMOE3_W2_EXTERNAL:-0}" = 1 ] || [ -f $SQ/init2/group$g/model_and_optim/.metadata ] || { PYTHONPATH=external/OLMo-core/src python scripts/sparse_experts/olmoe3_squares/rewrite_checkpoint.py --src $S/${RP}$g/step$fin --out $SQ/init2/group$g --overwrite 2>&1 | tail -1; say "init2 group$g done"; }   # OLMOE3_W2_EXTERNAL=1: square_worker.sh jobs own window 2 (init2 + training); the driver only waits, merges and evaluates
     t2=$(python -c "import json; print(json.load(open('$SQ/pack2/stats.json'))['tokens_per_group'][$g])"); fin2=$((t2 / 524288)); subs+=("$S/${RP}${g}_w2/step$fin2")
-    launch_train $LOG/square${g}_w2_launched $LOG/launch_square${g}_w2.log scripts/sparse_experts/model_scripts/olmoe3_275m_emo_square.sh SQUARE_GROUP=$g SQUARES_NAME=$SQN OLMOE3_EMO=1 OLMOE3_NUM_EXPERTS=512 OLMOE3_LR=$LR OLMOE3_TOKENS=$t2 OLMOE3_FIXED_STEPS="$fin2" OLMOE3_DATA_PATHS="$W/$SQN/pack2/group$g/*.npy" OLMOE3_INIT_FROM="$W/$SQN/init2/group$g/model_and_optim" OLMOE3_RUNNAME=${RP}${g}_w2 OLMOE3_WANDB_TAGS=$SQN,square,lr_sweep,w2 $FENV $VENV
+    [ "${OLMOE3_W2_EXTERNAL:-0}" = 1 ] || launch_train $LOG/square${g}_w2_launched $LOG/launch_square${g}_w2.log scripts/sparse_experts/model_scripts/olmoe3_275m_emo_square.sh SQUARE_GROUP=$g SQUARES_NAME=$SQN OLMOE3_EMO=1 OLMOE3_NUM_EXPERTS=512 OLMOE3_LR=$LR OLMOE3_TOKENS=$t2 OLMOE3_FIXED_STEPS="$fin2" OLMOE3_DATA_PATHS="$W/$SQN/pack2/group$g/*.npy" OLMOE3_INIT_FROM="$W/$SQN/init2/group$g/model_and_optim" OLMOE3_RUNNAME=${RP}${g}_w2 OLMOE3_WANDB_TAGS=$SQN,square,lr_sweep,w2 $FENV $VENV
   done
   for d in "${subs[@]}"; do until [ -f "$d/train/rank0.pt" ]; do sleep 300; done; done; say "window-2 finals present"
   merge_k $SQN $SQ/merged/match57221 "$SH2" "${subs[@]}"; checkfrz 57221
