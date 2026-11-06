@@ -252,6 +252,15 @@ def _local_path(p: Optional[str]) -> Optional[str]:
     return p
 
 
+# Sparser squares (user request 2026-11-06): in the layers a sub-model cuts down (layers 2-9 of a K-way split) activate only
+# OLMOE3_SQUARE_TOP_K experts per token instead of TOP_K (4 of 64 instead of 16 of 64 for K = 8, close to the full model's 16 of 512);
+# the layer kept whole (layer 1) and the EMO pool range are untouched. OLMOE3_SQUARE_NORM_TOP_K=16 additionally keeps the top-16
+# normalisation of the weights and drops the experts beyond the top-k un-renormalised (emo_square_topk.py); unset = the stock
+# router with top_k = OLMOE3_SQUARE_TOP_K (its own L1 normalisation over the kept experts).
+SQUARE_TOP_K = int(os.environ["OLMOE3_SQUARE_TOP_K"]) if os.environ.get("OLMOE3_SQUARE_TOP_K") else None
+SQUARE_NORM_TOP_K = int(os.environ["OLMOE3_SQUARE_NORM_TOP_K"]) if os.environ.get("OLMOE3_SQUARE_NORM_TOP_K") else None
+if SQUARE_NORM_TOP_K is not None and SQUARE_TOP_K is None:
+    raise ValueError("OLMOE3_SQUARE_NORM_TOP_K requires OLMOE3_SQUARE_TOP_K")
 SQUARES_GROUPS = _local_path(os.environ.get("OLMOE3_GROUPS") or None)
 SQUARES_GROUP = int(os.environ["OLMOE3_GROUP"]) if os.environ.get("OLMOE3_GROUP") else None
 SQUARES_LAYER_EXPERTS = None
@@ -437,6 +446,10 @@ def _router_config_cls():
         from emo_learned_d import LearnedDRouterConfigV2
 
         return LearnedDRouterConfigV2
+    if SQUARE_NORM_TOP_K is not None:
+        from emo_square_topk import SquareTopKRouterConfigV2
+
+        return SquareTopKRouterConfigV2
     return MoERouterConfigV2
 
 
@@ -470,6 +483,10 @@ def _moe_block(layer_norm: LayerNormConfig, sequence_mixer, num_experts: Optiona
             # the sub-model's pool range is [top_k, its own expert count] (same convention as the arms)
             b.routed_experts_router.emo.max_document_expert_pool = min(EMO_MAX_POOL, num_experts)
             b.routed_experts_router.emo.eval_document_expert_pool = min(EMO_EVAL_POOL, num_experts)
+        if SQUARE_TOP_K is not None:   # sparser squares: only the cut-down layers
+            b.routed_experts_router.top_k = SQUARE_TOP_K
+            if SQUARE_NORM_TOP_K is not None:
+                b.routed_experts_router.norm_top_k = SQUARE_NORM_TOP_K
         return b
     return OLMoDDPTransformerBlockConfig(
         name=TransformerBlockType.moe_fused_v2,
@@ -656,6 +673,7 @@ FORWARDED_ENV = (
     "OLMOE3_LD_LAMBDA_WARMUP", "OLMOE3_LD_INIT", "OLMOE3_LD_EVAL", "OLMOE3_LD_DETACH", "OLMOE3_LD_LR_MULT",
     "OLMOE3_LD_SIGNAL", "OLMOE3_LD_LAMBDA_COV", "OLMOE3_ROUTER_ONLY_LR", "OLMOE3_FREEZE_ROUTER", "OLMOE3_FREEZE_PATTERNS", "OLMOE3_FREEZE_TAG",
     "OLMOE3_GROUPS", "OLMOE3_GROUP", "OLMOE3_DATA_PATHS", "OLMOE3_INIT_FROM", "OLMOE3_FIXED_STEPS", "OLMOE3_WARMUP",
+    "OLMOE3_SQUARE_TOP_K", "OLMOE3_SQUARE_NORM_TOP_K",
 )
 
 
@@ -956,6 +974,7 @@ def build_trainer_config(common: CommonComponents, cluster: str) -> TrainerConfi
                       *(["pool_select_random", f"pool_min{EMO_MIN_POOL}"] if EMO_ENABLED and EMO_POOL_SELECT == "random" else []),
                       *(["learned_d", f"ld_T{LD_TEMP:g}_l{LD_LAMBDA:g}_w{LD_WARMUP}_m{LD_LR_MULT:g}", f"ld_signal_{LD_SIGNAL}"] if LEARNED_D else []),
                       *(["router_only"] if ROUTER_ONLY_LR is not None else []), *(["router_frozen"] if FREEZE_ROUTER else []), *([f"freeze_{os.environ['OLMOE3_FREEZE_TAG']}"] if os.environ.get("OLMOE3_FREEZE_TAG") else []),
+                      *([f"square_top{SQUARE_TOP_K}" + (f"_norm{SQUARE_NORM_TOP_K}" if SQUARE_NORM_TOP_K is not None else "")] if SQUARE_TOP_K is not None else []),
                       cluster.rsplit("/", 1)[-1], *EXTRA_WANDB_TAGS],
             ),
         )
