@@ -271,7 +271,8 @@ if SQUARES_GROUPS:
 DATA_PATHS = [p for p in os.environ.get("OLMOE3_DATA_PATHS", "").split(",") if p]
 INIT_FROM = os.environ.get("OLMOE3_INIT_FROM") or None
 FIXED_STEPS = [int(x) for x in os.environ.get("OLMOE3_FIXED_STEPS", "").split(",") if x]
-HARD_STOP = int(os.environ["OLMOE3_HARD_STOP"]) if os.environ.get("OLMOE3_HARD_STOP") else None   # stop after this many steps, everything else (data order, schedule) unchanged: the first-steps probe of the squares (2026-11-07)
+HARD_STOP = int(os.environ["OLMOE3_HARD_STOP"]) if os.environ.get("OLMOE3_HARD_STOP") else None
+LB_WEIGHT = float(os.environ.get("OLMOE3_LB_WEIGHT", "0.01"))   # load-balancing loss weight (the recipe's 0.01); OLMOE3_LB_WEIGHT for the 2000e LB-weight sweep (user request 2026-11-07)   # stop after this many steps, everything else (data order, schedule) unchanged: the first-steps probe of the squares (2026-11-07)
 WARMUP_STEPS = int(os.environ.get("OLMOE3_WARMUP", "2000"))
 
 
@@ -511,7 +512,7 @@ def _moe_block(layer_norm: LayerNormConfig, sequence_mixer, num_experts: Optiona
             normalize_expert_weights=1.0,
             gating_function=MoERouterGatingFunction.softmax,
             dtype=DType.float32,
-            lb_loss_weight=0.01,
+            lb_loss_weight=LB_WEIGHT,
             # As in the ladder's EMO branch: EMO needs global (DP-wide) load balancing, which
             # requires local-batch granularity; the plain model keeps the ladder's instance LB.
             lb_loss_granularity=(
@@ -674,7 +675,7 @@ FORWARDED_ENV = (
     "OLMOE3_LD_LAMBDA_WARMUP", "OLMOE3_LD_INIT", "OLMOE3_LD_EVAL", "OLMOE3_LD_DETACH", "OLMOE3_LD_LR_MULT",
     "OLMOE3_LD_SIGNAL", "OLMOE3_LD_LAMBDA_COV", "OLMOE3_ROUTER_ONLY_LR", "OLMOE3_FREEZE_ROUTER", "OLMOE3_FREEZE_PATTERNS", "OLMOE3_FREEZE_TAG",
     "OLMOE3_GROUPS", "OLMOE3_GROUP", "OLMOE3_DATA_PATHS", "OLMOE3_INIT_FROM", "OLMOE3_FIXED_STEPS", "OLMOE3_WARMUP",
-    "OLMOE3_SQUARE_TOP_K", "OLMOE3_SQUARE_NORM_TOP_K", "OLMOE3_HARD_STOP",
+    "OLMOE3_SQUARE_TOP_K", "OLMOE3_SQUARE_NORM_TOP_K", "OLMOE3_HARD_STOP", "OLMOE3_LB_WEIGHT",
 )
 
 
@@ -976,6 +977,7 @@ def build_trainer_config(common: CommonComponents, cluster: str) -> TrainerConfi
                       *(["pool_select_random", f"pool_min{EMO_MIN_POOL}"] if EMO_ENABLED and EMO_POOL_SELECT == "random" else []),
                       *(["learned_d", f"ld_T{LD_TEMP:g}_l{LD_LAMBDA:g}_w{LD_WARMUP}_m{LD_LR_MULT:g}", f"ld_signal_{LD_SIGNAL}"] if LEARNED_D else []),
                       *(["router_only"] if ROUTER_ONLY_LR is not None else []), *(["router_frozen"] if FREEZE_ROUTER else []), *([f"freeze_{os.environ['OLMOE3_FREEZE_TAG']}"] if os.environ.get("OLMOE3_FREEZE_TAG") else []),
+                      *([f"lb_weight_{LB_WEIGHT:g}"] if LB_WEIGHT != 0.01 else []),
                       *([f"square_top{SQUARE_TOP_K}" + (f"_norm{SQUARE_NORM_TOP_K}" if SQUARE_NORM_TOP_K is not None else "")] if SQUARE_TOP_K is not None else []),
                       cluster.rsplit("/", 1)[-1], *EXTRA_WANDB_TAGS],
             ),

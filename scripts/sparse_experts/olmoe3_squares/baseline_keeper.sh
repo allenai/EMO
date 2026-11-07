@@ -29,7 +29,12 @@ JOBS=("olmoe3_275m_emo_130b|247956|olmoe3_275m_emo_130b_baseline.sh|$KEEP/emo_13
       "olmoe3_275m_2000e_emo_lr4e-4_5b|10000|olmoe3_275m_2000e_emo_lrsweep_5b.sh|$S/olmoe3_squares_emo2000lr/logs/lr4e-4_launched|OLMOE3_LR=4e-4"
       "olmoe3_275m_2000e_emo_lr8e-4_5b|10000|olmoe3_275m_2000e_emo_lrsweep_5b.sh|$S/olmoe3_squares_emo2000lr/logs/lr8e-4_launched|OLMOE3_LR=8e-4"
       "olmoe3_275m_2000e_emo_lr1.6e-3_5b|10000|olmoe3_275m_2000e_emo_lrsweep_5b.sh|$S/olmoe3_squares_emo2000lr/logs/lr1.6e-3_launched|OLMOE3_LR=1.6e-3"
-      "olmoe3_275m_2000e_emo_lr3.2e-3_5b|10000|olmoe3_275m_2000e_emo_lrsweep_5b.sh|$S/olmoe3_squares_emo2000lr/logs/lr3.2e-3_launched|OLMOE3_LR=3.2e-3")
+      "olmoe3_275m_2000e_emo_lr3.2e-3_5b|10000|olmoe3_275m_2000e_emo_lrsweep_5b.sh|$S/olmoe3_squares_emo2000lr/logs/lr3.2e-3_launched|OLMOE3_LR=3.2e-3"
+      "olmoe3_275m_2000e_emo_lb3e-4_5b|10000|olmoe3_275m_2000e_emo_lbsweep_5b.sh|$S/olmoe3_squares_emo2000lb/logs/lb3e-4_launched|OLMOE3_LB_WEIGHT=3e-4"
+      "olmoe3_275m_2000e_emo_lb1e-3_5b|10000|olmoe3_275m_2000e_emo_lbsweep_5b.sh|$S/olmoe3_squares_emo2000lb/logs/lb1e-3_launched|OLMOE3_LB_WEIGHT=1e-3"
+      "olmoe3_275m_2000e_emo_lb3e-3_5b|10000|olmoe3_275m_2000e_emo_lbsweep_5b.sh|$S/olmoe3_squares_emo2000lb/logs/lb3e-3_launched|OLMOE3_LB_WEIGHT=3e-3"
+      "olmoe3_275m_2000e_emo_lb3e-2_5b|10000|olmoe3_275m_2000e_emo_lbsweep_5b.sh|$S/olmoe3_squares_emo2000lb/logs/lb3e-2_launched|OLMOE3_LB_WEIGHT=3e-2"
+      "olmoe3_275m_2000e_emo_lb1e-1_5b|10000|olmoe3_275m_2000e_emo_lbsweep_5b.sh|$S/olmoe3_squares_emo2000lb/logs/lb1e-1_launched|OLMOE3_LB_WEIGHT=1e-1")
 RETIRED=$S/olmoe3_routing/twin_scheduler/retired.txt   # same retired-run globs as twin_scheduler.py: a listed run is never relaunched
 retired() { [ -f $RETIRED ] && python -c "
 import fnmatch,sys; pats=[l.strip() for l in open('$RETIRED') if l.strip() and not l.startswith('#')]; sys.exit(0 if any(fnmatch.fnmatch('$1', p) for p in pats) else 1)"; }
