@@ -271,6 +271,7 @@ if SQUARES_GROUPS:
 DATA_PATHS = [p for p in os.environ.get("OLMOE3_DATA_PATHS", "").split(",") if p]
 INIT_FROM = os.environ.get("OLMOE3_INIT_FROM") or None
 FIXED_STEPS = [int(x) for x in os.environ.get("OLMOE3_FIXED_STEPS", "").split(",") if x]
+HARD_STOP = int(os.environ["OLMOE3_HARD_STOP"]) if os.environ.get("OLMOE3_HARD_STOP") else None   # stop after this many steps, everything else (data order, schedule) unchanged: the first-steps probe of the squares (2026-11-07)
 WARMUP_STEPS = int(os.environ.get("OLMOE3_WARMUP", "2000"))
 
 
@@ -673,7 +674,7 @@ FORWARDED_ENV = (
     "OLMOE3_LD_LAMBDA_WARMUP", "OLMOE3_LD_INIT", "OLMOE3_LD_EVAL", "OLMOE3_LD_DETACH", "OLMOE3_LD_LR_MULT",
     "OLMOE3_LD_SIGNAL", "OLMOE3_LD_LAMBDA_COV", "OLMOE3_ROUTER_ONLY_LR", "OLMOE3_FREEZE_ROUTER", "OLMOE3_FREEZE_PATTERNS", "OLMOE3_FREEZE_TAG",
     "OLMOE3_GROUPS", "OLMOE3_GROUP", "OLMOE3_DATA_PATHS", "OLMOE3_INIT_FROM", "OLMOE3_FIXED_STEPS", "OLMOE3_WARMUP",
-    "OLMOE3_SQUARE_TOP_K", "OLMOE3_SQUARE_NORM_TOP_K",
+    "OLMOE3_SQUARE_TOP_K", "OLMOE3_SQUARE_NORM_TOP_K", "OLMOE3_HARD_STOP",
 )
 
 
@@ -937,6 +938,7 @@ def build_trainer_config(common: CommonComponents, cluster: str) -> TrainerConfi
         cancel_check_interval=cancel_check_interval,
         async_bookkeeping=False,
         max_duration=Duration.steps(_max_steps(TOKENS)),  # == Duration.tokens(TOKENS) for stream runs; one step fewer for square runs (see _max_steps)
+        hard_stop=Duration.steps(HARD_STOP) if HARD_STOP else None,
     )
     if PPL_EVAL_INTERVAL > 0:
         trainer = trainer.with_callback("lm_evaluator", _ppl_eval_callback(common))
