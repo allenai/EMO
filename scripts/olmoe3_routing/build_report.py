@@ -266,7 +266,8 @@ VARIANTS = [("A", "EMO 512e, 4 sub-models", "#2563eb", "the main experiment"),
             ("5G", "Routing of the merged model", "#0f766e", "how the merged standard 512e control routes compared with the continued baseline and with its own squares, checkpoint by checkpoint"),
             ("5H", "Load balancing (512e / 1000e / 2000e)", "#475569", "expert-load CV of the joint baselines and of their merged four-square models, and the in-loop load-balancing loss of joint training against the combined four- and eight-square sub-model training (all squares at sub-model LR 4e-4)"),
             ("5I", "Sparser squares", "#16a34a", "an eight-way split leaves each square with 64 experts per layer but still 16 active, far denser than the 16 of 512 it is merged back into: the same 8 squares at LR 4e-4 with only 4 of 64 active"),
-            ("5J", "Router weights and logits after disjoint training", "#9333ea", "do the squares' routers drift apart in scale or offset while they train separately: router rows and router logits of the squares, the merged models and the joint baselines, layer by layer")]
+            ("5J", "Router weights and logits after disjoint training", "#9333ea", "do the squares' routers drift apart in scale or offset while they train separately: router rows and router logits of the squares, the merged models and the joint baselines, layer by layer"),
+            ("5K", "The first steps of disjoint training", "#b91c1c", "is the merge degradation immediate: the random squares of EMO 512e at LR 4e-4 trained from the 10B checkpoint for a handful of steps, merged after every step and evaluated")]
 
 
 def variant(letter, inner, tab="q3"):
@@ -1629,6 +1630,35 @@ def router_logits_section():
     res = ("<ul>" + "".join(f"<li>{t}</li>" for t in ROUTER_LOGITS_TAKE) + "</ul>") if ROUTER_LOGITS_TAKE else ""
     return card("info", "What is measured", f"<p>{what}</p>") + card("results", "Results", res + CHART_CSS + ctl)
 
+FIRST_STEPS_TAKE = []   # short observations, one line each, no numbers (user rule 2026-11-04)
+
+
+def first_steps_section():
+    """Box 5K (user request 2026-11-07): EMO 512e from the 10B checkpoint at sub-model LR 4e-4 with the LR-4e-4 control arms' random groups and
+    packs, 8 squares for the first 10 steps and 4 squares for the first 5, a checkpoint after every step, the squares merged after every step
+    (token-share weights) and each merge scored on the reporting held-out sample (squares_firststeps.sh). Step 0 is the start model."""
+    R = ROOT / "sparse_experts/olmoe3_routing"; start = _ce(R / "runs_heldout300b_emo/emo_step19074/none")
+    arms = [("8 squares", "runs_heldout300b_emorand8_lr4e-4_steps", 10, "#ea580c"), ("4 squares", "runs_heldout300b_emorand_lr4e-4_steps", 5, "#2563eb")]
+    ser = []; N = 10; rows = []
+    for name, hr, n, col in arms:
+        ys = [start] + [_ce(R / hr / f"merged_step{s}/none") for s in range(1, n + 1)]
+        if not any(y is not None for y in ys[1:]): continue
+        ser.append({"name": f"merged, {name} (LR 4e-4)", "y": ys + [None] * (N - n), "color": col, "gap": True}); rows.append([name] + [f"{y:.3f}" if y is not None else "&ndash;" for y in ys] + ["&ndash;"] * (N - n))
+    if not ser: return card("info", "Setup", "<p>The probe is running (launched 2026-11-07); this box fills in when the per-step merges are evaluated.</p>")
+    ser.append({"name": "start model (10B)", "y": [start] * (N + 1), "const": True, "dashed": True, "color": "#64748b"})
+    d = next((x for x in control_explorer_data() if x["id"] == "emo"), None)
+    for key, lab, col in (("l8", "merged, 8 squares at 15.7B (the control arm's first point)", "#ea580c"), ("l4", "merged, 4 squares at 15.7B", "#2563eb"), ("baseline", "joint training at 15.7B", "#059669")):
+        if d and key in d["series"]:
+            i = next((i for i, t in enumerate(d["toks"]) if abs(t - 15.729) < 0.01), None); v = d["series"][key]["h"][i] if i is not None else None
+            if v is not None: ser.append({"name": lab, "y": [v] * (N + 1), "const": True, "dotted": True, "color": col})
+    ch = CHART_CSS + line_chart(list(range(N + 1)), ser, title="Held-out CE of the merged model after each training step of the squares", y_label="CE", x_label="training steps of every square (0 = start model)",
+                                xfmt=lambda v: f"{v:.0f}", W=720, H=320)
+    tbl = table(["squares", *[f"step {s}" for s in range(N + 1)]], rows)
+    what = ("Each square trains from its start slice on its own documents exactly as in the control arm (same data order, constant LR 4e-4, one warm-up step) and is checkpointed after every step; "
+            "after every step the squares are merged with the control arms' token-share weights and the merge is scored on the 300B held-out sample. One step is one global batch of 0.5M tokens per square. "
+            "Dotted lines: where the control arms' merges and the joint model stand at the first regular point (15.7B, about 1,365 steps later).")
+    return card("info", "Setup", f"<p>{what}</p>") + card("results", "Results", ("<ul>" + "".join(f"<li>{t}</li>" for t in FIRST_STEPS_TAKE) + "</ul>" if FIRST_STEPS_TAKE else "") + ch + tbl)
+
 
 def build_q5_controls():
     """Q5: the random-partition controls, one box per start model (moved out of Q3 on 2026-09-24)."""
@@ -1696,6 +1726,7 @@ def build_q5_controls():
     boxes["5H"] = load_balance_section()
     boxes["5I"] = sparse_squares_section()
     boxes["5J"] = router_logits_section()
+    boxes["5K"] = first_steps_section()
     boxes = {L: inner for L, inner in boxes.items() if inner}
     body += VARIANT_CSS + card("info", "Experiments",
         '<ul class="q3index">' + "".join(f'<li><a href="#q5-{L}"><b>{L}</b> &middot; {t}</a> &mdash; {bl}</li>' for L, t, _, bl in VARIANTS if L in boxes) + "</ul>")
@@ -2115,11 +2146,11 @@ def artifact_page(body, path):
     """The Disjoint Training Report: Q5 as its own page (a Claude artifact). Same content as the Q5 tab, renumbered 1-8 (the 5A-5H
     letters only mean something inside the parent report), with a header, a sticky contents rail and its own stylesheet."""
     import datetime, re
-    letters = "ABCDEFGHIJ"; num = lambda L: str(letters.index(L) + 1)
+    letters = "ABCDEFGHIJK"; num = lambda L: str(letters.index(L) + 1)
     for L in letters:
         body = body.replace(f'id="q5-5{L}"', f'id="s{num(L)}"').replace(f'href="#q5-5{L}"', f'href="#s{num(L)}"').replace(f'<span class="vb">5{L}</span>', f'<span class="vb">{num(L)}</span>').replace(f'<b>5{L}</b> &middot;', f'<b>{num(L)}</b> &middot;')
-    body = re.sub(r"boxes 5([A-J])((?:, 5[A-J])+)", lambda m: "sections " + ", ".join(num(x) for x in re.findall(r"5([A-J])", m.group(0))), body)
-    body = re.sub(r"box 5([A-J])", lambda m: "section " + num(m.group(1)), body)
+    body = re.sub(r"boxes 5([A-K])((?:, 5[A-K])+)", lambda m: "sections " + ", ".join(num(x) for x in re.findall(r"5([A-K])", m.group(0))), body)
+    body = re.sub(r"box 5([A-K])", lambda m: "section " + num(m.group(1)), body)
     body = body.replace('<div class="card info"><h3>Experiments</h3>', '<div class="card info rp-index"><h3>Experiments</h3>')
     body = re.sub(r'<div class="card ok"><h3>Question</h3>.*?</div>', "", body, count=1, flags=re.S)   # the question card (user 2026-11-03: title only, no question box)
     toc = "".join(f'<li><a href="#s{num(L[1])}"><span class="n">{num(L[1])}</span> {t}</a></li>' for L, t, _, _ in VARIANTS if L.startswith("5") and f'id="s{num(L[1])}"' in body)
