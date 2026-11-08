@@ -34,7 +34,8 @@ JOBS=("olmoe3_275m_emo_130b|247956|olmoe3_275m_emo_130b_baseline.sh|$KEEP/emo_13
       "olmoe3_275m_2000e_emo_lb1e-3_5b|10000|olmoe3_275m_2000e_emo_lbsweep_5b.sh|$S/olmoe3_squares_emo2000lb/logs/lb1e-3_launched|OLMOE3_LB_WEIGHT=1e-3"
       "olmoe3_275m_2000e_emo_lb3e-3_5b|10000|olmoe3_275m_2000e_emo_lbsweep_5b.sh|$S/olmoe3_squares_emo2000lb/logs/lb3e-3_launched|OLMOE3_LB_WEIGHT=3e-3"
       "olmoe3_275m_2000e_emo_lb3e-2_5b|10000|olmoe3_275m_2000e_emo_lbsweep_5b.sh|$S/olmoe3_squares_emo2000lb/logs/lb3e-2_launched|OLMOE3_LB_WEIGHT=3e-2"
-      "olmoe3_275m_2000e_emo_lb1e-1_5b|10000|olmoe3_275m_2000e_emo_lbsweep_5b.sh|$S/olmoe3_squares_emo2000lb/logs/lb1e-1_launched|OLMOE3_LB_WEIGHT=1e-1")
+      "olmoe3_275m_2000e_emo_lb1e-1_5b|10000|olmoe3_275m_2000e_emo_lbsweep_5b.sh|$S/olmoe3_squares_emo2000lb/logs/lb1e-1_launched|OLMOE3_LB_WEIGHT=1e-1"
+      "olmoe3_275m_2000e_emo_130b|247956|olmoe3_275m_2000e_emo_130b_baseline.sh|$S/olmoe3_squares_emo2000rand4/logs/baseline130_launched")
 RETIRED=$S/olmoe3_routing/twin_scheduler/retired.txt   # same retired-run globs as twin_scheduler.py: a listed run is never relaunched
 retired() { [ -f $RETIRED ] && python -c "
 import fnmatch,sys; pats=[l.strip() for l in open('$RETIRED') if l.strip() and not l.startswith('#')]; sys.exit(0 if any(fnmatch.fnmatch('$1', p) for p in pats) else 1)"; }
