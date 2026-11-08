@@ -260,7 +260,7 @@ VARIANTS = [("A", "EMO 512e, 4 sub-models", "#2563eb", "the main experiment"),
             ("5A", "Random split and merge: routing structure of the start model (512e)", "#2563eb", "the same random expert groups and random document packs applied to every 512-expert start model: the EMO model, the standard-routing model and the two random-pool EMO models, 4 and 8 sub-models, 10B &rarr; 30B / 130B"),
             ("5B", "Random split and merge: expert count and expert width", "#b45309", "the same split for the expert-count ladder (standard 128e, EMO 1000e and 2000e) and for the half-size-expert EMO 1024e models (top-16 and top-32): does the merge cost change with the number or the width of the experts"),
             ("5C", "Sub-model learning rate", "#0891b2", "one learning rate shared by all squares, swept for the EMO 512e controls (4 and 8 sub-models); the winner, 4e-4, is the sub-model LR of every later control"),
-            ("5D", "Pretraining learning rate of the start models", "#0d9488", "is the recipe's 8e-4 the right pretraining LR for the 128e, 1000e and 2000e start models (six LRs from scratch to 5.24B each)"),
+            ("5D", "Pretraining learning rate and load-balancing weight of the start models", "#0d9488", "is the recipe's 8e-4 the right pretraining LR for the 128e, 1000e and 2000e start models, and its 0.01 the right load-balancing-loss weight for the 2000e model (sweeps from scratch to 5.24B each)"),
             ("5E", "Re-merge and re-partition", "#be123c", "merging and re-splitting into fresh random groups during training: every 10B for the EMO 512e 4-square control at LR 4e-4, and once at 61B for the standard 512e control"),
             ("5F", "Freezing parameters in the squares", "#7c3aed", "which parameters the squares need to train: routers, attention and everything-but-the-experts frozen in the 8-square EMO 512e control at LR 4e-4, and the router weights of the squares against the joint baseline"),
             ("5G", "Routing of the merged model", "#0f766e", "how the merged standard 512e control routes compared with the continued baseline and with its own squares, checkpoint by checkpoint"),
@@ -1664,6 +1664,34 @@ def first_steps_section():
             "Dotted lines: where the control arms' merges and the joint model stand at the first regular point (15.7B, about 1,365 steps later).")
     return card("info", "Setup", f"<p>{what}</p>") + card("results", "Results", ("<ul>" + "".join(f"<li>{t}</li>" for t in FIRST_STEPS_TAKE) + "</ul>" if FIRST_STEPS_TAKE else "") + ch + tbl)
 
+LB_WEIGHTS = ["3e-4", "1e-3", "3e-3", "1e-2", "3e-2", "1e-1"]
+BIG_LB_TAKE = []   # short observations, one line each, no numbers (user rule 2026-11-04), filled in when all arms are evaluated
+
+
+def big_lb_sweep_section(tag="2000e"):
+    """Load-balancing-loss-weight sweep of the EMO 2000e model (big_lb_sweep.sh, user request 2026-11-07): five arms from scratch at LR 8e-4 with
+    lb_loss_weight 3e-4 .. 1e-1 to step 10,000 (5.24B tokens), the recipe's 1e-2 being the LR sweep's 8e-4 arm; the LR sweep's three metrics."""
+    R = ROOT / "sparse_experts/olmoe3_routing"; HV = R / f"runs_heldout300b_emo{tag[:-1]}lb_val"; H = R / f"runs_heldout300b_emo{tag[:-1]}lb"; P = ROOT / f"sparse_experts/olmoe3_squares_emo{tag[:-1]}lb/ppl_validation"
+    if not HV.exists(): return ""
+    f3 = lambda v: "&ndash;" if v is None else f"{v:.3f}"
+    def row(w):
+        if w == "1e-2":   # the recipe's weight = the LR sweep's 8e-4 arm
+            return dict(w=w, val=_ce(R / f"runs_heldout300b_emo{tag[:-1]}lr_val/lr8e-4_step10000/none"), ho=_ce(R / f"runs_heldout300b_emo{tag[:-1]}lr/lr8e-4_step10000/none"),
+                        ppl=_ppl(ROOT / f"sparse_experts/olmoe3_squares_emo{tag[:-1]}lr/ppl_validation/olmoe3_275m_{tag}_emo_lr8e-4_5b/step10000.json"))
+        return dict(w=w, val=_ce(HV / f"lb{w}_step10000/none"), ho=_ce(H / f"lb{w}_step10000/none"), ppl=_ppl(P / f"olmoe3_275m_{tag}_emo_lb{w}_5b" / "step10000.json"))
+    rows = [row(w) for w in LB_WEIGHTS]
+    if not any(r["val"] is not None for r in rows if r["w"] != "1e-2"): return ""
+    best = min((r["val"] for r in rows if r["val"] is not None), default=None)
+    tb = [[r["w"] + (" (the recipe's weight)" if r["w"] == "1e-2" else ""), f"<b>{f3(r['val'])}</b>" if r["val"] == best and best is not None else f3(r["val"]), f3(r["ho"]), f3(r["ppl"])] for r in rows]
+    tbl = table(["load-balancing loss weight", "selection CE @5.24B", "held-out CE @5.24B", "ppl sets @5.24B"], tb)
+    xs = list(range(len(LB_WEIGHTS)))
+    ch = CHART_CSS + line_chart(xs, [{"name": "selection sample", "y": [r["val"] for r in rows], "color": "#7c3aed", "gap": True}, {"name": "held-out (reporting) sample", "y": [r["ho"] for r in rows], "color": "#2563eb", "gap": True}],
+                                title=f"EMO {tag} from scratch: CE at 5.24B vs load-balancing loss weight (LR 8e-4)", y_label="CE", x_label="load-balancing loss weight", xlabels=LB_WEIGHTS)
+    what = (f"The LR sweep's protocol for the EMO {tag} model with the pretraining LR fixed at its winner 8e-4 and the load-balancing loss weight varied by factors of three around the recipe's 1e-2 "
+            "(five new arms from scratch to step 10,000 = 5.24B tokens, 4 nodes each; the 1e-2 row is the LR sweep's 8e-4 arm). The in-loop W&B balancing loss is weight &times; loss, so arms are not comparable on that curve.")
+    pending = "" if all(r["val"] is not None for r in rows) else "<p class=\"note\">Arms still training or awaiting evaluation show a dash.</p>"
+    return section(f"Load-balancing loss weight of the {tag} model", what, ch + tbl + pending, " ".join(BIG_LB_TAKE) if BIG_LB_TAKE else "pending until every arm is evaluated.")
+
 
 def build_q5_controls():
     """Q5: the random-partition controls, one box per start model (moved out of Q3 on 2026-09-24)."""
@@ -1724,7 +1752,7 @@ def build_q5_controls():
                                "The 1000e, 2000e and half-size squares train at sub-model LR 4e-4, the winner of the 512e sweep (box 5C), and are merged at the freeze-ablation points only "
                                "(window-1 mid point = matched step 30,000 = 15.7B; 20B = 38,148; 30B = 57,221). Each square is also scored alone (mean of the K and the best one).") + b if b else ""
     boxes["5C"] = lr_sweep_section()
-    boxes["5D"] = s128_lr_sweep_section() + big_lr_sweep_section("1000e") + big_lr_sweep_section("2000e")
+    boxes["5D"] = s128_lr_sweep_section() + big_lr_sweep_section("1000e") + big_lr_sweep_section("2000e") + big_lb_sweep_section("2000e")
     boxes["5E"] = repartition_section() + std_remerge_section()
     boxes["5F"] = freeze_section() + router_norm_section()
     boxes["5G"] = std_routing_section()
