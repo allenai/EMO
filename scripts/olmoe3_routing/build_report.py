@@ -429,7 +429,7 @@ RANDOM_CONTROL = {  # random expert groups + random document split; arms = (sub-
                        setup_note=" The document packs are the 512e controls' (same random split of the same documents); the expert groups are a fresh random shuffle of the 1024 experts into 8 groups of 128 "
                                   "(seed 2); the squares train at LR 4e-4 with the model's own shape (hidden 272, top-16) at expert parallelism 2 (layer 1 keeps all 1024 experts)."),
     "emo2000": dict(hrb="runs_heldout300b_emo2000", start="emo2000_step19074", ppl_dirs=("olmoe3_squares_emo2000rand8/ppl_validation", "olmoe3_squares_emo2000rand4/ppl_validation"),
-                    base_runs=("olmoe3_275m_2000e_emo_30b", "olmoe3_275m_2000e_emo_61b"), start_ppl="olmoe3_275m_2000e_emo_10b", model="EMO 2000e", E=2000,
+                    base_runs=("olmoe3_275m_2000e_emo_30b", "olmoe3_275m_2000e_emo_61b", "olmoe3_275m_2000e_emo_130b"), start_ppl="olmoe3_275m_2000e_emo_10b", model="EMO 2000e", E=2000,
                     arms=[dict(k=4, lr="4e-4", sqn="olmoe3_squares_emo2000rand4", hr="runs_heldout300b_emo2000rand4", color="#2563eb"), dict(k=8, lr="4e-4", sqn="olmoe3_squares_emo2000rand8", hr="runs_heldout300b_emo2000rand8", color="#ea580c")],
                     remerge=False, take=lambda: EMO2000_TAKE, sparse=True, standalone=True,   # squares_big.sh emo2000 (2026-10-17): sub-model LR 4e-4, merges at 30000 / 38148 / 57221
                     setup_note=" The document packs are the 512e controls' (same random split of the same documents); the expert groups are a fresh random shuffle of the 2000 experts "
