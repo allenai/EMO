@@ -1630,7 +1630,12 @@ def router_logits_section():
     res = ("<ul>" + "".join(f"<li>{t}</li>" for t in ROUTER_LOGITS_TAKE) + "</ul>") if ROUTER_LOGITS_TAKE else ""
     return card("info", "What is measured", f"<p>{what}</p>") + card("results", "Results", res + CHART_CSS + ctl)
 
-FIRST_STEPS_TAKE = []   # short observations, one line each, no numbers (user rule 2026-11-04)
+FIRST_STEPS_TAKE = [   # short observations, one line each, no numbers (user rule 2026-11-04)
+    "The degradation is immediate: one training step of every square already makes the merge worse than the start model, and it worsens step by step.",
+    "It saturates within the first ten steps: eight squares level off after about seven steps, four squares after about three.",
+    "Eight squares pay about three times the four-square jump.",
+    "For eight squares the level reached after ten steps is where the control arm's merge still sits at its first regular checkpoint (15.7B), so the squares' learning in between brings the merge no net gain.",
+    "The four-square merge recovers from its jump and is ahead of joint training by 15.7B; the eight-square merge does not."]
 
 
 def first_steps_section():
