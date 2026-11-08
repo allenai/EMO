@@ -1665,7 +1665,10 @@ def first_steps_section():
     return card("info", "Setup", f"<p>{what}</p>") + card("results", "Results", ("<ul>" + "".join(f"<li>{t}</li>" for t in FIRST_STEPS_TAKE) + "</ul>" if FIRST_STEPS_TAKE else "") + ch + tbl)
 
 LB_WEIGHTS = ["3e-4", "1e-3", "3e-3", "1e-2", "3e-2", "1e-1"]
-BIG_LB_TAKE = []   # short observations, one line each, no numbers (user rule 2026-11-04), filled in when all arms are evaluated
+BIG_LB_TAKE = [   # short observations, one line each, no numbers (user rule 2026-11-04)
+    "The recipe's weight is close to the optimum: a third of it is marginally better, three times it is clearly worse.",
+    "Over-balancing costs more than under-balancing at this expert count; the largest weight is the worst arm by a wide margin.",
+    "The gain available from retuning is within what the LR sweep treated as noise, so the 2000e baseline stands."]
 
 
 def big_lb_sweep_section(tag="2000e"):
