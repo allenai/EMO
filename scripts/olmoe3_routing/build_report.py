@@ -1555,77 +1555,84 @@ def sparse_squares_section():
               "<p class=\"note\">Training is complete for both arms (2026-11-06); evaluation passes are still arriving and the tables fill in as they finish.</p>"))
     return card("info", "Setup", f"<p>{what}</p>") + card("results", "Results", res)
 
-ROUTER_LOGITS_TAKE = [   # short observations, one line each, no numbers (user rule 2026-11-04)
-    "No offsets between squares: every square's experts sit at the same logit level and share a token's top-16 evenly, in every layer and every model.",
-    "The squares' routers are sharper than a jointly trained one: larger router rows and a wider spread of logits per token.",
-    "The sharpening is complete at the first checkpoint after the split and then stays flat; with 4 squares it fades by 61B.",
+ROUTER_LOGITS_TAKE = [   # short observations, one line each, no numbers (user rule 2026-11-04); trimmed to the two kept metrics 2026-11-09
+    "No square dominates: in the merged model a token's top-16 is spread across the squares as evenly as chance, in fact slightly more evenly, in every layer and every model.",
+    "The squares' routers grow larger rows than a jointly trained one; the merged model inherits them, and the squares alone sit even higher.",
+    "The growth is complete at the first checkpoint after the split and then stays flat; with 4 squares it fades by 61B.",
     "It is larger with 8 squares than with 4, and about the same size for 512, 1000 and 2000 experts.",
-    "A square's logits barely change when its experts are placed in the merged model.",
-    "Freezing the routers did not reduce the merge loss (box 5F), so the sharper routing accompanies the divergence rather than causing it."]
+    "Freezing the routers did not reduce the merge loss (box 5F), so the larger routers accompany the divergence rather than causing it."]
 
 
 def router_logits_section():
-    """Box 5J (user request 2026-11-06): router rows and router logits after disjoint training, from router_logits.py dumps reduced by
-    router_logit_analysis.py (claude_outputs/olmoe3_routing/router_logits.json + router_logits_figs/). Per model (512e / 1000e / 2000e), K (4 / 8
-    squares at sub-model LR 4e-4) and matched point, across the nine MoE layers: row norms, the logit spread a token sees, the per-token offset
-    between the squares' experts, how much of a token's top-16 one square takes, and the top-16 softmax mass; plus the logit distribution of each
-    square's experts in the joint baseline, in the merged model and in the square's own model."""
+    """Box 5J (user request 2026-11-06; simplified 2026-11-09): router rows and router logits after disjoint training, from router_logits.py dumps
+    reduced by router_logit_analysis.py (claude_outputs/olmoe3_routing/router_logits.json + router_logits_figs/). Two metrics across the nine MoE
+    layers per model (512e / 1000e / 2000e): the router row norm and the largest square's share of a token's top-16; 4 and 8 squares (sub-model
+    LR 4e-4) as check boxes drawn in the same charts, the matched checkpoint as a slider, the y axis fixed across checkpoints; plus the logit
+    distribution figures of each square's experts (joint baseline / merged / the square's own model)."""
     J = _jload(OUT / "router_logits.json")
     if not J: return ""
     MOD = [("emo512", "EMO 512e"), ("emo1000", "EMO 1000e"), ("emo2000", "EMO 2000e")]; PTS = [("30000", "15.7B"), ("38148", "20B"), ("57221", "30B"), ("116479", "61B")]
-    LY = [str(l) for l in range(1, 10)]; xs = list(range(1, 10))
+    LY = [str(l) for l in range(1, 10)]; xs = list(range(1, 10)); COL = {"4": "#2563eb", "8": "#ea580c"}
+    CHANCE = {"4": 0.3838, "8": 0.2625}   # E[largest of K equal groups' counts among 16 draws] / 16: what an evenly spread router gives per token
     def pick(e, kind, key, f=lambda v: v):
         return [None if kind not in e or e[kind][l].get(key) is None else f(e[kind][l][key]) for l in LY]
-    def metrics(m, K, pt):
-        r = J.get(m, {}).get(K); 
-        if not r or pt not in r["points"]: return None
-        e = r["points"][pt]; st = r["points"].get("19074", {}); Ki = int(K); mc = "#ea580c" if Ki == 8 else "#2563eb"
-        S = lambda name, y, color, **kw: dict(name=name, y=y, color=color, gap=True, **kw)
-        start = lambda key: S("start model (10B)", pick(st, "start", key), "#64748b", dashed=True)
-        return [
-            ("Router row norm", "mean L2 norm", [start("row_norm"), S("joint training", pick(e, "joint", "row_norm"), "#111827"), S(f"merged, {K} squares", pick(e, "merged", "row_norm"), mc),
-                                                    S("smallest square", pick(e, "squares", "sq_row_norm_g", min), mc, dotted=True), S("largest square", pick(e, "squares", "sq_row_norm_g", max), mc, dotted=True)]),
-            ("Logit spread a token sees", "std across experts", [start("logit_std"), S("joint training", pick(e, "joint", "logit_std"), "#111827"), S(f"merged, {K} squares", pick(e, "merged", "logit_std"), mc),
-                                                                   S("inside a square's own model", pick(e, "squares", "sq_logit_std"), mc, dashed=True)]),
-            ("Offset between the squares' experts", "x chance", [start("offset_ratio"), S("joint training", pick(e, "joint", "offset_ratio"), "#111827"), S(f"merged, {K} squares", pick(e, "merged", "offset_ratio"), mc)]),
-            ("Largest square's share of a token's top-16", "share", [start("token_max_share"), S("joint training", pick(e, "joint", "token_max_share"), "#111827"), S(f"merged, {K} squares", pick(e, "merged", "token_max_share"), mc)]),
-            ("Square alone vs merged: agreement of its experts' logits", "correlation", [S(f"{K} squares (mean)", pick(e, "squares", "sq_vs_merged_corr"), mc)]),
-        ]
-    panes = []; names = None
-    for K in ("4", "8"):
-        for pt, pl in PTS:
-            per = {m: metrics(m, K, pt) for m, _ in MOD}
-            if not any(v and any(any(y is not None for y in s_["y"]) for _, _, ser in v for s_ in ser if "merged" in s_["name"]) for v in per.values()): continue
+    def has(m, K, pt): r = J.get(m, {}).get(K); return bool(r) and pt in r["points"] and "merged" in r["points"][pt]
+    S = lambda name, y, color, **kw: dict(name=name, y=y, color=color, gap=True, **kw)
+    def series(m, pt, Ks):   # -> [(metric title, y label, series)] for the two metrics, lines of every K in Ks
+        out = []
+        for metric, title, yl in (("row_norm", "Router row norm", "mean L2 norm"), ("token_max_share", "Largest square's share of a token's top-16", "share of the 16")):
+            ser = []
+            for K in Ks:
+                if not has(m, K, pt): continue
+                e = J[m][K]["points"][pt]; st = J[m][K]["points"].get("19074", {}); c = COL[K]
+                if metric == "row_norm":
+                    if not ser: ser += [S("start model (10B)", pick(st, "start", metric), "#64748b", dashed=True), S("joint training", pick(e, "joint", metric), "#111827")]
+                    ser += [S(f"merged, {K} squares", pick(e, "merged", metric), c), S(f"smallest square of {K}", pick(e, "squares", "sq_row_norm_g", min), c, dotted=True), S(f"largest square of {K}", pick(e, "squares", "sq_row_norm_g", max), c, dotted=True)]
+                else:
+                    ser += [S(f"merged, {K} squares", pick(e, "merged", metric), c), S(f"joint training, {K}-way grouping", pick(e, "joint", metric), c, dotted=True),
+                            S(f"even spread over {K} squares (chance)", [CHANCE[K]] * 9, c, const=True, dashed=True)]
+            out.append((title, yl, [s_ for s_ in ser if any(y is not None for y in s_["y"])]))
+        return out
+    pts = [(pt, pl) for pt, pl in PTS if any(has(m, K, pt) for m, _ in MOD for K in ("4", "8"))]
+    if not pts: return card("info", "Setup", "<p>Router-logit passes are running (launched 2026-11-06); this box fills in when they finish.</p>")
+    # one y range per model and metric over every checkpoint and both K, so the slider does not rescale the axis
+    YR = {}
+    for m, _ in MOD:
+        for i_, (title, yl, ser) in enumerate(series(m, pts[0][0], ("4", "8"))):
+            vals = [y for pt, _ in pts for _, _, ser_ in [series(m, pt, ("4", "8"))[i_]] for s_ in ser_ for y in s_["y"] if y is not None]
+            if vals: lo, hi = min(vals), max(vals); pad = max(0.01, 0.08 * (hi - lo)); YR[(m, i_)] = (lo - pad, hi + pad)
+    panes = []
+    for Ks in (("4",), ("8",), ("4", "8")):
+        for pt, pl in pts:
             rows = ""
-            for i in range(5):
+            for i_ in range(2):
                 cells = ""
                 for m, ml in MOD:
-                    if not per[m]: cells += "<div></div>"; continue
-                    title, yl, ser = per[m][i]; ser = [s_ for s_ in ser if any(y is not None for y in s_["y"])]
-                    cells += line_chart(xs, ser, title=f"{ml}: {title.lower()}", y_label=yl, x_label="MoE layer", xfmt=lambda v: f"{v:.0f}", W=400, H=250) if ser else "<div></div>"
+                    title, yl, ser = series(m, pt, Ks)[i_]
+                    cells += line_chart(xs, ser, title=f"{ml}: {title.lower()}", y_label=yl, x_label="MoE layer", xfmt=lambda v: f"{v:.0f}", W=400, H=250, yrange=YR.get((m, i_))) if ser else "<div></div>"
                 rows += f'<div class="rlrow">{cells}</div>'
             fig = "".join(f'<div class="rlfig"><p><b>{ml}</b>, {K} squares at {pl}: logits of each square\'s experts in the joint baseline (grey), the merged model (colour) and the square\'s own model (outline); box = 25&ndash;75%, whiskers 5&ndash;95%</p>{img_tag(OUT / "router_logits_figs" / f"{m}_k{K}_{pt}.png", "")}</div>'
-                          for m, ml in MOD if (OUT / "router_logits_figs" / f"{m}_k{K}_{pt}.png").exists())
-            panes.append((K, pt, pl, rows + fig))
-    if not panes: return card("info", "Setup", "<p>Router-logit passes are running (launched 2026-11-06); this box fills in when they finish.</p>")
-    Ks = sorted({K for K, _, _, _ in panes}); pts = [(pt, pl) for pt, pl in PTS if any(p_ == pt for _, p_, _, _ in panes)]
-    dK = "8" if "8" in Ks else Ks[0]; dP = "57221" if any(p_ == "57221" for _, p_, _, _ in panes) else pts[-1][0]
+                          for K in Ks for m, ml in MOD if (OUT / "router_logits_figs" / f"{m}_k{K}_{pt}.png").exists())
+            panes.append((",".join(Ks), pt, rows + fig))
+    dP = "57221" if any(pt == "57221" for pt, _ in pts) else pts[-1][0]; di = [pt for pt, _ in pts].index(dP)
     what = ("For each checkpoint the same 64 held-out instances are run and the router's full logit vector is kept at the same 4,096 token positions, so models are compared token by token. "
             "Experts are grouped by the square that owned them (layer 1 is whole in every square; it is shown with the layer-2 grouping as a reference). "
-            "<b>Row norm</b>: size of the router weight rows. <b>Logit spread</b>: std of a token's logits across experts, the scale the softmax sees. "
-            "<b>Offset</b>: per token, how far apart the squares' average logits are, relative to what random groups of one jointly trained router give (1 = chance). "
-            "<b>Largest square's share</b>: fraction of a token's 16 selected experts that come from one square (1/K when squares share evenly). "
-            "<b>Agreement</b>: correlation between a square's logits in its own model and the same experts' logits in the merged model. "
+            "<b>Row norm</b>: size of the router weight rows, for the start model, joint training, the merged model and the smallest and largest square alone. "
+            "<b>Largest square's share</b>: per token, the fraction of its 16 selected experts that come from the single square contributing most, averaged over tokens. "
+            "This is a per-token maximum, so an evenly spread router does not give 1/K: 16 draws over K equal groups put about 38% (K = 4) or 26% (K = 8) into the busiest group by chance; "
+            "that chance level is the dashed line, and the jointly trained router with the same grouping sits on it. "
             "The 512e joint model at 30B comes from the one-node training segment, whose finer load-balancing granularity flattens its router; for 512e compare the merged lines with the start model or with the 61B joint point.")
-    ctl = ('<style>.rl .rlpane{display:none}.rl .rlpane.on{display:block}.rl .rlrow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.rl .ctl{margin:6px 0 10px;font-size:0.95em}'
-           '.rl .ctl label{margin-right:12px}.rl .rlfig img{max-width:100%}.rl .rlfig p{max-width:none;font-size:13px;margin:14px 0 2px}</style>'
-           '<div class="rl"><div class="ctl"><b>Squares:</b> ' + " ".join(f'<label><input type="radio" name="rlk" value="{K}"{" checked" if K == dK else ""}> {K}</label>' for K in Ks)
-           + ' &nbsp; <b>Checkpoint:</b> ' + " ".join(f'<label><input type="radio" name="rlp" value="{pt}"{" checked" if pt == dP else ""}> {pl}</label>' for pt, pl in pts) + "</div>"
-           + "".join(f'<div class="rlpane{" on" if (K == dK and pt == dP) else ""}" data-k="{K}" data-p="{pt}">{body}</div>' for K, pt, _, body in panes)
-           + '<p class="note rlnone" style="display:none">No checkpoint of this arm at this point.</p></div>'
-           "<script>(function(){const box=document.querySelector('.rl');if(!box)return;const upd=()=>{const k=box.querySelector('input[name=rlk]:checked').value,p=box.querySelector('input[name=rlp]:checked').value;let any=false;"
-           "box.querySelectorAll('.rlpane').forEach(d=>{const on=d.dataset.k===k&&d.dataset.p===p;d.classList.toggle('on',on);any=any||on;});box.querySelector('.rlnone').style.display=any?'none':'block';};"
-           "box.querySelectorAll('input').forEach(i=>i.addEventListener('change',upd));})();</script>")
+    ctl = ('<style>.rl .rlpane{display:none}.rl .rlpane.on{display:block}.rl .rlrow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.rl .ctl{margin:6px 0 10px;font-size:0.95em;display:flex;flex-wrap:wrap;gap:18px;align-items:center}'
+           '.rl .ctl label{margin-right:8px}.rl .ctl input[type=range]{vertical-align:middle;width:220px;margin:0 8px}.rl .rlfig img{max-width:100%}.rl .rlfig p{max-width:none;font-size:13px;margin:14px 0 2px}</style>'
+           '<div class="rl"><div class="ctl"><span><b>Squares:</b> ' + " ".join(f'<label><input type="checkbox" name="rlk" value="{K}" checked> {K}</label>' for K in ("4", "8")) + '</span>'
+           f'<span><b>Checkpoint:</b> <input type="range" name="rlp" min="0" max="{len(pts) - 1}" step="1" value="{di}" list="rlticks"> <b class="rlpl">{pts[di][1]}</b>'
+           + '<datalist id="rlticks">' + "".join(f'<option value="{i}" label="{pl}"></option>' for i, (_, pl) in enumerate(pts)) + '</datalist></span></div>'
+           + "".join(f'<div class="rlpane{" on" if (ks == "4,8" and pt == dP) else ""}" data-ks="{ks}" data-p="{pt}">{body}</div>' for ks, pt, body in panes)
+           + '<p class="note rlnone" style="display:none">Tick at least one arm; no checkpoint of the ticked arms at this point.</p></div>'
+           "<script>(function(){const box=document.querySelector('.rl');if(!box)return;const P=" + json.dumps([pt for pt, _ in pts]) + ",L=" + json.dumps([pl for _, pl in pts]) + ";"
+           "const upd=()=>{const ks=[...box.querySelectorAll('input[name=rlk]:checked')].map(i=>i.value).sort().join(','),i=+box.querySelector('input[name=rlp]').value;box.querySelector('.rlpl').textContent=L[i];let any=false;"
+           "box.querySelectorAll('.rlpane').forEach(d=>{const on=d.dataset.ks===ks&&d.dataset.p===P[i];d.classList.toggle('on',on);any=any||on;});box.querySelector('.rlnone').style.display=any?'none':'block';};"
+           "box.querySelectorAll('input').forEach(i=>{i.addEventListener('change',upd);i.addEventListener('input',upd);});})();</script>")
     res = ("<ul>" + "".join(f"<li>{t}</li>" for t in ROUTER_LOGITS_TAKE) + "</ul>") if ROUTER_LOGITS_TAKE else ""
     return card("info", "What is measured", f"<p>{what}</p>") + card("results", "Results", res + CHART_CSS + ctl)
 
