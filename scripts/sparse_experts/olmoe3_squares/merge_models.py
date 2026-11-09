@@ -4,7 +4,7 @@
 Inputs: one checkpoint step dir per group (their model_and_optim holds flat fp32 `module.<name>.main`
 tensors), groups.json and the groups' token shares. For the partitioned layers (2..9) every group's
 expert tensors (w_up_gate, w_down, router rows) are scattered back to their global expert ids, so the
-merged layer has all 512 experts again, each owned by exactly one group. Everything else (attention,
+merged layer has all 512 experts again, each owned by exactly one group (or, with overlapping groups, averaged over its owners with token-share weights). Everything else (attention,
 embeddings, dense layer 0, latent projections, shared expert, norms, lm head, and the whole of
 layer 1) is averaged over the four sub-models with token-share weights. Output: a model-only DCP
 checkpoint (`module.<name>.main` keys) + config.json of the full model, readable by the routing
@@ -54,10 +54,18 @@ def main():
         suffix = "." + key.rsplit(".", 1)[1]; base = key[len("module."):-len(suffix)]; l = layer_of(key); shp = expert_shape(base, E, mcfg)
         vals = [next(load_keys(d, [key])) for d in sub_dirs]
         if shp is not None and l in part and suffix != ".step":
-            merged = torch.empty(shp, dtype=vals[0].dtype)
-            for g in range(k):
-                ids = torch.tensor(G["groups"][str(l)][g], dtype=torch.long)
-                merged[ids] = vals[g].reshape(len(ids), *shp[1:])
+            owners = np.bincount(np.concatenate([np.asarray(G["groups"][str(l)][g]) for g in range(k)]), minlength=E); assert (owners >= 1).all(), f"layer {l}: unowned experts"
+            if (owners == 1).all():   # a partition: every expert comes from exactly one sub-model (bit-exact copy)
+                merged = torch.empty(shp, dtype=vals[0].dtype)
+                for g in range(k):
+                    ids = torch.tensor(G["groups"][str(l)][g], dtype=torch.long)
+                    merged[ids] = vals[g].reshape(len(ids), *shp[1:])
+            else:   # overlapping groups (partition_overlap.py): every expert = token-share-weighted mean of its owners' copies, weights renormalised per expert
+                merged = torch.zeros(shp, dtype=torch.float32); wsum = torch.zeros(E, dtype=torch.float32)
+                for g in range(k):
+                    ids = torch.tensor(G["groups"][str(l)][g], dtype=torch.long)
+                    merged.index_add_(0, ids, float(w[g]) * vals[g].reshape(len(ids), *shp[1:]).float()); wsum.index_add_(0, ids, torch.full((len(ids),), float(w[g])))
+                merged = (merged / wsum.view(E, *([1] * (len(shp) - 1)))).to(vals[0].dtype)
             out_sd[key] = merged.reshape(-1).contiguous(); n_scatter += 1
         else:
             assert all(v.numel() == vals[0].numel() for v in vals), key
