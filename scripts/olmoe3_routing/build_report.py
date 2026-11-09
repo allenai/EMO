@@ -1775,25 +1775,28 @@ def build_q5_controls():
                    + card("results", "Results", explorer_button("Show these models in the explorer", models_5a, ["baseline", "m4", "m8", "start"],
                                                                 note="Opens the explorer above with the four start models, one panel each: joint baseline, merged 4 and merged 8 sub-models, and the start model.")
                           + "<ol>" + "".join(f"<li>{t}</li>" for t in takes_5a) + "</ol>"))
-    # 5B: expert count (128e / 1000e / 2000e) and expert width (half-size 1024e)
-    rows = []; b = ""
+    # 5B: expert count (128e / 1000e / 2000e) and expert width (half-size 1024e) -- like 5A: start-model table + one explorer button + one-line observations (user 2026-11-09)
+    rows = []; models_5b = []
     if has("olmoe3_squares_s128rand4"):
-        rows.append(["standard MoE 128e (expert-count ladder: same expert size, a quarter of the total)", "128 &times; 544", "16", "0.80B / 274.5M", "130B", "4 &times; 32 / 8 &times; 16", "8e-4", "every matched checkpoint, 10B &rarr; 130B"])
-        b += random_control("s128", with_charts=False)
+        rows.append(["standard MoE 128e (expert-count ladder: same expert size, a quarter of the total)", "0.80B / 274.5M", "130B", "8e-4"]); models_5b.append("s128")
     if has("olmoe3_squares_emo1000rand8"):
-        rows.append(["EMO 1000e (ladder: the 512e recipe with 1000 experts, pools uniform in [16, 1000])", "1000 &times; 544", "16", "4.90B / 279.5M", "61B", "4 &times; 250 / 8 &times; 125 (seed 2)", "4e-4", "15.7B / 20B / 30B (+ 61B, 4 squares)"])
-        b += random_control("emo1000", with_charts=True) + emo1000_table()
+        rows.append(["EMO 1000e (ladder: the 512e recipe with 1000 experts, pools uniform in [16, 1000])", "4.90B / 279.5M", "61B", "4e-4"]); models_5b.append("emo1000")
     if has("olmoe3_squares_emo2000rand8"):
-        rows.append(["EMO 2000e (ladder: 2000 experts, pools uniform in [16, 2000], expert parallelism 2)", "2000 &times; 544", "16", "9.61B / 285.2M", "61B", "4 &times; 500 / 8 &times; 250 (seed 2)", "4e-4", "15.7B / 20B / 30B (+ 61B, 4 squares)"])
-        b += random_control("emo2000", with_charts=True) + emo1000_table("emo2000")
+        rows.append(["EMO 2000e (ladder: 2000 experts, pools uniform in [16, 2000], expert parallelism 2)", "9.61B / 285.2M", "130B (4 sub-models; 8 sub-models to 30B)", "4e-4"]); models_5b.append("emo2000")
     if half_size_experts_card():
-        rows += [["EMO 1024e half-size experts, top-32 (routed parameters = 512e; the 512e model's active FFN width; EP 2)", "1024 &times; 272", "32", "2.61B / 279.6M", "30B", "4 &times; 256 / 8 &times; 128 (seed 2)", "4e-4", "15.7B / 20B / 30B"],
-                 ["EMO 1024e half-size experts, top-16 (half the active FFN width)", "1024 &times; 272", "16", "2.61B / 242.0M", "30B", "4 &times; 256 / 8 &times; 128 (seed 2)", "4e-4", "15.7B / 20B / 30B"]]
-        b += half_size_experts_card() + random_control("emo1024h272k32", with_charts=True) + emo1000_table("emo1024h272k32") \
-             + random_control("emo1024h272k16", with_charts=True, take="Same picture as the top-32 arm; the takeaway above covers both half-size arms.") + emo1000_table("emo1024h272k16")
-    boxes["5B"] = start_models(rows, "Same random document packs as the 512e controls; each model's expert groups are a fresh random shuffle of its own experts into K equal groups. "
-                               "The 1000e, 2000e and half-size squares train at sub-model LR 4e-4, the winner of the 512e sweep (box 5C), and are merged at the freeze-ablation points only "
-                               "(window-1 mid point = matched step 30,000 = 15.7B; 20B = 38,148; 30B = 57,221). Each square is also scored alone (mean of the K and the best one).") + b if b else ""
+        rows += [["EMO 1024e half-size experts, top-32 (routed parameters = 512e; the 512e model's active FFN width)", "2.61B / 279.6M", "30B", "4e-4"],
+                 ["EMO 1024e half-size experts, top-16 (half the active FFN width)", "2.61B / 242.0M", "30B", "4e-4"]]; models_5b += ["emo1024h272k32", "emo1024h272k16"]
+    takes_5b = ["More full-width experts make the split cheaper: with 1000 and 2000 experts the four-sub-model merge is level with or ahead of joint training, and the eight-sub-model gap shrinks.",
+                "Fewer experts change nothing: the standard 128e model pays the same cost as the 512e one, so the cost is set by the number of sub-models, not the expert count.",
+                "Halving the expert width at fixed total size makes the split costlier at either K, and those eight-sub-model merges never regain their start model.",
+                "Every merge stays ahead of its sub-models alone; the four-sub-model split works for all of these models, the eight-sub-model split costs a lot for all of them."]
+    boxes["5B"] = (start_models(rows, "Same random document packs as the 512e controls; each model's expert groups are a fresh random shuffle of its own experts into 4 or 8 equal groups. "
+                                      "The 1000e, 2000e and half-size sub-models train at LR 4e-4, the winner of the 512e sub-model LR sweep (section 3), and are merged at 15.7B / 20B / 30B "
+                                      "(the 2000e four-sub-model arm continued to 130B, the 1000e one to 61B); the 128e model follows the 512e protocol (every matched checkpoint to 130B).",
+                                cols=["start model (10B tokens)", "total / active", "joint baseline continued to", "sub-model LR"])
+                   + card("results", "Results", explorer_button("Show these models in the explorer", models_5b, ["baseline", "m4", "m8", "l4", "l8", "start"],
+                                                                note="Opens the explorer above with these start models, one panel each: joint baseline, merged 4 and merged 8 sub-models, and the start model.")
+                          + "<ol>" + "".join(f"<li>{t}</li>" for t in takes_5b) + "</ol>")) if rows else ""
     boxes["5C"] = lr_sweep_section()
     boxes["5D"] = s128_lr_sweep_section() + big_lr_sweep_section("1000e") + big_lr_sweep_section("2000e") + big_lb_sweep_section("2000e")
     boxes["5E"] = repartition_section() + std_remerge_section()
