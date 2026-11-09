@@ -1630,12 +1630,13 @@ def router_logits_section():
     res = ("<ul>" + "".join(f"<li>{t}</li>" for t in ROUTER_LOGITS_TAKE) + "</ul>") if ROUTER_LOGITS_TAKE else ""
     return card("info", "What is measured", f"<p>{what}</p>") + card("results", "Results", res + CHART_CSS + ctl)
 
-FIRST_STEPS_TAKE = [   # short observations, one line each, no numbers (user rule 2026-11-04)
+FIRST_STEPS_TAKE = [   # short observations, one line each, no numbers (user rule 2026-11-04); continued probe 2026-11-09
     "The degradation is immediate: one training step of every square already makes the merge worse than the start model, and it worsens step by step.",
-    "It saturates within the first ten steps: eight squares level off after about seven steps, four squares after about three.",
     "Eight squares pay about three times the four-square jump.",
-    "For eight squares the level reached after ten steps is where the control arm's merge still sits at its first regular checkpoint (15.7B), so the squares' learning in between brings the merge no net gain.",
-    "The four-square merge recovers from its jump and is ahead of joint training by 15.7B; the eight-square merge does not."]
+    "Four squares: the peak comes within the first five steps; the merge turns down right after, is back at the start model's level by about fifty steps and improves smoothly from there, with no second bump.",
+    "Eight squares: the jump saturates within about seven steps, but the plateau is not flat: the merge keeps drifting up slowly through at least the first three hundred steps and is only back at its ten-step level by the first regular point (15.7B), so its worst lies somewhere between a few hundred steps and that point.",
+    "In both arms every square alone improves fast and monotonically from the first step, so the merge's early rise is a merge cost, not the squares getting worse.",
+    "The four-square merge recovers from its jump and is ahead of joint training by 15.7B; the eight-square merge is still above the start model at 30B."]
 
 
 def first_steps_section():
