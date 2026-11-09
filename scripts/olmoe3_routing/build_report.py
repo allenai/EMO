@@ -1118,6 +1118,12 @@ def control_explorer_data():
                 if not HT.exists() or not any(_ce(HT / f"merged_match{st}/none") is not None for st in (30000, 38148, 57221)): continue
                 ser[key] = {"h": [hb(C["start"]) if st == 19074 else (_ce(HT / f"merged_match{st}/none") if st in (30000, 38148, 57221) else None) for st in steps],
                             "p": [ref_ppl if st == 19074 else (_ppl(PT / f"match{st}.json") if st in (30000, 38148, 57221) else None) for st in steps]}
+            HO = R / "runs_heldout300b_emorand16ov"; PO = ROOT / "sparse_experts/olmoe3_squares_emorand16ov/ppl_validation/merged"   # overlapping sub-models (2026-11-09): 16 groups of 64, every expert in two
+            if HO.exists() and any(_ce(HO / f"merged_match{st}/none") is not None for st in (30000, 38148, 57221)):
+                ser["o16"] = {"h": [hb(C["start"]) if st == 19074 else (_ce(HO / f"merged_match{st}/none") if st in (30000, 38148, 57221) else None) for st in steps],
+                              "p": [ref_ppl if st == 19074 else (_ppl(PO / f"match{st}.json") if st in (30000, 38148, 57221) else None) for st in steps]}
+                so = [[_ce(HO / f"sub{g}_match{st}/none") for g in range(16)] if st in (30000, 38148, 57221) else [None] for st in steps]
+                ser["so16"] = {"h": [sum(v) / 16 if all(x is not None for x in v) and len(v) == 16 else None for v in so], "c": "#9333ea"}
             if rp_pts and "l4" in ser:  # re-merged + re-partitioned every 10B from the 4e-4 arm's 20B merge
                 i20 = steps.index(38148)
                 ser["rp4"] = {"h": [ser["l4"]["h"][i20] if st == 38148 else (_ce(RPH / f"merged_c{rp_pts[st]}/none") if st in rp_pts else None) for st in steps],
@@ -1136,6 +1142,7 @@ EXPLORER_LINES = [  # key, label, colour, dashed, needs-ppl
     ("f8r", "merged, 8 squares, LR 4e-4, routers frozen (EMO only)", "#7c3aed", True), ("f8ra", "merged, 8 squares, LR 4e-4, routers + attention frozen (EMO only)", "#d97706", True),
     ("f8e", "merged, 8 squares, LR 4e-4, everything frozen except experts (EMO only)", "#0891b2", True),
     ("t8", "merged, 8 squares, LR 4e-4, squares activate 4 of 64 (EMO only)", "#16a34a", False), ("t8n", "merged, 8 squares, LR 4e-4, squares activate 4 of 64 with top-16 weights (EMO only)", "#16a34a", True),
+    ("o16", "merged, 16 overlapping sub-models of 64 (every expert in two), LR 4e-4 (EMO 512e only)", "#9333ea", False), ("so16", "overlapping sub-models alone, mean of 16 (EMO 512e only)", "#9333ea", True),
     ("rm", "re-merged + re-partitioned at 61B (std only)", "#7c3aed", False), ("rs", "squares after re-partition, mean of 4 (std only)", "#7c3aed", True),
     ("start", "start model (10B)", "#64748b", True)]
 EXPLORER_DEFAULT = ["baseline", "m4", "m8", "l4", "l8", "s4", "s8", "start"]
