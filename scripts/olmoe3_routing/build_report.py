@@ -258,9 +258,9 @@ VARIANTS = [("A", "EMO 512e, 4 sub-models", "#2563eb", "the main experiment"),
             ("D", "EMO 512e, 8 sub-models", "#059669", "same as A with k = 8 blocks per layer"),
             ("E", "EMO 512e with pools {64, 512}, 4 sub-models", "#d97706", "same pipeline as A on the arm whose training pools were a random choice of 64 or 512 experts per document"),
             ("5A", "Random split and merge: routing structure of the start model (512e)", "#2563eb", "the same random expert groups and random document packs applied to every 512-expert start model: the EMO model, the standard-routing model and the two random-pool EMO models, 4 and 8 sub-models, 10B &rarr; 30B / 130B"),
-            ("5B", "Random split and merge: expert count and expert width", "#b45309", "the same split for the expert-count ladder (standard 128e, EMO 1000e and 2000e) and for the half-size-expert EMO 1024e models (top-16 and top-32): does the merge cost change with the number or the width of the experts"),
-            ("5C", "Sub-model learning rate", "#0891b2", "one learning rate shared by all squares, swept for the EMO 512e controls (4 and 8 sub-models); the winner, 4e-4, is the sub-model LR of every later control"),
-            ("5D", "Pretraining learning rate and load-balancing weight of the start models", "#0d9488", "is the recipe's 8e-4 the right pretraining LR for the 128e, 1000e and 2000e start models, and its 0.01 the right load-balancing-loss weight for the 2000e model (sweeps from scratch to 5.24B each)"),
+            ("5B", "Sub-model learning rate", "#0891b2", "one learning rate shared by all sub-models, swept for the EMO 512e controls (4 and 8 sub-models); the winner, 4e-4, is the sub-model LR of every later experiment"),
+            ("5C", "Random split and merge: expert count and expert width", "#b45309", "the same split at sub-model LR 4e-4 for the expert-count ladder (EMO 512e, 1000e and 2000e) and for the half-size-expert EMO 1024e models (top-16 and top-32): does the merge cost change with the number or the width of the experts; plus the load-balancing-weight ablation of the 2000e model"),
+            ("5D", "Pretraining learning rate of the start models", "#0d9488", "is the recipe's 8e-4 the right pretraining LR for the 128e, 1000e and 2000e start models: from-scratch LR sweeps to 5.24B tokens with the LR-sweep protocol"),
             ("5E", "Re-merge and re-partition", "#be123c", "merging and re-splitting into fresh random groups during training: every 10B for the EMO 512e 4-square control at LR 4e-4, and once at 61B for the standard 512e control"),
             ("5F", "Freezing parameters in the squares", "#7c3aed", "which parameters the squares need to train: routers, attention and everything-but-the-experts frozen in the 8-square EMO 512e control at LR 4e-4, and the router weights of the squares against the joint baseline"),
             ("5G", "Routing of the merged model", "#0f766e", "how the merged standard 512e control routes compared with the continued baseline and with its own squares, checkpoint by checkpoint"),
@@ -1103,7 +1103,7 @@ def control_explorer_data():
                          "p": [None] * i0 + [m4["p"][i0]] + [_ppl(RMP / "merged" / f"match{st}.json") for st in steps[i0 + 1:]]}
             rsq = [[rv(f"sub{g}_match{st}") for g in range(4)] for st in steps[i0 + 1:]]
             ser["rs"] = {"h": [None] * i0 + [ser["s4"]["h"][i0]] + [sum(v) / 4 if all(x is not None for x in v) else None for v in rsq]}
-        if which == "emo":  # sub-model LR sweep winners (Q5 box 5C): merges at 30000 / 38148 / 57221 only, starting from the 10B start model
+        if which == "emo":  # sub-model LR sweep winners (Q5 box 5B): merges at 30000 / 38148 / 57221 only, starting from the 10B start model
             for k, sqn in ((4, "olmoe3_squares_emorand_lr4e-4"), (8, "olmoe3_squares_emorand8_lr4e-4")):
                 HL = R / f"runs_heldout300b_{'emorand' if k == 4 else 'emorand8'}_lr4e-4"; PL = ROOT / "sparse_experts" / sqn / "ppl_validation" / "merged"
                 if not HL.exists(): continue
@@ -1307,7 +1307,7 @@ def s128_lr_sweep_section():
         extra = "<p><b>Chosen LR pretrained from scratch to 130B</b> (held-out CE, reporting sample) next to the 8e-4 baseline:</p>" + table(["tokens", "chosen LR", "8e-4"], rows2)
     what = ("Six pretraining runs of the standard-routing 128e model from scratch, identical except for the peak LR (2,000-step warmup, then constant: "
             "the WSD trunk used everywhere in this report), stopped at step 10,000 = 5.24B tokens; the 8e-4 row is the existing run at the same "
-            "step. <b>Selection CE</b>: the separate 6,808-instance validation sample also used for the sub-model LR sweep of box 5C; "
+            "step. <b>Selection CE</b>: the separate 6,808-instance validation sample also used for the sub-model LR sweep of box 5B; "
             "<b>held-out CE</b> and <b>ppl sets</b>: the report's usual metrics. The chosen LR is pretrained from scratch to 130B (4 nodes) with the "
             "same matched checkpoints as the 8e-4 baseline.")
     return section("Pretraining learning rate of the 128e model", what, ch + tbl + extra, S128_LR_TAKE)
@@ -1736,6 +1736,46 @@ def big_lb_sweep_section(tag="2000e"):
     return section(f"Load-balancing loss weight of the {tag} model", what, ch + tbl + pending, " ".join(BIG_LB_TAKE) if BIG_LB_TAKE else "pending until every arm is evaluated.")
 
 
+LR_SWEEP_SIMPLE_TAKE = [   # short observations, no numbers (user rule 2026-11-04)
+    "The sub-models want a lower learning rate than the pretraining one: 4e-4 wins for both four and eight sub-models, with the next lower LR close behind.",
+    "At the pretraining LR the four-sub-model merge trails joint training; at 4e-4 it is level with it at the end of the first window.",
+    "The optimum is the same for four and eight sub-models, so 4e-4 is the sub-model LR of every later experiment."]
+
+
+def lr_sweep_simple():
+    """Box 5B as one chart: merged held-out CE at 20B vs sub-model LR for the 4- and 8-square EMO 512e controls, baseline dashed (the full
+    tables live in lr_sweep_section, no longer shown)."""
+    R = ROOT / "sparse_experts/olmoe3_routing"; base = _ce(R / "runs_heldout300b_emo/baseline_step38148/none")
+    ys = {}
+    for k, parent in ((4, "emorand"), (8, "emorand8")):
+        ys[k] = [_ce(R / (f"runs_heldout300b_{parent}" if lr == "8e-4" else f"runs_heldout300b_{parent}_lr{lr}") / "merged_match38148/none") for lr in LR_SWEEP_LRS]
+    if not any(v is not None for k in ys for v in ys[k]): return ""
+    xs = list(range(len(LR_SWEEP_LRS)))
+    ch = CHART_CSS + line_chart(xs, [{"name": "merged, 4 sub-models", "y": ys[4], "color": "#2563eb", "gap": True}, {"name": "merged, 8 sub-models", "y": ys[8], "color": "#ea580c", "gap": True},
+                                    {"name": "joint training", "y": [base] * len(xs), "const": True, "dashed": True, "color": "#059669"}],
+                               title="EMO 512e: held-out CE of the merged model at 20B vs the sub-models' learning rate", y_label="CE", x_label="sub-model LR (shared by all sub-models; 8e-4 is the pretraining LR)", xlabels=LR_SWEEP_LRS, W=720, H=320)
+    what = ("Every sub-model of an arm trains with the same constant LR from the 10B start model on its random documents (the same groups, packs and sliced start checkpoints as the main runs), "
+            "and the sub-models are merged at the end of the first 10B window (20B). The LR was chosen on a separate selection sample; the chart shows the reporting held-out sample.")
+    return card("info", "Setup", f"<p>{what}</p>") + card("results", "Results", "<ol>" + "".join(f"<li>{t}</li>" for t in LR_SWEEP_SIMPLE_TAKE) + "</ol>" + ch)
+
+
+LB_SIMPLE_TAKE = ["The recipe's weight is close to the optimum; a smaller weight is marginally better, a much larger one clearly worse.",
+                  "Over-balancing costs more than under-balancing, so the 2000e baseline stands as trained."]
+
+
+def lb_sweep_simple(tag="2000e"):
+    """The load-balancing-loss-weight ablation of the 2000e model as one simple chart inside box 5C (from-scratch arms to 5.24B at LR 8e-4)."""
+    R = ROOT / "sparse_experts/olmoe3_routing"; H = R / f"runs_heldout300b_emo{tag[:-1]}lb"
+    if not H.exists(): return ""
+    ho = [_ce(R / f"runs_heldout300b_emo{tag[:-1]}lr/lr8e-4_step10000/none") if w == "1e-2" else _ce(H / f"lb{w}_step10000/none") for w in LB_WEIGHTS]
+    if not any(v is not None for v in ho): return ""
+    xs = list(range(len(LB_WEIGHTS)))
+    ch = CHART_CSS + line_chart(xs, [{"name": f"EMO {tag}, held-out CE at 5.24B", "y": ho, "color": "#2563eb", "gap": True}], title=f"EMO {tag} from scratch: held-out CE at 5.24B vs load-balancing loss weight (the recipe uses 1e-2)",
+                               y_label="CE", x_label="load-balancing loss weight", xlabels=LB_WEIGHTS, W=720, H=300)
+    return card("results", f"Load-balancing loss weight ({tag} model)", f"<p>Six runs from scratch to 5.24B tokens at the pretraining LR, the load-balancing loss weight varied by factors of three around the recipe's value.</p>"
+                + "<ol>" + "".join(f"<li>{t}</li>" for t in LB_SIMPLE_TAKE) + "</ol>" + ch)
+
+
 def build_q5_controls():
     """Q5: the random-partition controls, one box per start model (moved out of Q3 on 2026-09-24)."""
     body = question_card("q5")
@@ -1751,7 +1791,7 @@ def build_q5_controls():
         "sample and the v3-small ppl sets. The squares are also scored alone, each on all held-out documents (a random split gives a held-out document no "
         "'own' square), as the mean of the K and the best one. The 10B point of every chart is the start model (untrained slices merge back to it exactly).</li></ol>"
         "<p>The same random expert groups and document packs are used for every 512-expert start model, so the boxes differ only in the start model; "
-        "the 1000- and 2000-expert and half-size-expert models (box 5B) use the same document packs with their own random groups.</p>")
+        "the 1000- and 2000-expert and half-size-expert models (box 5C) use the same document packs with their own random groups.</p>")
     body += CX_CSS + control_explorer() + CX_PRESET_JS
     has = lambda d: (ROOT / "sparse_experts" / d / "groups.json").exists()
     SM_COLS = ["start model (10B tokens)", "routed experts", "top-k", "total / active", "joint baseline continued to", "sub-models: K &times; experts per group", "sub-model LR", "merge points"]
@@ -1759,7 +1799,7 @@ def build_q5_controls():
         return card("info", "Start models", table(cols, rows) + f"<p>{note}</p>")
     boxes = {}
     # 5A: the four 512-expert start models under the same random split
-    rows = [["EMO 512e (the main model)", "2.61B / 276.7M", "130B", "8e-4 (4e-4 arms: sections 3, 5, 6)"],
+    rows = [["EMO 512e (the main model)", "2.61B / 276.7M", "130B", "8e-4 (4e-4 arms: boxes 5B, 5E, 5F)"],
             ["standard MoE 512e", "2.61B / 276.7M", "130B", "8e-4"]]
     if has("olmoe3_squares_randsel4"):
         rows += [["random-pool EMO 512e, pools [16, 512] (each document's pool is a <i>random</i> set of experts of the EMO pool size; in-loop CE 3.036 vs 3.000 at 10B)", "2.61B / 276.7M", "130B (random-pool recipe)", "8e-4"],
@@ -1775,30 +1815,30 @@ def build_q5_controls():
                    + card("results", "Results", explorer_button("Show these models in the explorer", models_5a, ["baseline", "m4", "m8", "start"],
                                                                 note="Opens the explorer above with the four start models, one panel each: joint baseline, merged 4 and merged 8 sub-models, and the start model.")
                           + "<ol>" + "".join(f"<li>{t}</li>" for t in takes_5a) + "</ol>"))
-    # 5B: expert count (128e / 1000e / 2000e) and expert width (half-size 1024e) -- like 5A: start-model table + one explorer button + one-line observations (user 2026-11-09)
-    rows = []; models_5b = []
-    if has("olmoe3_squares_s128rand4"):
-        rows.append(["standard MoE 128e (expert-count ladder: same expert size, a quarter of the total)", "0.80B / 274.5M", "130B", "8e-4"]); models_5b.append("s128")
+    # 5B: the sub-model LR sweep (moved before the expert-count box, user 2026-11-09): one chart, one-line observations
+    boxes["5B"] = lr_sweep_simple()
+    # 5C: expert count (512e / 1000e / 2000e) and expert width (half-size 1024e) at sub-model LR 4e-4 -- like 5A: start-model table + one explorer
+    # button + one-line observations (user 2026-11-09), plus the load-balancing-weight ablation of the 2000e model as one simple chart
+    rows = [["EMO 512e (the main model)", "2.61B / 276.7M", "130B", "4e-4"]]; models_5c = ["emo"]
     if has("olmoe3_squares_emo1000rand8"):
-        rows.append(["EMO 1000e (ladder: the 512e recipe with 1000 experts, pools uniform in [16, 1000])", "4.90B / 279.5M", "61B", "4e-4"]); models_5b.append("emo1000")
+        rows.append(["EMO 1000e (ladder: the 512e recipe with 1000 experts, pools uniform in [16, 1000])", "4.90B / 279.5M", "61B", "4e-4"]); models_5c.append("emo1000")
     if has("olmoe3_squares_emo2000rand8"):
-        rows.append(["EMO 2000e (ladder: 2000 experts, pools uniform in [16, 2000], expert parallelism 2)", "9.61B / 285.2M", "130B (4 sub-models; 8 sub-models to 30B)", "4e-4"]); models_5b.append("emo2000")
+        rows.append(["EMO 2000e (ladder: 2000 experts, pools uniform in [16, 2000], expert parallelism 2)", "9.61B / 285.2M", "130B (4 sub-models; 8 sub-models to 30B)", "4e-4"]); models_5c.append("emo2000")
     if half_size_experts_card():
         rows += [["EMO 1024e half-size experts, top-32 (routed parameters = 512e; the 512e model's active FFN width)", "2.61B / 279.6M", "30B", "4e-4"],
-                 ["EMO 1024e half-size experts, top-16 (half the active FFN width)", "2.61B / 242.0M", "30B", "4e-4"]]; models_5b += ["emo1024h272k32", "emo1024h272k16"]
-    takes_5b = ["More full-width experts make the split cheaper: with 1000 and 2000 experts the four-sub-model merge is level with or ahead of joint training, and the eight-sub-model gap shrinks.",
-                "Fewer experts change nothing: the standard 128e model pays the same cost as the 512e one, so the cost is set by the number of sub-models, not the expert count.",
+                 ["EMO 1024e half-size experts, top-16 (half the active FFN width)", "2.61B / 242.0M", "30B", "4e-4"]]; models_5c += ["emo1024h272k32", "emo1024h272k16"]
+    takes_5c = ["More full-width experts make the split cheaper: from 512 to 1000 to 2000 experts the four-sub-model merge goes from slightly behind joint training to level to ahead, and the eight-sub-model gap shrinks.",
                 "Halving the expert width at fixed total size makes the split costlier at either K, and those eight-sub-model merges never regain their start model.",
-                "Every merge stays ahead of its sub-models alone; the four-sub-model split works for all of these models, the eight-sub-model split costs a lot for all of them."]
-    boxes["5B"] = (start_models(rows, "Same random document packs as the 512e controls; each model's expert groups are a fresh random shuffle of its own experts into 4 or 8 equal groups. "
-                                      "The 1000e, 2000e and half-size sub-models train at LR 4e-4, the winner of the 512e sub-model LR sweep (section 3), and are merged at 15.7B / 20B / 30B "
-                                      "(the 2000e four-sub-model arm continued to 130B, the 1000e one to 61B); the 128e model follows the 512e protocol (every matched checkpoint to 130B).",
+                "Every merge stays ahead of its sub-models alone; four sub-models work for all of these models, eight cost a lot for all of them."]
+    boxes["5C"] = (start_models(rows, "Same random document packs as the 512e controls; each model's expert groups are a fresh random shuffle of its own experts into 4 or 8 equal groups. "
+                                      "All sub-models train at LR 4e-4, the winner of the sub-model LR sweep (box 5B), and are merged at 15.7B / 20B / 30B "
+                                      "(the 512e and 2000e four-sub-model arms continued to 61B and 130B, the 1000e one to 61B).",
                                 cols=["start model (10B tokens)", "total / active", "joint baseline continued to", "sub-model LR"])
-                   + card("results", "Results", explorer_button("Show these models in the explorer", models_5b, ["baseline", "m4", "m8", "l4", "l8", "start"],
-                                                                note="Opens the explorer above with these start models, one panel each: joint baseline, merged 4 and merged 8 sub-models, and the start model.")
-                          + "<ol>" + "".join(f"<li>{t}</li>" for t in takes_5b) + "</ol>")) if rows else ""
-    boxes["5C"] = lr_sweep_section()
-    boxes["5D"] = s128_lr_sweep_section() + big_lr_sweep_section("1000e") + big_lr_sweep_section("2000e") + big_lb_sweep_section("2000e")
+                   + card("results", "Results", explorer_button("Show these models in the explorer", models_5c, ["baseline", "l4", "l8", "start"],
+                                                                note="Opens the explorer above with these start models, one panel each: joint baseline, merged 4 and merged 8 sub-models (LR 4e-4), and the start model.")
+                          + "<ol>" + "".join(f"<li>{t}</li>" for t in takes_5c) + "</ol>")
+                   + lb_sweep_simple("2000e"))
+    boxes["5D"] = s128_lr_sweep_section() + big_lr_sweep_section("1000e") + big_lr_sweep_section("2000e")
     boxes["5E"] = repartition_section() + std_remerge_section()
     boxes["5F"] = freeze_section() + router_norm_section()
     boxes["5G"] = std_routing_section()
