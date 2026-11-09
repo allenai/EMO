@@ -1850,10 +1850,11 @@ def _points_table(which, arm):
         fin = st_pack["tokens_per_group"][g] // 524288
         if st == 30000: return f"{rp}{g}/step{max(1, round(fin * 10926 / 19074))}"
         if st == 38148: return f"{rp}{g}/step{fin}"
-        if st == 116479: return f"{rp}{g}_w3/step{57221 + g * 47684 + 14815}"   # window 3 to the 61B point (squares_big_w3.sh)
+        W3_OFF = {116479: 14815, 166478: 27315, 216477: 39815, 247956: 47684}   # window-3 square steps at the 61B / 87B / 113B / 130B points (squares_big_w3.sh, squares_big_w3_130b.sh)
+        if st in W3_OFF: return f"{rp}{g}_w3/step{57221 + g * 47684 + W3_OFF[st]}"
         return f"{rp}{g}_w2/step{st_pack2['tokens_per_group'][g] // 524288}" if st_pack2 else None
     rows = []
-    pts = [(19074, "10B (start)"), (30000, "15.7B"), (38148, "20B"), (57221, "30B")] + ([(116479, "61B")] if K == 4 and ((HR / "merged_match116479/none").exists() or (SQ / "merged/match116479").exists()) else [])
+    pts = [(19074, "10B (start)"), (30000, "15.7B"), (38148, "20B"), (57221, "30B")] + ([(st, f"{st * 524288 / 1e9:.3g}B") for st in W3_STEPS if st > 57221 and _ce(HR / f"merged_match{st}/none") is not None] if K == 4 else [])   # window-3 points (61B, 87B, 113B, 130B) as their results land
     for st, lab in pts:
         if st == 19074:   # the untrained slices scored alone (init_point_evals.sh: sub<g>_match19074, ppl of init_ckpt/group<g>); the merged slices reproduce the start model
             sh = [_ce(HR / f"sub{g}_match19074/none") for g in range(K)]; sp = [_ppl(SQ / "ppl_validation/init_ckpt" / f"group{g}.json") for g in range(K)]
