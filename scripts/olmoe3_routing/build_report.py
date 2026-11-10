@@ -434,7 +434,7 @@ RANDOM_CONTROL = {  # random expert groups + random document split; arms = (sub-
                     setup_note=" The document packs are the 512e controls' (same random split of the same documents); the expert groups are a fresh random shuffle of the 2000 experts "
                                "into 4 groups of 500 / 8 groups of 250 (seed 2); the squares train at LR 4e-4 at expert parallelism 2 (layer 1 keeps all 2000 experts)."),
     "emo1000": dict(hrb="runs_heldout300b_emo1000", start="emo1000_step19074", ppl_dirs=("olmoe3_squares_emo1000rand8/ppl_validation", "olmoe3_squares_emo1000rand4/ppl_validation"),
-                    base_runs=("olmoe3_275m_1000e_emo_30b", "olmoe3_275m_1000e_emo_61b"), start_ppl="olmoe3_275m_1000e_emo_10b", model="EMO 1000e", E=1000,
+                    base_runs=("olmoe3_275m_1000e_emo_30b", "olmoe3_275m_1000e_emo_61b", "olmoe3_275m_1000e_emo_130b"), start_ppl="olmoe3_275m_1000e_emo_10b", model="EMO 1000e", E=1000,
                     arms=[dict(k=4, lr="4e-4", sqn="olmoe3_squares_emo1000rand4", hr="runs_heldout300b_emo1000rand4", color="#2563eb"), dict(k=8, lr="4e-4", sqn="olmoe3_squares_emo1000rand8", hr="runs_heldout300b_emo1000rand8", color="#ea580c")],
                     remerge=False, take=lambda: EMO1000_TAKE, sparse=True,   # squares_emo1000.sh: sub-model LR 4e-4, merges at 30000 / 38148 / 57221 only
                     setup_note=" The document packs are the 512e controls' (same random split of the same documents); the expert groups are a fresh random "
