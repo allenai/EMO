@@ -266,7 +266,8 @@ VARIANTS = [("A", "EMO 512e, 4 sub-models", "#2563eb", "the main experiment"),
             ("5H", "Load balancing (512e / 1000e / 2000e)", "#475569", "expert-load CV of the joint baselines and of their merged four-square models, and the in-loop load-balancing loss of joint training against the combined four- and eight-square sub-model training (all squares at sub-model LR 4e-4)"),
             ("5I", "Sparser squares", "#16a34a", "an eight-way split leaves each square with 64 experts per layer but still 16 active, far denser than the 16 of 512 it is merged back into: the same 8 squares at LR 4e-4 with only 4 of 64 active"),
             ("5J", "Router weights and logits after disjoint training", "#9333ea", "do the squares' routers drift apart in scale or offset while they train separately: router rows and router logits of the squares, the merged models and the joint baselines, layer by layer"),
-            ("5K", "The first steps of disjoint training", "#b91c1c", "is the merge degradation immediate: the random squares of EMO 512e at LR 4e-4 trained from the 10B checkpoint for a handful of steps, merged after every step and evaluated")]
+            ("5K", "The first steps of disjoint training", "#b91c1c", "is the merge degradation immediate: the random squares of EMO 512e at LR 4e-4 trained from the 10B checkpoint for a handful of steps, merged after every step and evaluated"),
+            ("5L", "Overlapping sub-models", "#0e7490", "does letting the sub-models share experts help the merge: EMO 512e at LR 4e-4 split into 16 random groups of 64 experts in which every expert belongs to two groups, the documents split 16 ways, each expert merged as the mean of its two copies")]
 
 
 def variant(letter, inner, tab="q3"):
@@ -1643,6 +1644,29 @@ def router_logits_section():
     res = ("<ul>" + "".join(f"<li>{t}</li>" for t in ROUTER_LOGITS_TAKE) + "</ul>") if ROUTER_LOGITS_TAKE else ""
     return card("info", "What is measured", f"<p>{what}</p>") + card("results", "Results", res + CHART_CSS + ctl)
 
+OVERLAP_TAKE = [   # short observations, one line each, no numbers (user rule 2026-11-04)
+    "Sharing experts between sub-models does not help: the merge of 16 overlapping sub-models of 64 experts lands exactly where the merge of 8 disjoint sub-models of 64 does, at every point.",
+    "The sub-models themselves are worse than the disjoint ones, since each sees half the documents, yet the merge is no worse: averaging an expert's two copies recovers what each copy lacks.",
+    "The merge cost is therefore set by the size of the expert set a sub-model trains, not by how many sub-models there are or whether their experts overlap."]
+
+
+def overlap_section():
+    """Box 5L (user request 2026-11-09): EMO 512e from the 10B checkpoint, sub-model LR 4e-4, 16 random groups of 64 experts per layer with every expert in
+    two groups (partition_overlap.py: two independent random 8-way partitions stacked), the window documents split uniformly at random 16 ways, merged at
+    15.7B / 20B / 30B with every expert the token-share-weighted mean of its two copies (squares_overlap16.sh). Explorer lines o16 / so16."""
+    HO = ROOT / "sparse_experts/olmoe3_routing/runs_heldout300b_emorand16ov"
+    if not HO.exists() or not any(_ce(HO / f"merged_match{st}/none") is not None for st in (30000, 38148, 57221)): return ""
+    what = ("Same start model, learning rate, document windows and matched points as the 8-sub-model control of the EMO 512e model. In every layer 2&ndash;9 the experts are shuffled twice into "
+            "8 groups of 64 and the two partitions are stacked, so there are 16 groups of 64 and every expert belongs to exactly two of them (a group of the first partition shares "
+            "between 2 and 16 experts with a group of the second, 8 on average); layer 1 is whole in every sub-model. The documents of each 10B window go to one of the 16 sub-models "
+            "uniformly at random, so each sub-model trains on half as many documents as an 8-way sub-model but every expert still sees an eighth of the documents through its two copies, "
+            "and the arm costs the same GPU time. At merge time an expert's weights and its router row are the token-share-weighted mean of its two copies (near-equal shares, so a "
+            "plain average); everything shared is averaged over the 16. Every sub-model is also scored alone on the held-out sample.")
+    btn = explorer_button("Compare with the disjoint 8 sub-models in the explorer", ["emo"], ["baseline", "l8", "s8", "o16", "so16", "start"],
+                          note="Opens the EMO 512e panel with joint training, the merged 8 disjoint sub-models and their mean alone, the merged 16 overlapping sub-models and their mean alone, and the start model.")
+    return card("info", "Setup", f"<p>{what}</p>") + card("results", "Results", btn + "<ol>" + "".join(f"<li>{t}</li>" for t in OVERLAP_TAKE) + "</ol>")
+
+
 FIRST_STEPS_TAKE = [   # short observations, one line each, no numbers (user rule 2026-11-04); continued probe 2026-11-09
     "The degradation is immediate: one training step of every square already makes the merge worse than the start model, and it worsens step by step.",
     "Eight squares pay about three times the four-square jump.",
@@ -1880,6 +1904,7 @@ def build_q5_controls():
     boxes["5I"] = sparse_squares_section()
     boxes["5J"] = router_logits_section()
     boxes["5K"] = first_steps_section()
+    boxes["5L"] = overlap_section()
     boxes = {L: inner for L, inner in boxes.items() if inner}
     body += VARIANT_CSS + card("info", "Experiments",
         '<ul class="q3index">' + "".join(f'<li><a href="#q5-{L}"><b>{L}</b> &middot; {t}</a> &mdash; {bl}</li>' for L, t, _, bl in VARIANTS if L in boxes) + "</ul>")
@@ -2300,11 +2325,11 @@ def artifact_page(body, path):
     """The Disjoint Training Report: Q5 as its own page (a Claude artifact). Same content as the Q5 tab, renumbered 1-8 (the 5A-5H
     letters only mean something inside the parent report), with a header, a sticky contents rail and its own stylesheet."""
     import datetime, re
-    letters = "ABCEFGHIJK"; num = lambda L: str(letters.index(L) + 1)   # no 5D any more (its sweeps live in 5B)
+    letters = "ABCEFGHIJKL"; num = lambda L: str(letters.index(L) + 1)   # no 5D any more (its sweeps live in 5B)
     for L in letters:
         body = body.replace(f'id="q5-5{L}"', f'id="s{num(L)}"').replace(f'href="#q5-5{L}"', f'href="#s{num(L)}"').replace(f'<span class="vb">5{L}</span>', f'<span class="vb">{num(L)}</span>').replace(f'<b>5{L}</b> &middot;', f'<b>{num(L)}</b> &middot;')
-    body = re.sub(r"boxes 5([A-K])((?:, 5[A-K])+)", lambda m: "sections " + ", ".join(num(x) for x in re.findall(r"5([A-K])", m.group(0))), body)
-    body = re.sub(r"box 5([A-K])", lambda m: "section " + num(m.group(1)), body)
+    body = re.sub(r"boxes 5([A-L])((?:, 5[A-L])+)", lambda m: "sections " + ", ".join(num(x) for x in re.findall(r"5([A-L])", m.group(0))), body)
+    body = re.sub(r"box 5([A-L])", lambda m: "section " + num(m.group(1)), body)
     body = body.replace('<div class="card info"><h3>Experiments</h3>', '<div class="card info rp-index"><h3>Experiments</h3>')
     body = re.sub(r'<div class="card ok"><h3>Question</h3>.*?</div>', "", body, count=1, flags=re.S)   # the question card (user 2026-11-03: title only, no question box)
     toc = "".join(f'<li><a href="#s{num(L[1])}"><span class="n">{num(L[1])}</span> {t}</a></li>' for L, t, _, _ in VARIANTS if L.startswith("5") and f'id="s{num(L[1])}"' in body)
