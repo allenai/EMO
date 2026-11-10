@@ -258,8 +258,8 @@ VARIANTS = [("A", "EMO 512e, 4 sub-models", "#2563eb", "the main experiment"),
             ("D", "EMO 512e, 8 sub-models", "#059669", "same as A with k = 8 blocks per layer"),
             ("E", "EMO 512e with pools {64, 512}, 4 sub-models", "#d97706", "same pipeline as A on the arm whose training pools were a random choice of 64 or 512 experts per document"),
             ("5A", "Random split and merge: routing structure of the start model (512e)", "#2563eb", "the same random expert groups and random document packs applied to every 512-expert start model: the EMO model, the standard-routing model and the two random-pool EMO models, 4 and 8 sub-models, 10B &rarr; 30B / 130B"),
-            ("5B", "Pretraining learning rate and sub-model learning rate", "#0891b2", "the start models' pretraining LR swept from scratch at every scale (standard 128e, EMO 1000e and 2000e; the recipe's 8e-4 stands), and one learning rate shared by all sub-models swept for the EMO 512e controls (4 and 8 sub-models); the winner, 4e-4, is the sub-model LR of every later experiment"),
-            ("5C", "Random split and merge: expert count and expert width", "#b45309", "the same split at sub-model LR 4e-4 for the expert-count ladder (EMO 512e, 1000e and 2000e) and for the half-size-expert EMO 1024e models (top-16 and top-32): does the merge cost change with the number or the width of the experts; plus the load-balancing-weight ablation of the 2000e model"),
+            ("5B", "Hyperparameter tuning: pretraining LR, load-balancing weight, sub-model LR", "#0891b2", "the start models' recipe checked from scratch at every scale: the pretraining LR (standard 128e, EMO 1000e and 2000e; the recipe's 8e-4 stands) and the load-balancing loss weight (EMO 2000e; the recipe's 1e-2 stands), and one learning rate shared by all sub-models swept for the EMO 512e controls (4 and 8 sub-models); the winner, 4e-4, is the sub-model LR of every later experiment"),
+            ("5C", "Random split and merge: expert count and expert width", "#b45309", "the same split at sub-model LR 4e-4 for the expert-count ladder (EMO 512e, 1000e and 2000e) and for the half-size-expert EMO 1024e models (top-16 and top-32): does the merge cost change with the number or the width of the experts"),
             ("5E", "Re-merge and re-partition", "#be123c", "merging and re-splitting into fresh random groups during training: every 10B for the EMO 512e 4-square control at LR 4e-4, and once at 61B for the standard 512e control"),
             ("5F", "Freezing parameters in the squares", "#7c3aed", "which parameters the squares need to train: routers, attention and everything-but-the-experts frozen in the 8-square EMO 512e control at LR 4e-4, and the router weights of the squares against the joint baseline"),
             ("5G", "Routing of the merged model", "#0f766e", "how the merged standard 512e control routes compared with the continued baseline and with its own squares, checkpoint by checkpoint"),
@@ -1831,8 +1831,9 @@ def lb_sweep_simple(tag="2000e"):
     xs = list(range(len(LB_WEIGHTS)))
     ch = CHART_CSS + line_chart(xs, [{"name": f"EMO {tag}, held-out CE at 5.24B", "y": ho, "color": "#2563eb", "gap": True}], title=f"EMO {tag} from scratch: held-out CE at 5.24B vs load-balancing loss weight (the recipe uses 1e-2)",
                                y_label="CE", x_label="load-balancing loss weight", xlabels=LB_WEIGHTS, W=720, H=300)
-    return card("results", f"Load-balancing loss weight ({tag} model)", f"<p>Six runs from scratch to 5.24B tokens at the pretraining LR, the load-balancing loss weight varied by factors of three around the recipe's value.</p>"
-                + "<ol>" + "".join(f"<li>{t}</li>" for t in LB_SIMPLE_TAKE) + "</ol>" + ch)
+    what = (f"The EMO {tag} model from scratch to 5.24B tokens at the pretraining LR (the LR sweep's protocol), the load-balancing loss weight varied by factors of three around the recipe's 1e-2; "
+            "the chart shows the reporting held-out sample.")
+    return card("info", "Load-balancing loss weight", f"<p>{what}</p>") + card("results", "Results", "<ol>" + "".join(f"<li>{t}</li>" for t in LB_SIMPLE_TAKE) + "</ol>" + ch)
 
 
 def build_q5_controls():
@@ -1875,7 +1876,7 @@ def build_q5_controls():
                                                                 note="Opens the explorer above with the four start models, one panel each: joint baseline, merged 4 and merged 8 sub-models, and the start model.")
                           + "<ol>" + "".join(f"<li>{t}</li>" for t in takes_5a) + "</ol>"))
     # 5B: the sub-model LR sweep (moved before the expert-count box, user 2026-11-09): one chart, one-line observations
-    boxes["5B"] = pretraining_lr_simple() + lr_sweep_simple()
+    boxes["5B"] = pretraining_lr_simple() + lb_sweep_simple("2000e") + lr_sweep_simple()
     # 5C: expert count (512e / 1000e / 2000e) and expert width (half-size 1024e) at sub-model LR 4e-4 -- like 5A: start-model table + one explorer
     # button + one-line observations (user 2026-11-09), plus the load-balancing-weight ablation of the 2000e model as one simple chart
     rows = [["EMO 512e (the main model)", "2.61B / 276.7M", "130B", "4e-4"]]; models_5c = ["emo"]
@@ -1895,8 +1896,7 @@ def build_q5_controls():
                                 cols=["start model (10B tokens)", "total / active", "joint baseline continued to", "sub-model LR"])
                    + card("results", "Results", explorer_button("Show these models in the explorer", models_5c, ["baseline", "l4", "l8", "start"],
                                                                 note="Opens the explorer above with these start models, one panel each: joint baseline, merged 4 and merged 8 sub-models (LR 4e-4), and the start model.")
-                          + "<ol>" + "".join(f"<li>{t}</li>" for t in takes_5c) + "</ol>")
-                   + lb_sweep_simple("2000e"))
+                          + "<ol>" + "".join(f"<li>{t}</li>" for t in takes_5c) + "</ol>"))
     boxes["5E"] = repartition_section() + std_remerge_section()
     boxes["5F"] = freeze_section() + router_norm_section()
     boxes["5G"] = std_routing_section()
