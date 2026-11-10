@@ -5,15 +5,19 @@
 # steps); the joint baseline is continued 61B -> 130B (olmoe3_275m_2000e_emo_130b_baseline.sh, 4 nodes, keeper). At every point: equal-weight
 # merge, then ONE 8-GPU evaluation job per point (eval_batch_8gpu.sh: merged + every square + baseline, held-out sample and ppl sets).
 # GATE (user: the running analysis must not be blocked): nothing is submitted until the experiments listed in GATE_IDS have started.
-#   bash scripts/sparse_experts/olmoe3_squares/squares_big_w3_130b.sh emo2000      (idempotent; detach it; commit + push first)
+#   bash scripts/sparse_experts/olmoe3_squares/squares_big_w3_130b.sh emo512|emo1000|emo2000      (idempotent; detach it; commit + push first)
 set -u; cd "$(git rev-parse --show-toplevel)"; export PATH=/root/.conda/envs/emo/bin:$PATH
-ARM="${1:?emo2000}"; [ $ARM = emo2000 ] || { echo "emo2000 only"; exit 1; }
-SQN=olmoe3_squares_emo2000rand4; RP=olmoe3_275m_emo2000rand4_square; FULL=olmoe3_275m_2000e_emo_10b; E=2000; HR=runs_heldout300b_emo2000rand4; HRB=runs_heldout300b_emo2000
-BRUN=olmoe3_275m_2000e_emo_130b; BSCRIPT=scripts/sparse_experts/model_scripts/olmoe3_275m_2000e_emo_130b_baseline.sh; SQENV="OLMOE3_EP_SIZE=2 OLMOE3_EP_PATH=sync_1d"; BSF=2; PPLB=4
+ARM="${1:?emo512|emo1000|emo2000}"
+case $ARM in   # (2026-11-10: generalised from emo2000 to the 512e and 1000e four-square LR-4e-4 arms, user request)
+  emo512)  SQN=olmoe3_squares_emorand_lr4e-4; RP=olmoe3_275m_emorand_lr4e-4_square; FULL=olmoe3_275m_emo_10b;       E=512;  HR=runs_heldout300b_emorand_lr4e-4; HRB=runs_heldout300b_emo;     BRUN=olmoe3_275m_emo_130b;       BSCRIPT="";                                                                        SQENV="";                                       BSF=8; PPLB=8; GATE_DEFAULT="";;
+  emo1000) SQN=olmoe3_squares_emo1000rand4;    RP=olmoe3_275m_emo1000rand4_square;    FULL=olmoe3_275m_1000e_emo_10b; E=1000; HR=runs_heldout300b_emo1000rand4;    HRB=runs_heldout300b_emo1000; BRUN=olmoe3_275m_1000e_emo_130b; BSCRIPT=scripts/sparse_experts/model_scripts/olmoe3_275m_1000e_emo_130b_baseline.sh; SQENV="";                                       BSF=4; PPLB=8; GATE_DEFAULT="";;
+  emo2000) SQN=olmoe3_squares_emo2000rand4;    RP=olmoe3_275m_emo2000rand4_square;    FULL=olmoe3_275m_2000e_emo_10b; E=2000; HR=runs_heldout300b_emo2000rand4;    HRB=runs_heldout300b_emo2000; BRUN=olmoe3_275m_2000e_emo_130b; BSCRIPT=scripts/sparse_experts/model_scripts/olmoe3_275m_2000e_emo_130b_baseline.sh; SQENV="OLMOE3_EP_SIZE=2 OLMOE3_EP_PATH=sync_1d"; BSF=2; PPLB=4; GATE_DEFAULT="01M6WR2TEK3A8QKXVKVXFVPY0E $(grep -o '[A-Z0-9]*$' sparse_experts/olmoe3_squares_emo2000lb/logs/lb1e-1_launched 2>/dev/null)";;
+  *) echo "emo512|emo1000|emo2000"; exit 1;;
+esac
 S=sparse_experts; W=/weka/oe-training-default/ryanwang/EMO/sparse_experts; SAMPLE=sample_8k_300b.npz; LR=4e-4
 B0=57221; SQ_STEPS=47684; DONE_STEPS=14815; POINTS="166478:27315 216477:39815 247956:47684"   # matched step : the square's step count at that fraction of its quarter
 SQ=$S/$SQN; LOG=$SQ/logs; SP=/tmp/claude-0/-root-EMO/c7db74f2-bbe3-4a2c-9d37-93c64250d7c6/scratchpad; mkdir -p $LOG $SP $S/olmoe3_routing/baseline_keeper
-GATE_IDS="${GATE_IDS:-01M6WR2TEK3A8QKXVKVXFVPY0E $(grep -o '[A-Z0-9]*$' $S/olmoe3_squares_emo2000lb/logs/lb1e-1_launched 2>/dev/null)}"   # the consolidated evaluation job + the last LB-sweep arm
+GATE_IDS="${GATE_IDS-$GATE_DEFAULT}"   # emo2000 (2026-11-08): the consolidated evaluation job + the last LB-sweep arm had to start first; the 512e / 1000e extensions are ungated
 say() { echo "$(date -u +%m-%d\ %H:%M) [w3-130b $ARM] $*"; }
 state() { beaker experiment get "$1" --format=json 2>/dev/null | python -c "
 import json,sys
@@ -26,7 +30,7 @@ launch_train() { local marker=$1 log=$2 script=$3; shift 3; [ -f "$marker" ] && 
   say "$(basename $marker): ${u:-LAUNCH FAILED}"; [ -n "$u" ] && echo "$u" > "$marker"; }
 have() { [ -f "$1/meta.json" ] || [ -f "$1/rank0/DONE" ]; }
 # ---- 1. baseline 61B -> 130B (4 nodes; keeper resumes it) ----
-[ -f $S/$BRUN/step247956/train/rank0.pt ] || { launch_train $LOG/baseline130_launched $LOG/launch_baseline130.log $BSCRIPT
+[ -f $S/$BRUN/step247956/train/rank0.pt ] || [ -z "$BSCRIPT" ] || { launch_train $LOG/baseline130_launched $LOG/launch_baseline130.log $BSCRIPT
   pgrep -f "^bash scripts/sparse_experts/olmoe3_squares/baseline_keeper.sh" > /dev/null || { ( setsid nohup bash scripts/sparse_experts/olmoe3_squares/baseline_keeper.sh >> $S/olmoe3_routing/baseline_keeper/log.txt 2>&1 < /dev/null & ); say "baseline keeper started"; }; }
 # ---- 2. squares: resume from the 61B checkpoints to the end of the quarter ----
 for g in 0 1 2 3; do start=$((B0 + g * SQ_STEPS)); fixed=$(for p in $POINTS; do echo -n "$((start + ${p#*:})),"; done); fixed=${fixed%,}
@@ -45,7 +49,7 @@ for p in $POINTS; do P=${p%%:*}; F=${p#*:}; subs=()
   have $S/olmoe3_routing/$HRB/baseline_step$P/none || echo "python scripts/sparse_experts/olmoe3_routing/extract_routing.py --checkpoint $W/$BRUN/step$P --instances $W/olmoe3_routing/$SAMPLE --out-dir $W/olmoe3_routing/$HRB/baseline_step$P/none/rank0 --restrict none --batch-size $BSF --log-every 100" >> $CF
   for g in 0 1 2 3; do st=$((B0 + g * SQ_STEPS + F)); have $S/olmoe3_routing/$HR/sub${g}_match$P/none || echo "python scripts/sparse_experts/olmoe3_routing/extract_routing.py --checkpoint $W/${RP}${g}_w3/step$st --instances $W/olmoe3_routing/$SAMPLE --out-dir $W/olmoe3_routing/$HR/sub${g}_match$P/none/rank0 --restrict none --batch-size $BSF --log-every 100" >> $CF; done
   [ -f $SQ/ppl_validation/merged/match$P.json ] || echo "python scripts/debug_validation/eval_ppl_validation.py --checkpoints $W/$SQN/merged/match$P --out-dir $W/$SQN/ppl_validation --batch-size $PPLB" >> $CF
-  [ -f $SQ/ppl_validation/$BRUN/step$P.json ] || echo "python scripts/debug_validation/eval_ppl_validation.py --checkpoints $W/$BRUN/step$P --out-dir $W/$SQN/ppl_validation --batch-size $PPLB" >> $CF
+  [ -f $SQ/ppl_validation/$BRUN/step$P.json ] || [ -f $S/olmoe3_squares_emorand/ppl_validation/$BRUN/step$P.json ] || echo "python scripts/debug_validation/eval_ppl_validation.py --checkpoints $W/$BRUN/step$P --out-dir $W/$SQN/ppl_validation --batch-size $PPLB" >> $CF
   ck=""; for g in 0 1 2 3; do st=$((B0 + g * SQ_STEPS + F)); [ -f $SQ/ppl_validation/${RP}${g}_w3/step$st.json ] || ck="$ck $W/${RP}${g}_w3/step$st"; done; [ -n "$ck" ] && echo "python scripts/debug_validation/eval_ppl_validation.py --checkpoints $ck --out-dir $W/$SQN/ppl_validation --batch-size $PPLB" >> $CF
   if [ -s $CF ] && [ ! -f $LOG/evals_$P.launched ]; then u=$(python3 scripts/sparse_experts/olmoe3_beaker_cmd_cli.py --name "$SQN-evals-$P" --gpus 8 -- bash scripts/sparse_experts/olmoe3_squares/eval_batch_8gpu.sh $W/$SQN/logs/evals_$P.txt 2>&1 | tail -n 1); say "evals $P ($(wc -l < $CF) commands): $u"; echo "$u" | grep -q beaker.org && echo "$u" > $LOG/evals_$P.launched; fi
 done
