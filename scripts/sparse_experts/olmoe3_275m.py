@@ -50,6 +50,7 @@ Env knobs (all forwarded to the Beaker worker, which rebuilds the config):
                           (default, the ladder's EMO: the d experts with the largest summed router
                           score over the document's tokens) | random (a uniformly random set of d
                           experts per document, so the pool size distribution is kept but the pool
+                          content is random) | mix:<p> (a fraction p of the documents random, the rest relevance;
                           content ignores the router). Applied by patching the document-score input
                           of the pool mask in EmoRouterV2.forward, training branch only; eval pools
                           (eval_document_expert_pool, default all experts) are selected as before.
@@ -218,8 +219,10 @@ EMO_MAX_POOL = int(os.environ.get("OLMOE3_EMO_MAX_POOL", str(NUM_ROUTED_EXPERTS)
 EMO_EVAL_POOL = int(os.environ.get("OLMOE3_EMO_EVAL_POOL", str(NUM_ROUTED_EXPERTS)))
 EMO_POOL_DIST = os.environ.get("OLMOE3_EMO_POOL_DIST", "uniform").strip().lower()
 EMO_POOL_SELECT = os.environ.get("OLMOE3_EMO_POOL_SELECT", "relevance").strip().lower()
-if EMO_POOL_SELECT not in ("relevance", "random"):
-    raise ValueError(f"OLMOE3_EMO_POOL_SELECT must be relevance or random, got {EMO_POOL_SELECT!r}")
+# mix:<p> (user request 2026-11-10): a fraction p of the training documents get a RANDOM pool, the rest the relevance pool (pool size drawn as always)
+EMO_POOL_RANDOM_FRAC = 1.0 if EMO_POOL_SELECT == "random" else (float(EMO_POOL_SELECT[4:]) if EMO_POOL_SELECT.startswith("mix:") else 0.0)
+if EMO_POOL_SELECT not in ("relevance", "random") and not (EMO_POOL_SELECT.startswith("mix:") and 0.0 < EMO_POOL_RANDOM_FRAC < 1.0):
+    raise ValueError(f"OLMOE3_EMO_POOL_SELECT must be relevance, random or mix:<fraction in (0,1)>, got {EMO_POOL_SELECT!r}")
 # Learned per-document pool size (scripts/sparse_experts/emo_learned_d.py): d_head predicts each document's
 # pool in [min_pool, max_pool]; STE mask; size penalty lambda_d; optional warm-up that phases the restriction in.
 LEARNED_D = _env_bool("OLMOE3_EMO_LEARNED_D", False)
@@ -332,9 +335,13 @@ def install_pool_dist_patch(alpha) -> None:
     EmoRouterV2._pool_dist_alpha = alpha  # type: ignore[attr-defined]
 
 
-def install_random_pool_select_patch() -> None:
+def install_random_pool_select_patch(random_frac: float = 1.0) -> None:
     """Make every training document's expert pool a uniformly random set of d experts (d from the
     pool-size sampler as before) instead of the d experts with the largest summed router score.
+    With random_frac < 1 (OLMOE3_EMO_POOL_SELECT=mix:<p>) only a Bernoulli(p) subset of the documents
+    gets the random pool and the others keep the relevance pool: the per-document coin is drawn like
+    the pool sizes (one draw per document index, gathered to the tokens) and selects, per token,
+    between the random-noise document sums and the real ones.
 
     EmoRouterV2.forward computes ``document_scores = ops.doc_sum_scatter(scores, segment_ids)`` and
     keeps each document's top-d experts of it. This patch gives the router module its own view of
@@ -352,9 +359,14 @@ def install_random_pool_select_patch() -> None:
     real_doc_sum_scatter = ops_mod.doc_sum_scatter
 
     def doc_sum_scatter(per_token: torch.Tensor, segment_ids: torch.Tensor) -> torch.Tensor:
-        if state["training"]:
-            per_token = torch.rand_like(per_token)
-        return real_doc_sum_scatter(per_token, segment_ids)
+        if not state["training"]:
+            return real_doc_sum_scatter(per_token, segment_ids)
+        if random_frac >= 1.0:
+            return real_doc_sum_scatter(torch.rand_like(per_token), segment_ids)
+        real = real_doc_sum_scatter(per_token, segment_ids)
+        rnd = real_doc_sum_scatter(torch.rand_like(per_token), segment_ids)
+        coin = (torch.rand(segment_ids.shape, device=segment_ids.device) < random_frac).gather(1, segment_ids)   # one draw per document
+        return torch.where(coin.unsqueeze(-1), rnd, real)
 
     view = types.SimpleNamespace(**{k: v for k, v in vars(ops_mod).items() if not k.startswith("__")})
     view.doc_sum_scatter = doc_sum_scatter
@@ -369,7 +381,7 @@ def install_random_pool_select_patch() -> None:
             state["training"] = False
 
     EmoRouterV2.forward = forward  # type: ignore[method-assign]
-    EmoRouterV2._pool_select = "random"  # type: ignore[attr-defined]
+    EmoRouterV2._pool_select = "random" if random_frac >= 1.0 else f"mix{random_frac:g}"  # type: ignore[attr-defined]
 
 
 def install_zero_lr_warmup_patch() -> None:
@@ -396,8 +408,8 @@ if FREEZE_ROUTER or FREEZE_PATTERNS:
     install_zero_lr_warmup_patch()
 if EMO_ENABLED:
     install_pool_dist_patch(EMO_POOL_ALPHA)
-    if EMO_POOL_SELECT == "random":
-        install_random_pool_select_patch()
+    if EMO_POOL_RANDOM_FRAC > 0.0:
+        install_random_pool_select_patch(EMO_POOL_RANDOM_FRAC)
 ATTN_BACKEND = AttentionBackendName(os.environ.get("OLMOE3_ATTN_BACKEND", "flash_3"))
 
 
@@ -974,7 +986,7 @@ def build_trainer_config(common: CommonComponents, cluster: str) -> TrainerConfi
                 tags=["pretraining", EXPERIMENT_TAG, "olmoe3_275m", f"{NUM_ROUTED_EXPERTS}e", *([f"group{SQUARES_GROUP}"] if SQUARES_GROUP is not None else []),
                       "emo" if EMO_ENABLED else "noemo",
                       *([f"pool_{EMO_POOL_DIST.replace(':', '').replace(',', 'or')}"] if EMO_ENABLED and EMO_POOL_ALPHA is not None else []),
-                      *(["pool_select_random", f"pool_min{EMO_MIN_POOL}"] if EMO_ENABLED and EMO_POOL_SELECT == "random" else []),
+                      *([f"pool_select_{EMO_POOL_SELECT.replace(':', '')}", f"pool_min{EMO_MIN_POOL}"] if EMO_ENABLED and EMO_POOL_RANDOM_FRAC > 0.0 else []),
                       *(["learned_d", f"ld_T{LD_TEMP:g}_l{LD_LAMBDA:g}_w{LD_WARMUP}_m{LD_LR_MULT:g}", f"ld_signal_{LD_SIGNAL}"] if LEARNED_D else []),
                       *(["router_only"] if ROUTER_ONLY_LR is not None else []), *(["router_frozen"] if FREEZE_ROUTER else []), *([f"freeze_{os.environ['OLMOE3_FREEZE_TAG']}"] if os.environ.get("OLMOE3_FREEZE_TAG") else []),
                       *([f"lb_weight_{LB_WEIGHT:g}"] if LB_WEIGHT != 0.01 else []),
