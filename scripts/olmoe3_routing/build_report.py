@@ -1674,7 +1674,11 @@ FIRST_STEPS_TAKE = [   # short observations, one line each, no numbers (user rul
     "Four squares: the peak comes within the first five steps; the merge turns down right after, is back at the start model's level by about fifty steps and improves smoothly from there, with no second bump.",
     "Eight squares: the jump saturates within about seven steps, but the plateau is not flat: the merge keeps drifting up slowly through at least the first three hundred steps and is only back at its ten-step level by the first regular point (15.7B), so its worst lies somewhere between a few hundred steps and that point.",
     "In both arms every square alone improves fast and monotonically from the first step, so the merge's early rise is a merge cost, not the squares getting worse.",
-    "The four-square merge recovers from its jump and is ahead of joint training by 15.7B; the eight-square merge is still above the start model at 30B."]
+    "The four-square merge recovers from its jump and is ahead of joint training by 15.7B; the eight-square merge is still above the start model at 30B.",
+    "The standard-routing model spikes far harder: both of its merges jump several times higher than EMO's in the first steps, four squares peaking within four steps and eight squares within nine.",
+    "The standard four-square merge then recovers only slowly and is still above its start model after three hundred steps, where EMO's was back below it within fifty.",
+    "The standard eight-square merge dips briefly after its peak and then climbs again through step three hundred, ending near where its control arm's merge sits at the first regular point, the same shape as EMO's eight-square plateau.",
+    "Square 0 alone improves monotonically for the standard model as well, so for both routers the early rise is a merge cost, not the squares getting worse."]
 
 
 FIRST_STEPS_MODELS = [   # (model id of the explorer, label, start pass, per-model arms); std added 2026-11-11 (user request 2026-11-10: same probe at LR 4e-4)
