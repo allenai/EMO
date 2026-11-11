@@ -1107,8 +1107,9 @@ def control_explorer_data():
             for k, sqn in ((4, "olmoe3_squares_emorand_lr4e-4"), (8, "olmoe3_squares_emorand8_lr4e-4")):
                 HL = R / f"runs_heldout300b_{'emorand' if k == 4 else 'emorand8'}_lr4e-4"; PL = ROOT / "sparse_experts" / sqn / "ppl_validation" / "merged"
                 if not HL.exists(): continue
-                ser[f"l{k}"] = {"h": [hb(C["start"]) if st == 19074 else (_ce(HL / f"merged_match{st}/none") if st in (30000, 38148, 57221, 116479) else None) for st in steps],
-                                "p": [ref_ppl if st == 19074 else (_ppl(PL / f"match{st}.json") if st in (30000, 38148, 57221, 116479) else None) for st in steps]}
+                PTS_L = (30000, 38148, 57221, 116479, 166478, 216477, 247956)   # 15.7B / 20B / 30B / 61B and the 130B extension's 87B / 113B / 130B (2026-11-11)
+                ser[f"l{k}"] = {"h": [hb(C["start"]) if st == 19074 else (_ce(HL / f"merged_match{st}/none") if st in PTS_L else None) for st in steps],
+                                "p": [ref_ppl if st == 19074 else (_ppl(PL / f"match{st}.json") if st in PTS_L else None) for st in steps]}
             for tag, key in (("router", "f8r"), ("router_attn", "f8ra"), ("non_expert", "f8e")):  # freeze ablations of the 8-square 4e-4 arm
                 HF = R / f"runs_heldout300b_emorand8_lr4e-4_frz{tag}"; PF = ROOT / f"sparse_experts/olmoe3_squares_emorand8_lr4e-4_frz{tag}/ppl_validation/merged"
                 if not HF.exists(): continue
