@@ -410,6 +410,10 @@ RANDOM_CONTROL = {  # random expert groups + random document split; arms = (sub-
                  base_runs=("olmoe3_275m_128e_130b",), start_ppl="olmoe3_275m_128e_10b", model="standard-routing 128e", E=128,
                  arms=[dict(k=4, sqn="olmoe3_squares_s128rand4", hr="runs_heldout300b_s128rand4", color="#2563eb"), dict(k=8, sqn="olmoe3_squares_s128rand8", hr="runs_heldout300b_s128rand8", color="#ea580c")],
                  remerge=False, take=lambda: S128_TAKE),
+    "mix20": dict(hrb="runs_heldout300b_mix20", start="baseline_step19074", ppl_dirs=("olmoe3_squares_mix20rand8/ppl_validation", "olmoe3_squares_mix20rand4/ppl_validation"),
+                  base_runs=("olmoe3_275m_mix20_30b",), start_ppl="olmoe3_275m_emo_mix20_10b", model="mixed-pool EMO 512e (20% random pools)", E=512,
+                  arms=[dict(k=4, lr="4e-4", sqn="olmoe3_squares_mix20rand4", hr="runs_heldout300b_mix20rand4", color="#2563eb"), dict(k=8, lr="4e-4", sqn="olmoe3_squares_mix20rand8", hr="runs_heldout300b_mix20rand8", color="#ea580c")],
+                  remerge=False, take=lambda: ""),
     "randsel": dict(hrb="runs_heldout300b_randsel", start="baseline_step19074", ppl_dirs=("olmoe3_squares_randsel4/ppl_validation",),
                     base_runs=("olmoe3_275m_randsel_30b", "olmoe3_275m_randsel_130b"), start_ppl="olmoe3_275m_emo_randsel_10b", model="random-pool EMO 512e", E=512,
                     arms=[dict(k=4, sqn="olmoe3_squares_randsel4", hr="runs_heldout300b_randsel4", color="#2563eb"), dict(k=8, sqn="olmoe3_squares_randsel8", hr="runs_heldout300b_randsel8", color="#ea580c")],
@@ -1064,7 +1068,7 @@ def control_explorer_data():
     interactive explorer of Q5. Same loaders and same points as random_control()."""
     out = []
     R = ROOT / "sparse_experts/olmoe3_routing"
-    order = ["std", "emo", "s128", "randsel", "randsel64", "emo1024h272k32", "emo1024h272k16", "emo1000", "emo2000"]   # panel order (user: 1000e before 2000e, 2026-10-20)
+    order = ["std", "emo", "s128", "randsel", "randsel64", "mix20", "emo1024h272k32", "emo1024h272k16", "emo1000", "emo2000"]   # panel order (user: 1000e before 2000e, 2026-10-20)
     for which in sorted(RANDOM_CONTROL, key=lambda w: order.index(w) if w in order else len(order)):
         C = RANDOM_CONTROL[which]
         HRB = R / C["hrb"]; arms = [dict(a, HR=R / a["hr"], SQ=ROOT / "sparse_experts" / a["sqn"]) for a in C["arms"] if (ROOT / "sparse_experts" / a["sqn"] / "groups.json").exists()]

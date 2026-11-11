@@ -6,13 +6,15 @@
 # window, then of the 20B -> 30B window from its own window-1 final; merged at the matched steps 30000 (~16B), 38148 (20B) and 57221 (30B);
 # merged model, every square alone, the start model and the joint baseline 10B -> 30B evaluated on the 300B held-out sample and the ppl sets.
 # The baseline is launched by the K = 8 driver when it does not exist yet (marker shared by both K; baseline_keeper.sh resumes it).
-#   bash scripts/sparse_experts/olmoe3_squares/squares_big.sh emo2000 k4|k8      (idempotent; detach it; commit + push first)
+#   bash scripts/sparse_experts/olmoe3_squares/squares_big.sh emo2000|mix20 k4|k8      (idempotent; detach it; commit + push first)
 set -u; cd "$(git rev-parse --show-toplevel)"; export PATH=/root/.conda/envs/emo/bin:$PATH
-ARM="${1:?emo2000}"; KV="${2:?k4|k8}"; case $KV in k4) K=4; PACKSRC=olmoe3_squares_stdrand;; k8) K=8; PACKSRC=olmoe3_squares_stdrand8;; *) echo "k4|k8"; exit 1;; esac
+ARM="${1:?emo2000|mix20}"; KV="${2:?k4|k8}"; case $KV in k4) K=4; PACKSRC=olmoe3_squares_stdrand;; k8) K=8; PACKSRC=olmoe3_squares_stdrand8;; *) echo "k4|k8"; exit 1;; esac
 case $ARM in
   emo2000) FULL=olmoe3_275m_2000e_emo_10b; E=2000; HRB=runs_heldout300b_emo2000; START=emo2000_step19074; BASE=olmoe3_275m_2000e_emo_30b
            BASE_SCRIPT=scripts/sparse_experts/model_scripts/olmoe3_275m_2000e_emo_30b_baseline.sh; SQENV="OLMOE3_EP_SIZE=2 OLMOE3_EP_PATH=sync_1d"; BSF=2; PPLB=4; BSQ=2;;   # 9.6B parameters: small batches for the full-model passes; the squares (2.3-3.3B, layer 1 whole) OOMed at batch 8 too -> BSQ
-  *) echo "emo2000"; exit 1;;
+  mix20)   FULL=olmoe3_275m_emo_mix20_10b; E=512; HRB=runs_heldout300b_mix20; START=baseline_step19074; BASE=olmoe3_275m_mix20_30b   # mixed-pool EMO 512e (2026-11-11): start model under debug_validation/ (symlinked into sparse_experts/); squares + baseline train with the mixed-pool recipe
+           BASE_SCRIPT=scripts/sparse_experts/model_scripts/olmoe3_275m_mix20_30b_baseline.sh; SQENV="OLMOE3_EMO_POOL_SELECT=mix:0.2"; BSF=8; PPLB=8; BSQ=8;;
+  *) echo "emo2000|mix20"; exit 1;;
 esac
 S=sparse_experts; W=/weka/oe-training-default/ryanwang/EMO/sparse_experts; WR=/weka/oe-training-default/ryanwang/EMO
 SAMPLE=sample_8k_300b.npz; LR=4e-4
