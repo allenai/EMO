@@ -1677,70 +1677,76 @@ FIRST_STEPS_TAKE = [   # short observations, one line each, no numbers (user rul
     "The four-square merge recovers from its jump and is ahead of joint training by 15.7B; the eight-square merge is still above the start model at 30B."]
 
 
-def first_steps_section():
-    """Box 5K (user request 2026-11-07): EMO 512e from the 10B checkpoint at sub-model LR 4e-4 with the LR-4e-4 control arms' random groups and
-    packs, 8 squares for the first 10 steps and 4 squares for the first 5, a checkpoint after every step, the squares merged after every step
-    (token-share weights) and each merge scored on the reporting held-out sample (squares_firststeps.sh). Step 0 is the start model."""
-    R = ROOT / "sparse_experts/olmoe3_routing"; start = _ce(R / "runs_heldout300b_emo/emo_step19074/none")
-    arms = [("8 squares", "runs_heldout300b_emorand8_lr4e-4_steps", 10, "#ea580c"), ("4 squares", "runs_heldout300b_emorand_lr4e-4_steps", 5, "#2563eb")]
-    ser = []; N = 10; rows = []
-    for name, hr, n, col in arms:
-        ys = [start] + [_ce(R / hr / f"merged_step{s}/none") for s in range(1, n + 1)]
+FIRST_STEPS_MODELS = [   # (model id of the explorer, label, start pass, per-model arms); std added 2026-11-11 (user request 2026-11-10: same probe at LR 4e-4)
+    dict(id="emo", label="EMO 512e", start="runs_heldout300b_emo/emo_step19074/none", ref_keys=("l8", "l4"), ref_note="the control arms' merges at LR 4e-4",
+         arms=[("8 squares", "runs_heldout300b_emorand8_lr4e-4_steps", 10, "runs_heldout300b_emorand8_lr4e-4_steps300", "runs_heldout300b_emorand8_lr4e-4", {30000: 1365, 38148: 2383, 57221: 4766}, "#ea580c"),
+               ("4 squares", "runs_heldout300b_emorand_lr4e-4_steps", 5, "runs_heldout300b_emorand_lr4e-4_steps300", "runs_heldout300b_emorand_lr4e-4", {30000: 2731, 38148: 4768, 57221: 9536}, "#2563eb")]),
+    dict(id="std", label="standard MoE 512e", start="runs_heldout300b_std/std_step19074/none", ref_keys=("m8", "m4"), ref_note="the control arms' merges, which train at the pretraining LR 8e-4 (the probe at 4e-4 has no longer run)",
+         arms=[("8 squares", "runs_heldout300b_stdrand8_lr4e-4_steps300", 10, "runs_heldout300b_stdrand8_lr4e-4_steps300", "runs_heldout300b_stdrand8", {30000: 1365, 38148: 2383, 57221: 4766}, "#ea580c"),
+               ("4 squares", "runs_heldout300b_stdrand_lr4e-4_steps300", 10, "runs_heldout300b_stdrand_lr4e-4_steps300", "runs_heldout300b_stdrand", {30000: 2731, 38148: 4768, 57221: 9536}, "#2563eb")])]
+
+
+def first_steps_model(M):
+    """The two charts + tables of box 5K for one start model (see FIRST_STEPS_MODELS): CE of the merge after each of the first steps, and the
+    log-x continuation to the control arms' regular points with square 0 alone. Returns "" when the model has no probe data yet."""
+    import math
+    R = ROOT / "sparse_experts/olmoe3_routing"; start = _ce(R / M["start"]); d = next((x for x in control_explorer_data() if x["id"] == M["id"]), None)
+    N = max(a[2] for a in M["arms"]); ser = []; rows = []
+    for name, hr1, n, hr2, hrc, reg, col in M["arms"]:
+        ys = [start] + [_ce(R / hr1 / f"merged_step{s}/none") for s in range(1, n + 1)]
         if not any(y is not None for y in ys[1:]): continue
         ser.append({"name": f"merged, {name} (LR 4e-4)", "y": ys + [None] * (N - n), "color": col, "gap": True}); rows.append([name] + [f"{y:.3f}" if y is not None else "&ndash;" for y in ys] + ["&ndash;"] * (N - n))
-    if not ser: return card("info", "Setup", "<p>The probe is running (launched 2026-11-07); this box fills in when the per-step merges are evaluated.</p>")
+    if not ser: return ""
     ser.append({"name": "start model (10B)", "y": [start] * (N + 1), "const": True, "dashed": True, "color": "#64748b"})
-    d = next((x for x in control_explorer_data() if x["id"] == "emo"), None)
-    for key, lab, col in (("l8", "merged, 8 squares at 15.7B (the control arm's first point)", "#ea580c"), ("l4", "merged, 4 squares at 15.7B", "#2563eb"), ("baseline", "joint training at 15.7B", "#059669")):
+    for key, lab, col in ((M["ref_keys"][0], "merged, 8 squares at 15.7B (the control arm's first point)", "#ea580c"), (M["ref_keys"][1], "merged, 4 squares at 15.7B", "#2563eb"), ("baseline", "joint training at 15.7B", "#059669")):
         if d and key in d["series"]:
             i = next((i for i, t in enumerate(d["toks"]) if abs(t - 15.729) < 0.01), None); v = d["series"][key]["h"][i] if i is not None else None
             if v is not None: ser.append({"name": lab, "y": [v] * (N + 1), "const": True, "dotted": True, "color": col})
-    ch = CHART_CSS + line_chart(list(range(N + 1)), ser, title="Held-out CE of the merged model after each training step of the squares", y_label="CE", x_label="training steps of every square (0 = start model)",
-                                xfmt=lambda v: f"{v:.0f}", W=720, H=320)
+    ch = line_chart(list(range(N + 1)), ser, title=f"{M['label']}: held-out CE of the merged model after each training step of the squares", y_label="CE", x_label="training steps of every square (0 = start model)",
+                    xfmt=lambda v: f"{v:.0f}", W=720, H=320)
     tbl = table(["squares", *[f"step {s}" for s in range(N + 1)]], rows)
-    what = ("Each square trains from its start slice on its own documents exactly as in the control arm (same data order, constant LR 4e-4, one warm-up step) and is checkpointed after every step; "
-            "after every step the squares are merged with the control arms' token-share weights and the merge is scored on the 300B held-out sample. One step is one global batch of 0.5M tokens per square. "
-            "Dotted lines: where the control arms' merges and the joint model stand at the first regular point (15.7B, about 1,365 steps later).")
-    # continuation (user request 2026-11-09, squares_earlysteps.sh): log-spaced checkpoints 15 .. 300 square steps, merged + square 0 alone,
-    # drawn on a log-x axis together with the per-step probe and the control arms' regular points (15.7B / 20B / 30B in square steps)
-    import math
-    E_STEPS = [15, 20, 30, 50, 70, 100, 150, 200, 300]
-    arms2 = [("8 squares", "runs_heldout300b_emorand8_lr4e-4_steps", "runs_heldout300b_emorand8_lr4e-4_steps300", "runs_heldout300b_emorand8_lr4e-4", 10, {30000: 1365, 38148: 2383, 57221: 4766}, "#ea580c"),
-             ("4 squares", "runs_heldout300b_emorand_lr4e-4_steps", "runs_heldout300b_emorand_lr4e-4_steps300", "runs_heldout300b_emorand_lr4e-4", 5, {30000: 2731, 38148: 4768, 57221: 9536}, "#2563eb")]
-    pts = {}   # (arm, kind) -> {square step: CE}
-    for name, hr1, hr2, hrc, n, reg, col in arms2:
+    E_STEPS = [15, 20, 30, 50, 70, 100, 150, 200, 300]; pts = {}
+    for name, hr1, n, hr2, hrc, reg, col in M["arms"]:
         m = {s: _ce(R / hr1 / f"merged_step{s}/none") for s in range(1, n + 1)}; m.update({s: _ce(R / hr2 / f"merged_step{s}/none") for s in E_STEPS})
         m.update({st: _ce(R / hrc / f"merged_match{k}/none") for k, st in reg.items()})
         q = {s: _ce(R / hr2 / f"sub0_step{s}/none") for s in E_STEPS}; q.update({st: _ce(R / hrc / f"sub0_match{k}/none") for k, st in reg.items()})
         pts[(name, "m")] = {k: v for k, v in m.items() if v is not None}; pts[(name, "q")] = {k: v for k, v in q.items() if v is not None}
-    have2 = any(s in pts[(name, "m")] for name, *_ in arms2 for s in E_STEPS)
-    ch2 = tbl2 = ""
-    if have2:
-        xs2 = sorted({s for d_ in pts.values() for s in d_}); lx = [math.log10(s) for s in xs2]
-        want = [1, 3, 10, 30, 100, 300, 1000, 3000, 10000]; lab_at = {min(xs2, key=lambda s: abs(math.log10(s) - math.log10(w))) for w in want if xs2}
-        xl = [(f"{s/1000:g}k" if s >= 1000 else str(s)) if s in lab_at else "" for s in xs2]
-        ser2 = []
-        for name, hr1, hr2, hrc, n, reg, col in arms2:
-            if pts[(name, "m")]: ser2.append({"name": f"merged, {name}", "y": [pts[(name, "m")].get(s) for s in xs2], "color": col, "gap": True})
-            if pts[(name, "q")]: ser2.append({"name": f"square 0 alone, {name}", "y": [pts[(name, "q")].get(s) for s in xs2], "color": col, "dashed": True, "gap": True})
-        ser2.append({"name": "start model (10B)", "y": [start] * len(xs2), "const": True, "dashed": True, "color": "#64748b"})
-        if d and "baseline" in d["series"]:
-            for tk, lab in ((15.729, "15.7B"), (20.0, "20B"), (30.0, "30B")):
-                i = next((i for i, t in enumerate(d["toks"]) if abs(t - tk) < 0.01), None); v = d["series"]["baseline"]["h"][i] if i is not None else None
-                if v is not None: ser2.append({"name": f"joint training at {lab}", "y": [v] * len(xs2), "const": True, "dotted": True, "color": "#059669"})
-        ch2 = line_chart(lx, ser2, title="The same probe continued: held-out CE vs square steps (log axis) up to the control arms' regular points", y_label="CE",
-                         x_label="training steps of every square (log scale); the control arms' 15.7B / 20B / 30B merges are the last three points of each line", xfmt=lambda v: f"{10 ** v:.0f}", xlabels=xl, W=720, H=340)
-        f3 = lambda v: "&ndash;" if v is None else f"{v:.3f}"
-        rows2 = []
-        for name, hr1, hr2, hrc, n, reg, col in arms2:
-            regs = sorted(reg.values())
-            rows2.append([f"merged, {name}"] + [f3(pts[(name, "m")].get(s)) for s in E_STEPS + regs])
-            rows2.append([f"square 0 alone, {name}"] + [f3(pts[(name, "q")].get(s)) for s in E_STEPS + regs])
-        tbl2 = table(["", *[f"step {s}" for s in E_STEPS], "15.7B", "20B", "30B"], rows2)
-        what += (" <b>Continued (2026-11-09):</b> the same squares re-run from the same start slices (exact prefixes of the same schedule) with checkpoints at 15, 20, 30, 50, 70, 100, 150, 200 and 300 steps, "
-                 "every checkpoint merged and scored as before, and square 0 scored alone on the same sample (a square keeps a quarter or an eighth of the experts, so its own CE is far above the merge's). "
-                 "The regular points of the control arms (15.7B / 20B / 30B) are the squares' window-1 mid and final and window-2 final checkpoints: 1,365 / 2,383 / 4,766 square steps for eight squares, 2,731 / 4,768 / 9,536 for four.")
-    return card("info", "Setup", f"<p>{what}</p>") + card("results", "Results", ("<ul>" + "".join(f"<li>{t}</li>" for t in FIRST_STEPS_TAKE) + "</ul>" if FIRST_STEPS_TAKE else "") + ch + tbl + ch2 + tbl2)
+    if not any(s in pts[(name, "m")] for name, *_ in M["arms"] for s in E_STEPS): return ch + tbl
+    xs2 = sorted({s for d_ in pts.values() for s in d_}); lx = [math.log10(s) for s in xs2]
+    want = [1, 3, 10, 30, 100, 300, 1000, 3000, 10000]; lab_at = {min(xs2, key=lambda s: abs(math.log10(s) - math.log10(w))) for w in want}
+    xl = [(f"{s/1000:g}k" if s >= 1000 else str(s)) if s in lab_at else "" for s in xs2]
+    ser2 = []
+    for name, hr1, n, hr2, hrc, reg, col in M["arms"]:
+        if pts[(name, "m")]: ser2.append({"name": f"merged, {name}", "y": [pts[(name, "m")].get(s) for s in xs2], "color": col, "gap": True})
+        if pts[(name, "q")]: ser2.append({"name": f"square 0 alone, {name}", "y": [pts[(name, "q")].get(s) for s in xs2], "color": col, "dashed": True, "gap": True})
+    ser2.append({"name": "start model (10B)", "y": [start] * len(xs2), "const": True, "dashed": True, "color": "#64748b"})
+    if d and "baseline" in d["series"]:
+        for tk, lab in ((15.729, "15.7B"), (20.0, "20B"), (30.0, "30B")):
+            i = next((i for i, t in enumerate(d["toks"]) if abs(t - tk) < 0.01), None); v = d["series"]["baseline"]["h"][i] if i is not None else None
+            if v is not None: ser2.append({"name": f"joint training at {lab}", "y": [v] * len(xs2), "const": True, "dotted": True, "color": "#059669"})
+    ch2 = line_chart(lx, ser2, title=f"{M['label']}: the same probe continued, held-out CE vs square steps (log axis) up to the control arms' regular points", y_label="CE",
+                     x_label=f"training steps of every square (log scale); the last three points of each line are {M['ref_note']}", xfmt=lambda v: f"{10 ** v:.0f}", xlabels=xl, W=720, H=340)
+    f3 = lambda v: "&ndash;" if v is None else f"{v:.3f}"; rows2 = []
+    for name, hr1, n, hr2, hrc, reg, col in M["arms"]:
+        regs = sorted(reg.values()); rows2.append([f"merged, {name}"] + [f3(pts[(name, "m")].get(s)) for s in E_STEPS + regs]); rows2.append([f"square 0 alone, {name}"] + [f3(pts[(name, "q")].get(s)) for s in E_STEPS + regs])
+    return ch + tbl + ch2 + table(["", *[f"step {s}" for s in E_STEPS], "15.7B", "20B", "30B"], rows2)
+
+
+def first_steps_section():
+    """Box 5K (user requests 2026-11-07 / 2026-11-09 / 2026-11-10): the random squares trained from the 10B checkpoint at sub-model LR 4e-4 for the first
+    steps, a checkpoint after every step (steps 1-10) and at 15 .. 300, the squares merged after every checkpoint (token-share weights) and each merge scored
+    on the reporting held-out sample; square 0 also scored alone from step 15 on. EMO 512e (squares_firststeps.sh + squares_earlysteps.sh, 8 squares for 10
+    steps / 4 squares for 5, then 15-300) and the standard-routing 512e model (squares_steps_std.sh: both K for steps 1-10 and 15-300). Step 0 = the start model."""
+    parts = [(M["label"], first_steps_model(M)) for M in FIRST_STEPS_MODELS]; parts = [(lab, h) for lab, h in parts if h]
+    if not parts: return card("info", "Setup", "<p>The probe is running; this box fills in when the per-step merges are evaluated.</p>")
+    what = ("Each square trains from its start slice on its own documents exactly as in the control arm (same data order, constant LR 4e-4, one warm-up step) and is checkpointed after every one of the first "
+            "steps and at 15, 20, 30, 50, 70, 100, 150, 200 and 300; after every checkpoint the squares are merged with the control arms' token-share weights and the merge is scored on the 300B held-out "
+            "sample; from step 15 on square 0 is also scored alone (a square keeps a quarter or an eighth of the experts, so its own CE is far above the merge's). One step is one global batch of 0.5M "
+            "tokens per square. Dotted lines: where the control arms' merges and the joint model stand at the first regular point (15.7B, about 1,365 / 2,731 square steps later for 8 / 4 squares); the "
+            "log-axis charts end with the control arms' 15.7B / 20B / 30B points. The standard-routing model's control arms train at the pretraining LR 8e-4, so its probe (LR 4e-4) is not an exact prefix "
+            "of them; EMO's is.")
+    body = "".join(f"<h4>{lab}</h4>{h}" for lab, h in parts)
+    return card("info", "Setup", f"<p>{what}</p>") + card("results", "Results", ("<ol>" + "".join(f"<li>{t}</li>" for t in FIRST_STEPS_TAKE) + "</ol>" if FIRST_STEPS_TAKE else "") + CHART_CSS + body)
 
 LB_WEIGHTS = ["3e-4", "1e-3", "3e-3", "1e-2", "3e-2", "1e-1"]
 BIG_LB_TAKE = [   # short observations, one line each, no numbers (user rule 2026-11-04)
