@@ -55,6 +55,7 @@ ARMS = [
     ("beta4", "EMO, Beta(4,1) pool", "olmoe3_275m_emo_beta4_10b"),
     ("randsel", "EMO, random pool [16, 512]", "olmoe3_275m_emo_randsel_10b"),
     ("randsel64", "EMO, random pool [64, 512]", "olmoe3_275m_emo_randsel64_10b"),
+    ("mix20", "EMO, mixed pool: 20% of documents random, 80% relevance [16, 512]", "olmoe3_275m_emo_mix20_10b"),
 ]
 CKPTS = [5000, 10000, 15000, 19000, 19074]
 TOK = 524_288
