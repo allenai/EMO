@@ -2356,7 +2356,7 @@ def pres_plot_block_a():
     return f"<p>{what}</p>" + ch
 
 
-def pres_plot_std_control(with_remerge=False, model="std"):
+def pres_plot_std_control(with_remerge=False, model="std", squares=True, with_l4=False):
     """Presentation plots 2-4 (user request 2026-11-12): a start model's panel of the report's explorer: joint training, the merged 4 random squares at
     sub-model LR 8e-4 and the squares alone (mean of 4), 10B -> 130B, same style as plot 1; plot 3 adds the std re-merge line, plot 4 is the EMO 512e panel."""
     d = next((x for x in control_explorer_data() if x["id"] == model), None)
@@ -2364,8 +2364,10 @@ def pres_plot_std_control(with_remerge=False, model="std"):
     toks = d["toks"]; S = d["series"]; start = S["start"]["h"][0]
     lab = ["10B", "20B", "30B", "61B", "87B", "113B", "130B"]; want = [10.0, 20.001, 30.0, 61.069, 87.282, 113.496, 130.0]
     xl = [next((l for l, w in zip(lab, want) if abs(t - w) < 0.01), "") for t in toks]
-    ser = [{"name": "baseline (joint training)", "y": S["baseline"]["h"], "color": "#059669", "gap": True}, {"name": "disjoint training, 4 random partitions", "y": S["m4"]["h"], "color": "#2563eb", "gap": True},
-           {"name": "partitions alone, mean of 4", "y": S["s4"]["h"], "color": "#2563eb", "dashed": True, "gap": True}]
+    m4_name = "disjoint training, 4 random partitions" + (", sub-model LR 8e-4" if with_l4 else "")
+    ser = [{"name": "baseline (joint training)", "y": S["baseline"]["h"], "color": "#059669", "gap": True}, {"name": m4_name, "y": S["m4"]["h"], "color": "#2563eb", "gap": True}]
+    if squares: ser.append({"name": "partitions alone, mean of 4", "y": S["s4"]["h"], "color": "#2563eb", "dashed": True, "gap": True})
+    if with_l4 and "l4" in S: ser.append({"name": "disjoint training, 4 random partitions, sub-model LR 4e-4", "y": S["l4"]["h"], "color": "#ea580c", "gap": True})
     if with_remerge and "rm" in S: ser.append({"name": "re-merged + re-partitioned at 61B", "y": S["rm"]["h"], "color": "#7c3aed", "gap": True})
     ser.append({"name": "start model (10B)", "y": [start] * len(toks), "const": True, "dashed": True, "color": "#64748b"})
     ch = CHART_CSS + line_chart(toks, ser, title="", y_label="held-out CE", x_label="tokens trained", xlabels=xl, W=1300, H=720, fs=3.0)
@@ -2379,7 +2381,8 @@ def presentation_section():
     PRESENTATION_PLOTS = [(t, h) for t, h in [("1. Merged squares vs continued baseline (block A, EMO 512e, 10B to 20B)", pres_plot_block_a()),
                                               ("2. Standard MoE 512e: joint training vs merged 4 random squares vs the squares alone (10B to 130B)", pres_plot_std_control()),
                                               ("3. As plot 2, plus the merge re-merged and re-partitioned at 61B", pres_plot_std_control(with_remerge=True)),
-                                              ("4. EMO 512e: joint training vs merged 4 random squares vs the squares alone (10B to 130B)", pres_plot_std_control(model="emo"))] if h]
+                                              ("4. EMO 512e: joint training vs merged 4 random squares vs the squares alone (10B to 130B)", pres_plot_std_control(model="emo")),
+                                              ("5. EMO 512e: joint training vs merged 4 random squares at sub-model LR 8e-4 and 4e-4 (10B to 130B)", pres_plot_std_control(model="emo", squares=False, with_l4=True))] if h]
     """The second tab of the Disjoint Training Report: plots prepared for the presentation, one card each, independent of the report sections."""
     if not PRESENTATION_PLOTS:
         return card("info", "Presentation plots", "<p>Plots for the presentation go here, one card each. None yet: ask for the first one.</p>")
