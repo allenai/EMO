@@ -2346,9 +2346,9 @@ def pres_plot_block_a():
     steps = [st for st, _ in MATCH]; toks = [st * 524288 / 1e9 for st in steps]
     b = [start if st == 19074 else hv(f"baseline_step{st}") for st in steps]; m = [start if st == 19074 else hv(f"merged_match{st}") for st in steps]
     if not any(v is not None for v in b[1:] + m[1:]): return ""
-    ch = CHART_CSS + line_chart(toks, [{"name": "baseline (full model, continued)", "y": b, "color": "#059669"}, {"name": "merged squares", "y": m, "color": "#2563eb"},
+    ch = CHART_CSS + line_chart(toks, [{"name": "baseline (full model, continued)", "y": b, "color": "#059669"}, {"name": "disjoint training w. specialization", "y": m, "color": "#2563eb"},
                                       {"name": "start model (10B)", "y": [start] * len(toks), "const": True, "dashed": True, "color": "#64748b"}],
-                               title="EMO 512e, routing-based split into 4 squares: merged squares vs continued baseline (held-out CE)", y_label="held-out CE", x_label="tokens trained",
+                               title="EMO 512e, routing-based split into 4 squares: disjoint training w. specialization vs continued baseline (held-out CE)", y_label="held-out CE", x_label="tokens trained",
                                xlabels=[f"{t:.3g}B" for t in toks], W=760, H=360)
     what = ("The original disjoint-training experiment (block A of the routing report): the EMO 512e model at 10B tokens is split by its own routing into 4 sub-models (spectral expert groups, "
             "each document assigned to the group its routing favours), the sub-models train separately on their documents of the next 10B tokens and are merged at matched points; "
