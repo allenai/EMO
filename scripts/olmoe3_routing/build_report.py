@@ -812,7 +812,7 @@ show(location.hash && document.getElementById(location.hash.slice(1)) ? location
 _LC_COLORS = ["#2563eb", "#dc2626", "#059669", "#7c3aed", "#d97706", "#0891b2"]
 
 
-def line_chart(xs, series, *, title="", y_label="CE", x_label="progress through the 10B tokens", xfmt=lambda v: f"{v:.0f}%", W=480, H=280, xlabels=None, shade=None, yrange=None, fs=1.0):
+def line_chart(xs, series, *, title="", y_label="CE", x_label="progress through the 10B tokens", xfmt=lambda v: f"{v:.0f}%", W=480, H=280, xlabels=None, shade=None, yrange=None, fs=1.0, legend_on=True):
     """Interactive line chart (inline SVG; hovering shows every series' value at the nearest x).
     xs: x values; series: dicts(name, y=list with None for missing, dashed=False, const=False (horizontal reference line), color);
     xlabels: explicit tick labels; shade=(x_from, label) tints the plot area from x_from rightwards (e.g. a finetuning stage);
@@ -873,7 +873,7 @@ def line_chart(xs, series, *, title="", y_label="CE", x_label="progress through 
     g.append(f'<line class="lc-vline" x1="0" x2="0" y1="{y0}" y2="{y0+ph}" stroke="#94a3b8" stroke-dasharray="2,3" style="display:none"/></svg>')
     payload = html.escape(json.dumps(data), quote=True)
     return (f'<div class="lc" data-chart="{payload}">{f'<div class="lc-title">{title}</div>' if title else ''}' + "".join(g)
-            + f'<div style="font-size:{12*fs:.0f}px;margin-left:{44*fs:.0f}px">{"".join(legend)}</div><div class="lc-tip"></div></div>')
+            + (f'<div style="font-size:{12*fs:.0f}px;margin-left:{44*fs:.0f}px">{"".join(legend)}</div>' if legend_on else "") + '<div class="lc-tip"></div></div>')
 
 
 EMO_TAKE = ("The merged model beats the baseline only at 5% (2.424 vs 2.455) and then falls behind monotonically, ending 0.16 above it "
@@ -2376,13 +2376,34 @@ def pres_plot_std_control(with_remerge=False, model="std", squares=True, with_l4
     return f"<p>{what}</p>" + ch
 
 
+def pres_plot_scales_row():
+    """Presentation plot 6 (user request 2026-11-12): one row of three panels, EMO 512e / 1000e / 2000e, each with joint training and the merged 4 random
+    partitions at sub-model LR 4e-4 (and the start model), 10B -> 130B."""
+    data = {x["id"]: x for x in control_explorer_data()}; panels = []
+    for mid, lab in (("emo", "EMO 512e"), ("emo1000", "EMO 1000e"), ("emo2000", "EMO 2000e")):
+        d = data.get(mid)
+        if not d or "l4" not in d["series"]: continue
+        toks = d["toks"]; S = d["series"]; start = S["start"]["h"][0]
+        xl = [next((l for l, w in zip(["10B", "30B", "61B", "87B", "130B"], [10.0, 30.0, 61.069, 87.282, 130.0]) if abs(t - w) < 0.01), "") for t in toks]
+        ch = line_chart(toks, [{"name": "baseline (joint training)", "y": S["baseline"]["h"], "color": "#059669", "gap": True},
+                               {"name": "disjoint training, 4 random partitions", "y": S["l4"]["h"], "color": "#ea580c", "gap": True},
+                               {"name": "start model (10B)", "y": [start] * len(toks), "const": True, "dashed": True, "color": "#64748b"}],
+                        title="", y_label="held-out CE", x_label="tokens trained", xlabels=xl, W=440, H=420, fs=2.0, legend_on=not panels)   # one legend, under the first panel
+        panels.append(f'<div style="flex:1 1 0;min-width:0"><div style="font-size:28px;font-weight:600;line-height:1.2;margin:0 0 6px 46px">{lab}</div>{ch}</div>')
+    if not panels: return ""
+    what = ("The three EMO start models (512, 1000 and 2000 experts) split into 4 random partitions at sub-model LR 4e-4 and trained 10B to 130B, each against its own joint "
+            "continuation (sections 1 and 3 of the report). Held-out CE on the 300B-stream sample.")
+    return f"<p>{what}</p>" + CHART_CSS + '<div style="display:flex;gap:12px;align-items:flex-start">' + "".join(panels) + "</div>"
+
+
 def presentation_section():
     global PRESENTATION_PLOTS
     PRESENTATION_PLOTS = [(t, h) for t, h in [("1. Merged squares vs continued baseline (block A, EMO 512e, 10B to 20B)", pres_plot_block_a()),
                                               ("2. Standard MoE 512e: joint training vs merged 4 random squares vs the squares alone (10B to 130B)", pres_plot_std_control()),
                                               ("3. As plot 2, plus the merge re-merged and re-partitioned at 61B", pres_plot_std_control(with_remerge=True)),
                                               ("4. EMO 512e: joint training vs merged 4 random squares vs the squares alone (10B to 130B)", pres_plot_std_control(model="emo")),
-                                              ("5. EMO 512e: joint training vs merged 4 random squares at sub-model LR 8e-4 and 4e-4 (10B to 130B)", pres_plot_std_control(model="emo", squares=False, with_l4=True))] if h]
+                                              ("5. EMO 512e: joint training vs merged 4 random squares at sub-model LR 8e-4 and 4e-4 (10B to 130B)", pres_plot_std_control(model="emo", squares=False, with_l4=True)),
+                                              ("6. EMO 512e / 1000e / 2000e: joint training vs merged 4 random partitions at sub-model LR 4e-4 (10B to 130B)", pres_plot_scales_row())] if h]
     """The second tab of the Disjoint Training Report: plots prepared for the presentation, one card each, independent of the report sections."""
     if not PRESENTATION_PLOTS:
         return card("info", "Presentation plots", "<p>Plots for the presentation go here, one card each. None yet: ask for the first one.</p>")
