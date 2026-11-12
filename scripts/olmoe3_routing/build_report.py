@@ -2388,12 +2388,15 @@ def pres_plot_scales_row():
         ch = line_chart(toks, [{"name": "baseline (joint training)", "y": S["baseline"]["h"], "color": "#059669", "gap": True},
                                {"name": "disjoint training, 4 random partitions", "y": S["l4"]["h"], "color": "#ea580c", "gap": True},
                                {"name": "start model (10B)", "y": [start] * len(toks), "const": True, "dashed": True, "color": "#64748b"}],
-                        title="", y_label="held-out CE", x_label="tokens trained", xlabels=xl, W=440, H=420, fs=2.0, legend_on=not panels)   # one legend, under the first panel
+                        title="", y_label="held-out CE", x_label="tokens trained", xlabels=xl, W=440, H=420, fs=2.0, legend_on=False)   # one shared legend row under the three panels
         panels.append(f'<div style="flex:1 1 0;min-width:0"><div style="font-size:28px;font-weight:600;line-height:1.2;margin:0 0 6px 46px">{lab}</div>{ch}</div>')
     if not panels: return ""
     what = ("The three EMO start models (512, 1000 and 2000 experts) split into 4 random partitions at sub-model LR 4e-4 and trained 10B to 130B, each against its own joint "
             "continuation (sections 1 and 3 of the report). Held-out CE on the 300B-stream sample.")
-    return f"<p>{what}</p>" + CHART_CSS + '<div style="display:flex;gap:12px;align-items:flex-start">' + "".join(panels) + "</div>"
+    sw = lambda c, style: f'<span style="display:inline-block;width:36px;border-top:4px {style} {c};vertical-align:middle;margin-right:8px"></span>'
+    legend = ('<div style="font-size:24px;display:flex;justify-content:center;gap:48px;flex-wrap:wrap;margin:10px 0 4px">'
+              f'<span>{sw("#059669", "solid")}baseline (joint training)</span><span>{sw("#ea580c", "solid")}disjoint training, 4 random partitions</span><span>{sw("#64748b", "dashed")}start model (10B)</span></div>')
+    return f"<p>{what}</p>" + CHART_CSS + '<div style="display:flex;gap:12px;align-items:flex-start">' + "".join(panels) + "</div>" + legend
 
 
 def presentation_section():
