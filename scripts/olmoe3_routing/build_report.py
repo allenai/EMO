@@ -812,13 +812,14 @@ show(location.hash && document.getElementById(location.hash.slice(1)) ? location
 _LC_COLORS = ["#2563eb", "#dc2626", "#059669", "#7c3aed", "#d97706", "#0891b2"]
 
 
-def line_chart(xs, series, *, title="", y_label="CE", x_label="progress through the 10B tokens", xfmt=lambda v: f"{v:.0f}%", W=480, H=280, xlabels=None, shade=None, yrange=None):
+def line_chart(xs, series, *, title="", y_label="CE", x_label="progress through the 10B tokens", xfmt=lambda v: f"{v:.0f}%", W=480, H=280, xlabels=None, shade=None, yrange=None, fs=1.0):
     """Interactive line chart (inline SVG; hovering shows every series' value at the nearest x).
     xs: x values; series: dicts(name, y=list with None for missing, dashed=False, const=False (horizontal reference line), color);
     xlabels: explicit tick labels; shade=(x_from, label) tints the plot area from x_from rightwards (e.g. a finetuning stage);
     a list of (x_from, x_to, label) tints bounded bands."""
     import math
-    x0, y0, pw, ph = 46, 14, W - 72, H - 52   # 26px right margin so the last x label is not clipped
+    F = lambda v: f"{v * fs:.1f}"   # fs: font / stroke scale (presentation plots use 2x)
+    x0, y0, pw, ph = round(46 * fs), round(14 * fs), W - round(72 * fs), H - round(52 * fs)   # 26px right margin so the last x label is not clipped
     ys = [v for s_ in series for v in s_["y"] if v is not None]
     if not ys: return ""
     ymin, ymax = min(ys), max(ys); pad = max(0.02, 0.08 * (ymax - ymin)); ymin -= pad; ymax += pad
@@ -835,18 +836,18 @@ def line_chart(xs, series, *, title="", y_label="CE", x_label="progress through 
         else:  # (x_from, label): from x_from (half-way to the previous x) to the right edge
             xa = (X(band[0]) + X(max(v for v in xs if v < band[0]))) / 2 if any(v < band[0] for v in xs) else X(band[0]); xb = x0 + pw
         g.append(f'<rect x="{xa:.1f}" y="{y0}" width="{xb-xa:.1f}" height="{ph}" fill="#f1f5f9"/>'
-                 f'<text x="{(xa+xb)/2:.1f}" y="{y0+11}" font-size="10" text-anchor="middle" fill="#64748b">{band[-1]}</text>')
+                 f'<text x="{(xa+xb)/2:.1f}" y="{y0+11}" font-size="{F(10)}" text-anchor="middle" fill="#64748b">{band[-1]}</text>')
     step = (ymax - ymin) / 4
     mag = 10 ** math.floor(math.log10(step)); step = math.ceil(step / mag) * mag
     t = math.ceil(ymin / step) * step
     while t <= ymax:
-        g.append(f'<line x1="{x0}" x2="{x0+pw}" y1="{Y(t):.1f}" y2="{Y(t):.1f}" stroke="#e5e7eb"/><text x="{x0-6}" y="{Y(t)+4:.1f}" font-size="11" text-anchor="end" fill="#475569">{t:.2f}</text>')
+        g.append(f'<line x1="{x0}" x2="{x0+pw}" y1="{Y(t):.1f}" y2="{Y(t):.1f}" stroke="#e5e7eb"/><text x="{x0-6*fs:.1f}" y="{Y(t)+4*fs:.1f}" font-size="{F(11)}" text-anchor="end" fill="#475569">{t:.2f}</text>')
         t += step
     for v, lab in zip(xs, labels):
-        g.append(f'<text x="{X(v):.1f}" y="{y0+ph+16}" font-size="11" text-anchor="middle" fill="#475569">{lab}</text>')
+        g.append(f'<text x="{X(v):.1f}" y="{y0+ph+16*fs:.1f}" font-size="{F(11)}" text-anchor="middle" fill="#475569">{lab}</text>')
     g.append(f'<line x1="{x0}" x2="{x0+pw}" y1="{y0+ph}" y2="{y0+ph}" stroke="#94a3b8"/><line x1="{x0}" x2="{x0}" y1="{y0}" y2="{y0+ph}" stroke="#94a3b8"/>')
-    g.append(f'<text x="{x0+pw/2:.0f}" y="{H-4}" font-size="11" text-anchor="middle" fill="#475569">{x_label}</text>')
-    g.append(f'<text transform="translate(12,{y0+ph/2:.0f}) rotate(-90)" font-size="11" text-anchor="middle" fill="#475569">{y_label}</text>')
+    g.append(f'<text x="{x0+pw/2:.0f}" y="{H-4*fs:.1f}" font-size="{F(11)}" text-anchor="middle" fill="#475569">{x_label}</text>')
+    g.append(f'<text transform="translate({12*fs:.0f},{y0+ph/2:.0f}) rotate(-90)" font-size="{F(11)}" text-anchor="middle" fill="#475569">{y_label}</text>')
     data = {"W": W, "x0": x0, "pw": pw, "xmin": xmin, "xmax": xmax, "xs": xs, "xlab": labels, "series": []}
     legend = []
     for i, s_ in enumerate(series):
@@ -855,7 +856,7 @@ def line_chart(xs, series, *, title="", y_label="CE", x_label="progress through 
         if s_.get("const"):
             v = next((v for v in y if v is not None), None)
             if v is None: continue
-            g.append(f'<line x1="{x0}" x2="{x0+pw}" y1="{Y(v):.1f}" y2="{Y(v):.1f}" stroke="{c}" stroke-width="1.6"{dash}/>')
+            g.append(f'<line x1="{x0}" x2="{x0+pw}" y1="{Y(v):.1f}" y2="{Y(v):.1f}" stroke="{c}" stroke-width="{F(1.6)}"{dash}/>')
             y = [v] * len(xs)
         else:
             pts = [(X(x), Y(v)) for x, v in zip(xs, y) if v is not None]
@@ -865,14 +866,14 @@ def line_chart(xs, series, *, title="", y_label="CE", x_label="progress through 
                 elif v is not None: cur.append((X(x), Y(v)))
             segs.append(cur)
             for seg in segs:
-                if len(seg) > 1: g.append(f'<polyline fill="none" stroke="{c}" stroke-width="2"{dash} points="' + " ".join(f"{a:.1f},{b:.1f}" for a, b in seg) + '"/>')
-            for a, b in pts: g.append(f'<circle cx="{a:.1f}" cy="{b:.1f}" r="3.2" fill="{c}"/>')
+                if len(seg) > 1: g.append(f'<polyline fill="none" stroke="{c}" stroke-width="{F(2)}"{dash} points="' + " ".join(f"{a:.1f},{b:.1f}" for a, b in seg) + '"/>')
+            for a, b in pts: g.append(f'<circle cx="{a:.1f}" cy="{b:.1f}" r="{F(3.2)}" fill="{c}"/>')
         data["series"].append({"n": s_["name"], "y": y, "c": c})
-        legend.append(f'<span style="display:inline-block;margin-right:10px"><span style="display:inline-block;width:18px;border-top:2px {"dotted" if s_.get("dotted") else ("dashed" if s_.get("dashed") else "solid")} {c};vertical-align:middle"></span> {s_["name"]}</span>')
+        legend.append(f'<span style="display:inline-block;margin-right:{10*fs:.0f}px"><span style="display:inline-block;width:{18*fs:.0f}px;border-top:{2*fs:.0f}px {"dotted" if s_.get("dotted") else ("dashed" if s_.get("dashed") else "solid")} {c};vertical-align:middle"></span> {s_["name"]}</span>')
     g.append(f'<line class="lc-vline" x1="0" x2="0" y1="{y0}" y2="{y0+ph}" stroke="#94a3b8" stroke-dasharray="2,3" style="display:none"/></svg>')
     payload = html.escape(json.dumps(data), quote=True)
-    return (f'<div class="lc" data-chart="{payload}"><div class="lc-title">{title}</div>' + "".join(g)
-            + f'<div style="font-size:12px;margin-left:44px">{"".join(legend)}</div><div class="lc-tip"></div></div>')
+    return (f'<div class="lc" data-chart="{payload}">{f'<div class="lc-title">{title}</div>' if title else ''}' + "".join(g)
+            + f'<div style="font-size:{12*fs:.0f}px;margin-left:{44*fs:.0f}px">{"".join(legend)}</div><div class="lc-tip"></div></div>')
 
 
 EMO_TAKE = ("The merged model beats the baseline only at 5% (2.424 vs 2.455) and then falls behind monotonically, ending 0.16 above it "
@@ -2348,8 +2349,7 @@ def pres_plot_block_a():
     if not any(v is not None for v in b[1:] + m[1:]): return ""
     ch = CHART_CSS + line_chart(toks, [{"name": "baseline (full model, continued)", "y": b, "color": "#059669"}, {"name": "disjoint training w. specialization", "y": m, "color": "#2563eb"},
                                       {"name": "start model (10B)", "y": [start] * len(toks), "const": True, "dashed": True, "color": "#64748b"}],
-                               title="EMO 512e, routing-based split into 4 squares: disjoint training w. specialization vs continued baseline (held-out CE)", y_label="held-out CE", x_label="tokens trained",
-                               xlabels=[f"{t:.3g}B" for t in toks], W=760, H=360)
+                               title="", y_label="held-out CE", x_label="tokens trained", xlabels=["" if abs(t - 10.49) < 0.05 else f"{t:.3g}B" for t in toks], W=1300, H=720, fs=3.0)   # presentation: no title, 3x fonts; the 10.5B tick label would collide with 10B
     what = ("The original disjoint-training experiment (block A of the routing report): the EMO 512e model at 10B tokens is split by its own routing into 4 sub-models (spectral expert groups, "
             "each document assigned to the group its routing favours), the sub-models train separately on their documents of the next 10B tokens and are merged at matched points; "
             "compared with the same model continued jointly on all documents. Held-out CE on the 20B-window sample; the 10B point is the start model.")
