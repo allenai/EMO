@@ -2339,7 +2339,26 @@ const io=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting)set(e.
 PRESENTATION_PLOTS = []   # (title, html) entries of the "Presentation plots" tab of the Disjoint Training Report (user request 2026-11-12): filled on request
 
 
+def pres_plot_block_a():
+    """Presentation plot 1 (user request 2026-11-12): block A's stages 2-4 chart (EMO 512e, routing-based 4-way split, window 1 10B -> 20B) with only
+    the continued baseline, the merged squares and the start model, x = tokens trained."""
+    hv = lambda tag: _ce(HELD / f"{tag}/none"); start = hv("emo_step19074")
+    steps = [st for st, _ in MATCH]; toks = [st * 524288 / 1e9 for st in steps]
+    b = [start if st == 19074 else hv(f"baseline_step{st}") for st in steps]; m = [start if st == 19074 else hv(f"merged_match{st}") for st in steps]
+    if not any(v is not None for v in b[1:] + m[1:]): return ""
+    ch = CHART_CSS + line_chart(toks, [{"name": "baseline (full model, continued)", "y": b, "color": "#059669"}, {"name": "merged squares", "y": m, "color": "#2563eb"},
+                                      {"name": "start model (10B)", "y": [start] * len(toks), "const": True, "dashed": True, "color": "#64748b"}],
+                               title="EMO 512e, routing-based split into 4 squares: merged squares vs continued baseline (held-out CE)", y_label="held-out CE", x_label="tokens trained",
+                               xlabels=[f"{t:.3g}B" for t in toks], W=760, H=360)
+    what = ("The original disjoint-training experiment (block A of the routing report): the EMO 512e model at 10B tokens is split by its own routing into 4 sub-models (spectral expert groups, "
+            "each document assigned to the group its routing favours), the sub-models train separately on their documents of the next 10B tokens and are merged at matched points; "
+            "compared with the same model continued jointly on all documents. Held-out CE on the 20B-window sample; the 10B point is the start model.")
+    return f"<p>{what}</p>" + ch
+
+
 def presentation_section():
+    global PRESENTATION_PLOTS
+    PRESENTATION_PLOTS = [(t, h) for t, h in [("1. Merged squares vs continued baseline (block A, EMO 512e, 10B to 20B)", pres_plot_block_a())] if h]
     """The second tab of the Disjoint Training Report: plots prepared for the presentation, one card each, independent of the report sections."""
     if not PRESENTATION_PLOTS:
         return card("info", "Presentation plots", "<p>Plots for the presentation go here, one card each. None yet: ask for the first one.</p>")
