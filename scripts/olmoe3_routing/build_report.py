@@ -1692,7 +1692,10 @@ FIRST_STEPS_MODELS = [   # (model id of the explorer, label, start pass, per-mod
                ("4 squares", "runs_heldout300b_emorand_lr4e-4_steps", 5, "runs_heldout300b_emorand_lr4e-4_steps300", "runs_heldout300b_emorand_lr4e-4", {30000: 2731, 38148: 4768, 57221: 9536}, "#2563eb")]),
     dict(id="std", label="standard MoE 512e", start="runs_heldout300b_std/std_step19074/none", ref_keys=("m8", "m4"), ref_note="the control arms' merges, which train at the pretraining LR 8e-4 (the probe at 4e-4 has no longer run)",
          arms=[("8 squares", "runs_heldout300b_stdrand8_lr4e-4_steps300", 10, "runs_heldout300b_stdrand8_lr4e-4_steps300", "runs_heldout300b_stdrand8", {30000: 1365, 38148: 2383, 57221: 4766}, "#ea580c"),
-               ("4 squares", "runs_heldout300b_stdrand_lr4e-4_steps300", 10, "runs_heldout300b_stdrand_lr4e-4_steps300", "runs_heldout300b_stdrand", {30000: 2731, 38148: 4768, 57221: 9536}, "#2563eb")])]
+               ("4 squares", "runs_heldout300b_stdrand_lr4e-4_steps300", 10, "runs_heldout300b_stdrand_lr4e-4_steps300", "runs_heldout300b_stdrand", {30000: 2731, 38148: 4768, 57221: 9536}, "#2563eb")]),
+    dict(id="mix20", label="mixed-pool EMO 512e", start="runs_heldout300b_mix20/baseline_step19074/none", ref_keys=("l8", "l4"), ref_note="the control arms' merges at LR 4e-4",   # 2026-11-12
+         arms=[("8 squares", "runs_heldout300b_mix20rand8_lr4e-4_steps300", 10, "runs_heldout300b_mix20rand8_lr4e-4_steps300", "runs_heldout300b_mix20rand8", {30000: 1365, 38148: 2383, 57221: 4766}, "#ea580c"),
+               ("4 squares", "runs_heldout300b_mix20rand4_lr4e-4_steps300", 10, "runs_heldout300b_mix20rand4_lr4e-4_steps300", "runs_heldout300b_mix20rand4", {30000: 2731, 38148: 4768, 57221: 9536}, "#2563eb")])]
 
 
 def first_steps_model(M):
