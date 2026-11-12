@@ -2336,6 +2336,27 @@ if(!secs.length||!('IntersectionObserver' in window))return;const set=id=>links.
 const io=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting)set(e.target.id);});},{rootMargin:'-10% 0px -70% 0px'});secs.forEach(s=>io.observe(s));})();</script>"""
 
 
+PRESENTATION_PLOTS = []   # (title, html) entries of the "Presentation plots" tab of the Disjoint Training Report (user request 2026-11-12): filled on request
+
+
+def presentation_section():
+    """The second tab of the Disjoint Training Report: plots prepared for the presentation, one card each, independent of the report sections."""
+    if not PRESENTATION_PLOTS:
+        return card("info", "Presentation plots", "<p>Plots for the presentation go here, one card each. None yet: ask for the first one.</p>")
+    return "".join(card("results", t, h) for t, h in PRESENTATION_PLOTS)
+
+
+TAB_CSS = ("<style>.rp-tabs{max-width:1400px;margin:18px auto 0;display:flex;gap:6px;border-bottom:1px solid var(--line)}"
+           ".rp-tabs button{font:600 14px/1 inherit;font-family:inherit;color:var(--muted);background:none;border:0;border-bottom:3px solid transparent;padding:10px 14px 12px;cursor:pointer;margin-bottom:-1px}"
+           ".rp-tabs button.on{color:var(--ink);border-bottom-color:#1d5b86}.rp-tabs button:hover{color:var(--ink)}"
+           "body.tab-plots .rp-toc{display:none}body.tab-plots #q5{display:none}body:not(.tab-plots) #plots{display:none}"
+           "body.tab-plots .rp-wrap{display:block}body.tab-plots .rp-wrap > main{max-width:1400px;margin:0 auto;width:100%}#plots .card{max-width:none}</style>")
+TAB_JS = ("<script>(function(){const b=document.body,bt=[...document.querySelectorAll('.rp-tabs button')];"
+          "const show=t=>{b.classList.toggle('tab-plots',t==='plots');bt.forEach(x=>x.classList.toggle('on',x.dataset.tab===t));if(t==='plots'){history.replaceState(null,'','#plots');}else if(location.hash==='#plots'){history.replaceState(null,'',' ');}};"
+          "bt.forEach(x=>x.addEventListener('click',()=>show(x.dataset.tab)));show(location.hash==='#plots'?'plots':'report');"
+          "window.addEventListener('hashchange',()=>{if(location.hash==='#plots')show('plots');else if(location.hash.startsWith('#s'))show('report');});})();</script>")
+
+
 def artifact_page(body, path):
     """The Disjoint Training Report: Q5 as its own page (a Claude artifact). Same content as the Q5 tab, renumbered 1-8 (the 5A-5H
     letters only mean something inside the parent report), with a header, a sticky contents rail and its own stylesheet."""
@@ -2354,10 +2375,10 @@ def artifact_page(body, path):
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&family=IBM+Plex+Mono&display=swap" rel="stylesheet">
 {ARTIFACT_CSS}</head>
-<body><header class="rp-head"><div><h1>Disjoint Training Report</h1></div></header>
+<body><header class="rp-head"><div><h1>Disjoint Training Report</h1></div><div class="rp-tabs"><button type="button" class="on" data-tab="report">Report</button><button type="button" data-tab="plots">Presentation plots</button></div></header>
 <div class="rp-wrap"><nav class="rp-toc" aria-label="Contents"><h2>Contents</h2><ol>{toc}</ol></nav>
-<main><section class="tab active" id="q5">{body}</section><p class="rp-foot">Built {stamp} by scripts/olmoe3_routing/build_report.py. Held-out cross-entropy in nats per token on a 300B-stream sample of 8,000 unseen documents and on the v3-small ppl sets.</p></main></div>
-{CHART_JS}{ARTIFACT_CSS}{ARTIFACT_JS}</body></html>""")   # the stylesheet is repeated after the body so it also wins over the inline <style> blocks of the sections)
+<main><section class="tab active" id="q5">{body}</section><section class="tab active" id="plots">{presentation_section()}</section><p class="rp-foot">Built {stamp} by scripts/olmoe3_routing/build_report.py. Held-out cross-entropy in nats per token on a 300B-stream sample of 8,000 unseen documents and on the v3-small ppl sets.</p></main></div>
+{CHART_JS}{ARTIFACT_CSS}{TAB_CSS}{ARTIFACT_JS}{TAB_JS}</body></html>""")   # the stylesheet is repeated after the body so it also wins over the inline <style> blocks of the sections)
     print(f"Wrote Disjoint Training Report -> {path} ({path.stat().st_size/1e6:.1f} MB)")
 
 
