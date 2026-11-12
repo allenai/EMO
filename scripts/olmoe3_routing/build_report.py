@@ -2376,7 +2376,7 @@ def pres_plot_std_control(with_remerge=False, model="std", squares=True, with_l4
     return f"<p>{what}</p>" + ch
 
 
-def pres_plot_scales_row():
+def pres_plot_scales_row(with_l8=False):
     """Presentation plot 6 (user request 2026-11-12): one row of three panels, EMO 512e / 1000e / 2000e, each with joint training and the merged 4 random
     partitions at sub-model LR 4e-4 (and the start model), 10B -> 130B."""
     data = {x["id"]: x for x in control_explorer_data()}; panels = []
@@ -2385,17 +2385,18 @@ def pres_plot_scales_row():
         if not d or "l4" not in d["series"]: continue
         toks = d["toks"]; S = d["series"]; start = S["start"]["h"][0]
         xl = [next((l for l, w in zip(["10B", "30B", "61B", "87B", "130B"], [10.0, 30.0, 61.069, 87.282, 130.0]) if abs(t - w) < 0.01), "") for t in toks]
-        ch = line_chart(toks, [{"name": "baseline (joint training)", "y": S["baseline"]["h"], "color": "#059669", "gap": True},
-                               {"name": "disjoint training, 4 random partitions", "y": S["l4"]["h"], "color": "#ea580c", "gap": True},
-                               {"name": "start model (10B)", "y": [start] * len(toks), "const": True, "dashed": True, "color": "#64748b"}],
-                        title="", y_label="held-out CE", x_label="tokens trained", xlabels=xl, W=440, H=420, fs=2.0, legend_on=False)   # one shared legend row under the three panels
+        ser = [{"name": "baseline (joint training)", "y": S["baseline"]["h"], "color": "#059669", "gap": True}, {"name": "disjoint training, 4 random partitions", "y": S["l4"]["h"], "color": "#ea580c", "gap": True}]
+        if with_l8 and "l8" in S: ser.append({"name": "disjoint training, 8 random partitions", "y": S["l8"]["h"], "color": "#7c3aed", "gap": True})
+        ser.append({"name": "start model (10B)", "y": [start] * len(toks), "const": True, "dashed": True, "color": "#64748b"})
+        ch = line_chart(toks, ser, title="", y_label="held-out CE", x_label="tokens trained", xlabels=xl, W=440, H=420, fs=2.0, legend_on=False)   # one shared legend row under the three panels
         panels.append(f'<div style="flex:1 1 0;min-width:0"><div style="font-size:28px;font-weight:600;line-height:1.2;margin:0 0 6px 46px">{lab}</div>{ch}</div>')
     if not panels: return ""
-    what = ("The three EMO start models (512, 1000 and 2000 experts) split into 4 random partitions at sub-model LR 4e-4 and trained 10B to 130B, each against its own joint "
+    what = (f"The three EMO start models (512, 1000 and 2000 experts) split into 4 random partitions at sub-model LR 4e-4 and trained 10B to 130B{' (and into 8 random partitions, 10B to 30B)' if with_l8 else ''}, each against its own joint "
             "continuation (sections 1 and 3 of the report). Held-out CE on the 300B-stream sample.")
     sw = lambda c, style: f'<span style="display:inline-block;width:36px;border-top:4px {style} {c};vertical-align:middle;margin-right:8px"></span>'
     legend = ('<div style="font-size:24px;display:flex;justify-content:center;gap:48px;flex-wrap:wrap;margin:10px 0 4px">'
-              f'<span>{sw("#059669", "solid")}baseline (joint training)</span><span>{sw("#ea580c", "solid")}disjoint training, 4 random partitions</span><span>{sw("#64748b", "dashed")}start model (10B)</span></div>')
+              f'<span>{sw("#059669", "solid")}baseline (joint training)</span><span>{sw("#ea580c", "solid")}disjoint training, 4 random partitions</span>'
+              + (f'<span>{sw("#7c3aed", "solid")}disjoint training, 8 random partitions</span>' if with_l8 else "") + f'<span>{sw("#64748b", "dashed")}start model (10B)</span></div>')
     return f"<p>{what}</p>" + CHART_CSS + '<div style="display:flex;gap:12px;align-items:flex-start">' + "".join(panels) + "</div>" + legend
 
 
@@ -2406,7 +2407,8 @@ def presentation_section():
                                               ("3. As plot 2, plus the merge re-merged and re-partitioned at 61B", pres_plot_std_control(with_remerge=True)),
                                               ("4. EMO 512e: joint training vs merged 4 random squares vs the squares alone (10B to 130B)", pres_plot_std_control(model="emo")),
                                               ("5. EMO 512e: joint training vs merged 4 random squares at sub-model LR 8e-4 and 4e-4 (10B to 130B)", pres_plot_std_control(model="emo", squares=False, with_l4=True)),
-                                              ("6. EMO 512e / 1000e / 2000e: joint training vs merged 4 random partitions at sub-model LR 4e-4 (10B to 130B)", pres_plot_scales_row())] if h]
+                                              ("6. EMO 512e / 1000e / 2000e: joint training vs merged 4 random partitions at sub-model LR 4e-4 (10B to 130B)", pres_plot_scales_row()),
+                                              ("7. As plot 6, plus the merged 8 random partitions at sub-model LR 4e-4 (10B to 30B)", pres_plot_scales_row(with_l8=True))] if h]
     """The second tab of the Disjoint Training Report: plots prepared for the presentation, one card each, independent of the report sections."""
     if not PRESENTATION_PLOTS:
         return card("info", "Presentation plots", "<p>Plots for the presentation go here, one card each. None yet: ask for the first one.</p>")
