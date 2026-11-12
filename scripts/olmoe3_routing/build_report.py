@@ -2364,8 +2364,8 @@ def pres_plot_std_control():
     toks = d["toks"]; S = d["series"]; start = S["start"]["h"][0]
     lab = ["10B", "20B", "30B", "61B", "87B", "113B", "130B"]; want = [10.0, 20.001, 30.0, 61.069, 87.282, 113.496, 130.0]
     xl = [next((l for l, w in zip(lab, want) if abs(t - w) < 0.01), "") for t in toks]
-    ch = CHART_CSS + line_chart(toks, [{"name": "baseline (joint training)", "y": S["baseline"]["h"], "color": "#059669", "gap": True}, {"name": "merged, 4 squares (sub-model LR 8e-4)", "y": S["m4"]["h"], "color": "#2563eb", "gap": True},
-                                      {"name": "squares alone, mean of 4", "y": S["s4"]["h"], "color": "#2563eb", "dashed": True, "gap": True},
+    ch = CHART_CSS + line_chart(toks, [{"name": "baseline (joint training)", "y": S["baseline"]["h"], "color": "#059669", "gap": True}, {"name": "disjoint training, 4 random partitions", "y": S["m4"]["h"], "color": "#2563eb", "gap": True},
+                                      {"name": "partitions alone, mean of 4", "y": S["s4"]["h"], "color": "#2563eb", "dashed": True, "gap": True},
                                       {"name": "start model (10B)", "y": [start] * len(toks), "const": True, "dashed": True, "color": "#64748b"}],
                                title="", y_label="held-out CE", x_label="tokens trained", xlabels=xl, W=1300, H=720, fs=3.0)
     what = ("The standard-routing 512e model split into 4 random squares (random expert groups, random document split) at sub-model LR 8e-4 and trained 10B to 130B "
