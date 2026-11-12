@@ -2400,6 +2400,24 @@ def pres_plot_scales_row(with_l8=False):
     return f"<p>{what}</p>" + CHART_CSS + '<div style="display:flex;gap:12px;align-items:flex-start">' + "".join(panels) + "</div>" + legend
 
 
+def pres_plot_freeze():
+    """Presentation plot 8 (user request 2026-11-12): EMO 512e, joint training and the merged 4 random partitions at sub-model LR 4e-4, plus the merged 8 random
+    partitions at 4e-4 and its three freeze ablations (routers frozen / routers + attention frozen / everything but the experts frozen), 10B -> 30B."""
+    d = next((x for x in control_explorer_data() if x["id"] == "emo"), None)
+    if not d or "l4" not in d["series"]: return ""
+    S = d["series"]; keep = [i for i, t in enumerate(d["toks"]) if t <= 30.01]; toks = [d["toks"][i] for i in keep]; start = S["start"]["h"][0]
+    pick = lambda key: [S[key]["h"][i] for i in keep] if key in S else None
+    xl = [next((l for l, w in zip(["10B", "15.7B", "20B", "30B"], [10.0, 15.729, 20.001, 30.0]) if abs(t - w) < 0.01), "") for t in toks]
+    spec = [("baseline", "baseline (joint training)", "#059669", False), ("l4", "disjoint training, 4 random partitions", "#ea580c", False), ("l8", "disjoint training, 8 random partitions", "#7c3aed", False),
+            ("f8r", "8 partitions, routers frozen", "#0891b2", True), ("f8ra", "8 partitions, routers + attention frozen", "#d97706", True), ("f8e", "8 partitions, everything frozen except experts", "#db2777", True)]
+    ser = [{"name": lab, "y": pick(k), "color": c, "gap": True, "dashed": dsh} for k, lab, c, dsh in spec if pick(k)]
+    ser.append({"name": "start model (10B)", "y": [start] * len(toks), "const": True, "dashed": True, "color": "#64748b"})
+    ch = CHART_CSS + line_chart(toks, ser, title="", y_label="held-out CE", x_label="tokens trained", xlabels=xl, W=1300, H=720, fs=3.0)
+    what = ("EMO 512e, 10B to 30B: joint training, the merged 4 random partitions at sub-model LR 4e-4, the merged 8 random partitions at 4e-4 and the same 8-partition split with parameters "
+            "frozen in the sub-models (section 5 of the report): routers frozen, routers and attention frozen, everything frozen except the experts. Held-out CE on the 300B-stream sample.")
+    return f"<p>{what}</p>" + ch
+
+
 def presentation_section():
     global PRESENTATION_PLOTS
     PRESENTATION_PLOTS = [(t, h) for t, h in [("1. Merged squares vs continued baseline (block A, EMO 512e, 10B to 20B)", pres_plot_block_a()),
@@ -2408,7 +2426,8 @@ def presentation_section():
                                               ("4. EMO 512e: joint training vs merged 4 random squares vs the squares alone (10B to 130B)", pres_plot_std_control(model="emo")),
                                               ("5. EMO 512e: joint training vs merged 4 random squares at sub-model LR 8e-4 and 4e-4 (10B to 130B)", pres_plot_std_control(model="emo", squares=False, with_l4=True)),
                                               ("6. EMO 512e / 1000e / 2000e: joint training vs merged 4 random partitions at sub-model LR 4e-4 (10B to 130B)", pres_plot_scales_row()),
-                                              ("7. As plot 6, plus the merged 8 random partitions at sub-model LR 4e-4 (10B to 30B)", pres_plot_scales_row(with_l8=True))] if h]
+                                              ("7. As plot 6, plus the merged 8 random partitions at sub-model LR 4e-4 (10B to 30B)", pres_plot_scales_row(with_l8=True)),
+                                              ("8. EMO 512e: joint training, merged 4 and 8 random partitions at sub-model LR 4e-4, and the 8-partition freeze ablations (10B to 30B)", pres_plot_freeze())] if h]
     """The second tab of the Disjoint Training Report: plots prepared for the presentation, one card each, independent of the report sections."""
     if not PRESENTATION_PLOTS:
         return card("info", "Presentation plots", "<p>Plots for the presentation go here, one card each. None yet: ask for the first one.</p>")
