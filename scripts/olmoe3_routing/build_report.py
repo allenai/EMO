@@ -1683,7 +1683,8 @@ FIRST_STEPS_TAKE = [   # short observations, one line each, no numbers (user rul
     "The standard-routing model spikes far harder: both of its merges jump several times higher than EMO's in the first steps, four squares peaking within four steps and eight squares within nine.",
     "The standard four-square merge then recovers only slowly and is still above its start model after three hundred steps, where EMO's was back below it within fifty.",
     "The standard eight-square merge dips briefly after its peak and then climbs again through step three hundred, ending near where its control arm's merge sits at the first regular point, the same shape as EMO's eight-square plateau.",
-    "Square 0 alone improves monotonically for the standard model as well, so for both routers the early rise is a merge cost, not the squares getting worse."]
+    "Square 0 alone improves monotonically for the standard model as well, so for both routers the early rise is a merge cost, not the squares getting worse.",
+    "The mixed-pool model barely spikes at all: its four-square merge rises by a couple of thousandths and is below its start model within fifteen steps, and its eight-square merge peaks at under half of EMO's jump and, unlike EMO's, comes back down steadily to its start model by step three hundred and below it at the first regular point."]
 
 
 FIRST_STEPS_MODELS = [   # (model id of the explorer, label, start pass, per-model arms); std added 2026-11-11 (user request 2026-11-10: same probe at LR 4e-4)
