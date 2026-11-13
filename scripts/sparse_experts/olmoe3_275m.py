@@ -277,6 +277,7 @@ FIXED_STEPS = [int(x) for x in os.environ.get("OLMOE3_FIXED_STEPS", "").split(",
 HARD_STOP = int(os.environ["OLMOE3_HARD_STOP"]) if os.environ.get("OLMOE3_HARD_STOP") else None
 LB_WEIGHT = float(os.environ.get("OLMOE3_LB_WEIGHT", "0.01"))   # load-balancing loss weight (the recipe's 0.01); OLMOE3_LB_WEIGHT for the 2000e LB-weight sweep (user request 2026-11-07)   # stop after this many steps, everything else (data order, schedule) unchanged: the first-steps probe of the squares (2026-11-07)
 WARMUP_STEPS = int(os.environ.get("OLMOE3_WARMUP", "2000"))
+PRE_TRAIN_CKPT = os.environ.get("OLMOE3_PRE_TRAIN_CKPT", "0") == "1"   # save the random-init model as step0 (from-scratch squares, user request 2026-11-13)
 
 
 def _parse_pool_dist(spec: str):
@@ -687,7 +688,7 @@ FORWARDED_ENV = (
     "OLMOE3_LD_LAMBDA_WARMUP", "OLMOE3_LD_INIT", "OLMOE3_LD_EVAL", "OLMOE3_LD_DETACH", "OLMOE3_LD_LR_MULT",
     "OLMOE3_LD_SIGNAL", "OLMOE3_LD_LAMBDA_COV", "OLMOE3_ROUTER_ONLY_LR", "OLMOE3_FREEZE_ROUTER", "OLMOE3_FREEZE_PATTERNS", "OLMOE3_FREEZE_TAG",
     "OLMOE3_GROUPS", "OLMOE3_GROUP", "OLMOE3_DATA_PATHS", "OLMOE3_INIT_FROM", "OLMOE3_FIXED_STEPS", "OLMOE3_WARMUP",
-    "OLMOE3_SQUARE_TOP_K", "OLMOE3_SQUARE_NORM_TOP_K", "OLMOE3_HARD_STOP", "OLMOE3_LB_WEIGHT",
+    "OLMOE3_SQUARE_TOP_K", "OLMOE3_SQUARE_NORM_TOP_K", "OLMOE3_HARD_STOP", "OLMOE3_LB_WEIGHT", "OLMOE3_PRE_TRAIN_CKPT",
 )
 
 
@@ -968,7 +969,7 @@ def build_trainer_config(common: CommonComponents, cluster: str) -> TrainerConfi
                 fixed_steps=(FIXED_STEPS or None) if FIXED_STEPS else ([_wsd_decay_start_step(TOKENS)] if SCHEDULER == "wsd_decay" else None),
                 max_checkpoints=None if FIXED_STEPS else 3,
                 save_async=False,
-                pre_train_checkpoint=False,
+                pre_train_checkpoint=PRE_TRAIN_CKPT,
                 remove=CheckpointRemovalStrategy.ephemeral_only,
             ),
         )
