@@ -15,10 +15,19 @@
 set -u
 W=/weka/oe-training-default/ryanwang/EMO/sparse_experts
 SQ="$W/${SQUARES_NAME:?}"; RP="${RUN_PREFIX:?}"; CLUSTER="${CLUSTER:-ai2/jupiter}"; K="${SQUARES_K:-8}"; OFF="${WORKER_OFFSET:-0}"
-ME="${BEAKER_JOB_ID:-$(hostname)-$$}"; LOCKS="$SQ/logs/locks"; mkdir -p "$LOCKS"; STALE=900
+ME="${BEAKER_JOB_ID:-$(hostname)-$$}"; LOCKS="$SQ/logs/locks${LOCK_TAG:+_$LOCK_TAG}"; mkdir -p "$LOCKS"; STALE=900
 export OLMOE3_LR="${OLMOE3_LR:?}" OLMOE3_NUM_EXPERTS="${OLMOE3_NUM_EXPERTS:-512}" OLMOE3_EMO="${OLMOE3_EMO:-1}" OLMOE3_NUM_NODES=1 OLMOE3_NUM_GPUS=8 OLMOE3_RANK_MB=2 OLMOE3_EP_SIZE=1
 export OLMOE3_ATTN_BACKEND=flash_3 OLMOE3_USE_CUTE_KDA=0 OLMOE3_PREEMPTIBLE=0 OLMOE3_DATA_ROOT=s3://ai2-llm OLMOE3_SAVE_ROOT="$W" OLMOE3_WORK_DIR=/weka/oe-training-default/ryanwang/dataset-cache
-export OLMOE3_GROUPS="$SQ/groups.json" OLMOE3_WARMUP=1
+export OLMOE3_GROUPS="$SQ/groups.json" OLMOE3_WARMUP="${OLMOE3_WARMUP:-1}"
+# from-scratch squares (2026-11-14): ONE_WINDOW=1 trains window 1 only; W1_FRACS = matched baseline steps (of 19074) to checkpoint at besides
+# the final step; W1_STOP_FRAC = stop the square at that matched step (OLMOE3_HARD_STOP; ablation arms); LOCK_TAG = lock folder per arm when
+# several arms share one squares folder.
+ONE="${ONE_WINDOW:-0}"; FRACS="${W1_FRACS:-10926}"; STOPF="${W1_STOP_FRAC:-}"
+w1_steps() { python -c "
+fin=$1; fr=[int(x) for x in '$FRACS'.split(',')]; stop='$STOPF'
+st=sorted({max(1, round(fin*f/19074)) for f in fr} | {fin})
+if stop: tgt=max(1, round(fin*int(stop)/19074)); st=[x for x in st if x<=tgt]; st=sorted(set(st)|{tgt})
+print(','.join(map(str, st)))"; }
 # environment the gantry-launched training jobs carry (see `beaker experiment spec` of any square job)
 export NUM_NODES=1 OLMO_SHARED_FS=1 LOG_FILTER_TYPE=local_rank0_only OMP_NUM_THREADS=8 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True OLMO_SYMM_VDEV2D_AUTO_BUILD=0 TORCH_CUDA_ARCH_LIST=9.0 TORCH_LOGS=recompiles,graph_breaks PYTORCH_KERNEL_CACHE_PATH=/root/.cache/torch/kernels S3_PROFILE=S3 R2_PROFILE=R2 WEKA_PROFILE=WEKA
 export PYTHONPATH="external/OLMo-core/src${PYTHONPATH:+:$PYTHONPATH}"
@@ -37,17 +46,18 @@ beat_start() { local l="$LOCKS/$1"; ( while [ -d "$l" ]; do touch "$l/beat" 2>/d
 release() { [ -n "$HB" ] && kill "$HB" 2>/dev/null; HB=""; [ "$(cat "$LOCKS/$1/owner" 2>/dev/null)" = "$ME" ] && rm -rf "${LOCKS:?}/${1:?}"; }
 train() { local run=$1; say "training $run: $OLMOE3_TOKENS tokens, checkpoints at $OLMOE3_FIXED_STEPS"
   torchrun --standalone --nproc-per-node 8 scripts/sparse_experts/olmoe3_275m.py train "$run" "$CLUSTER"; }
-all_done() { local g; for g in $(seq 0 $((K-1))); do have "$W/${RP}${g}_w2/step$(( $(tok pack2 $g) / 524288 ))" || return 1; done; }
+all_done() { local g; if [ $ONE = 1 ]; then for g in $(seq 0 $((K-1))); do local l; l=$(w1_steps $(( $(tok pack $g) / 524288 ))); have "$W/${RP}$g/step${l##*,}" || return 1; done; return 0; fi; for g in $(seq 0 $((K-1))); do have "$W/${RP}${g}_w2/step$(( $(tok pack2 $g) / 524288 ))" || return 1; done; }
 fails=0
 while ! all_done; do progressed=0
   for i in $(seq 0 $((K-1))); do g=$(( (i + OFF) % K ))
-    t1=$(tok pack $g); fin=$(( t1 / 524288 )); mid=$(python -c "print(max(1, round($fin*10926/19074)))"); t2=$(tok pack2 $g); fin2=$(( t2 / 524288 ))
+    t1=$(tok pack $g); fin=$(( t1 / 524288 )); mid=$(python -c "print(max(1, round($fin*10926/19074)))"); fixed="$mid,$fin"; unset OLMOE3_HARD_STOP
+    if [ $ONE = 1 ]; then fixed=$(w1_steps $fin); [ "${fixed##*,}" != "$fin" ] && export OLMOE3_HARD_STOP="${fixed##*,}"; fin=${fixed##*,}; t2=0; fin2=0; else t2=$(tok pack2 $g); fin2=$(( t2 / 524288 )); fi
     if ! have "$W/${RP}$g/step$fin" && claim g${g}_w1; then beat_start g${g}_w1; progressed=1
-      export OLMOE3_GROUP=$g OLMOE3_TOKENS=$t1 OLMOE3_FIXED_STEPS="$mid,$fin" OLMOE3_DATA_PATHS="$SQ/pack/group$g/*.npy" OLMOE3_INIT_FROM="$SQ/init/group$g" OLMOE3_WANDB_TAGS="$TAGS"
+      export OLMOE3_GROUP=$g OLMOE3_TOKENS=$t1 OLMOE3_FIXED_STEPS="$fixed" OLMOE3_DATA_PATHS="$SQ/pack/group$g/*.npy" OLMOE3_INIT_FROM="$SQ/init/group$g" OLMOE3_WANDB_TAGS="$TAGS"
       train "${RP}$g" || { say "${RP}$g FAILED (exit $?)"; fails=$((fails+1)); }
       release g${g}_w1
     fi
-    if have "$W/${RP}$g/step$fin" && ! have "$W/${RP}${g}_w2/step$fin2" && claim g${g}_w2; then beat_start g${g}_w2; progressed=1
+    if [ $ONE != 1 ] && have "$W/${RP}$g/step$fin" && ! have "$W/${RP}${g}_w2/step$fin2" && claim g${g}_w2; then beat_start g${g}_w2; progressed=1
       if [ ! -f "$SQ/init2/group$g/model_and_optim/.metadata" ]; then say "init2 group$g from ${RP}$g/step$fin"
         python scripts/sparse_experts/olmoe3_squares/rewrite_checkpoint.py --src "$W/${RP}$g/step$fin" --out "$SQ/init2/group$g" --overwrite 2>&1 | tail -n 2; fi
       if [ -f "$SQ/init2/group$g/model_and_optim/.metadata" ]; then

@@ -15,7 +15,7 @@ S=sparse_experts; W=/weka/oe-training-default/ryanwang/EMO/sparse_experts; SAMPL
 HR=runs_heldout300b_scratch_steps; mkdir -p $S/olmoe3_routing/$HR
 say() { echo "$(date -u +%m-%d\ %H:%M) [scratch probe $KV] $*"; }
 ev() { local name=$1 ckpt=$2; [ -f $S/olmoe3_routing/$HR/$name/none/meta.json ] || echo "python scripts/sparse_experts/olmoe3_routing/extract_routing.py --checkpoint $ckpt --instances $W/olmoe3_routing/$SAMPLE --out-dir $W/olmoe3_routing/$HR/$name/none --restrict none --batch-size 8 --log-every 100 --ce-only --max-first-ce 100" >> $CF; }
-run_evals() { local tag=$1; if [ -s $CF ] && [ ! -f $LOG/eval8gpu.launched ]; then local u; u=$(python3 scripts/sparse_experts/olmoe3_beaker_cmd_cli.py --name "scratchprobe-$tag-evals" --gpus 8 -- bash scripts/sparse_experts/olmoe3_squares/eval_batch_8gpu.sh ${CF/$S/$W} 2>&1 | tail -n 1)
+run_evals() { local tag=$1; if [ -s $CF ] && [ ! -f $LOG/eval8gpu.launched ]; then local u; u=$(python3 scripts/sparse_experts/olmoe3_beaker_cmd_cli.py --name "scratchprobe-$tag-evals-$(date +%m%d%H%M)" --gpus 8 -- bash scripts/sparse_experts/olmoe3_squares/eval_batch_8gpu.sh ${CF/$S/$W} 2>&1 | tail -n 1)
   say "evals ($(wc -l < $CF) commands): $u"; echo "$u" | grep -q beaker.org && echo "$u" > $LOG/eval8gpu.launched; fi; }
 if [ $KV = joint ]; then LOG=$S/olmoe3_squares_scratch/logs/joint; mkdir -p $LOG; CF=$LOG/evals_8gpu.txt
   until [ -f $S/$JOINT/step800/train/rank0.pt ]; do sleep 120; done; say "joint run has step 800"
