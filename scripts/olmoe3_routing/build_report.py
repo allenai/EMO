@@ -1748,7 +1748,7 @@ BRANCH_TAKE = [
     "Eight sub-models are behind four at every branch point, and the difference between them shrinks along with the gap itself.",
     "The transition is in how the merge relates to its sub-models: up to about 100M tokens of joint training the merged model is no better than a sub-model alone; from about 200M on it is better, and by more at each later branch point.",
     "There is no sharp switch: both the gap to joint training and the merge's advantage over its sub-models change gradually across the first billion tokens.",
-    "Within a branch nothing breaks at the split: the merged model keeps improving through its 100M tokens at every branch point, just more slowly than joint training when the split is early."]
+    "Early splits show no jump at the split: the merged model simply improves more slowly than joint training. From about 400M tokens on, the first merge after the split is worse than the model that was split, the same immediate jump as in the first-steps probes of the 10B models, and the branch then recovers below its starting point within its 100M tokens."]
 
 
 def branch_section():
