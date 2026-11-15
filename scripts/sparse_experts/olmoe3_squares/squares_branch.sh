@@ -15,7 +15,7 @@ BS="10 25 50 100 200 400 800 1300 1907"; SPAN=191   # branch point 0 = the from-
 S=sparse_experts; W=/weka/oe-training-default/ryanwang/EMO/sparse_experts; SAMPLE=sample_8k_300b.npz; JOINT=olmoe3_275m_scratch_joint_1b; ST=$S/olmoe3_routing/stream_0b_10b
 HR=runs_heldout300b_branch; H=$S/olmoe3_routing/$HR; ROOTD=$S/olmoe3_squares_branch; mkdir -p $H $ROOTD/logs
 evline() { echo "python scripts/sparse_experts/olmoe3_routing/extract_routing.py --checkpoint $2 --instances $W/olmoe3_routing/$SAMPLE --out-dir $W/olmoe3_routing/$HR/$1/none --restrict none --batch-size 8 --log-every 100 --ce-only --max-first-ce 100"; }
-done_ev() { [ -f $H/$1/none/meta.json ]; }
+done_ev() { [ -s $H/$1/none/meta.json ]; }
 ce() { python -c "import json; print(round(json.load(open('$H/$1/none/meta.json'))['mean_ce'],4))" 2>/dev/null; }
 launch_evals() { local name=$1 cf=$2 mark=$3; [ -s $cf ] || return 0; [ -f $mark ] && return 0; local u
   u=$(python3 scripts/sparse_experts/olmoe3_beaker_cmd_cli.py --name "$name-$(date +%m%d%H%M%S)" --gpus 8 -- bash scripts/sparse_experts/olmoe3_squares/eval_batch_8gpu.sh ${cf/$S/$W} 2>&1 | tail -n 1)
@@ -76,7 +76,11 @@ PY
   for s in $CK; do [ -f $SQ/merged/s$s/merge_info.json ] || { say "ABORT: merge at step $s failed"; exit 1; }; done
   CF=$LOG/evals.txt; : > $CF; for s in $CK; do done_ev ${TAG}_merged_s$s || evline ${TAG}_merged_s$s $W/$SQN/merged/s$s >> $CF
     for g in $(seq 0 $((K-1))); do done_ev ${TAG}_sub${g}_s$s || evline ${TAG}_sub${g}_s$s $W/${RP}$g/step$s >> $CF; done; done; launch_evals branch-$TAG $CF $LOG/evals.launched
-  until allsc; do sleep 120; done
+  # an evaluation job that exits with passes still missing (2026-11-15: results lost to a full disk although the job reported success) is resubmitted, up to 3 times
+  tries=0; until allsc; do sleep 180; e=$(grep -o '01[A-Z0-9]\{20,\}' $LOG/evals.launched 2>/dev/null | head -1)
+    if [ -n "$e" ] && beaker experiment get $e --format json 2>/dev/null | grep -q '"exited"' && ! allsc; then sleep 60; allsc && break; tries=$((tries+1)); [ $tries -gt 3 ] && { say "ABORT: evaluations still missing after 3 resubmissions"; exit 1; }
+      : > $CF; for s in $CK; do done_ev ${TAG}_merged_s$s || evline ${TAG}_merged_s$s $W/$SQN/merged/s$s >> $CF; for g in $(seq 0 $((K-1))); do done_ev ${TAG}_sub${g}_s$s || evline ${TAG}_sub${g}_s$s $W/${RP}$g/step$s >> $CF; done; done
+      rm -f $LOG/evals.launched; say "resubmitting $(wc -l < $CF) missing evaluations (try $tries)"; launch_evals branch-$TAG $CF $LOG/evals.launched; fi; done
 fi
 for g in $(seq 0 $((K-1))); do rm -rf "$S/${RP:?}$g"; done; rm -rf "${SQ:?}/merged" "${SQ:?}/init" "${SQ:?}/pack" "${SQ:?}/assign"
 for i in 0 1 2; do [ "$(cat $ROOTD/logs/slot$i/owner 2>/dev/null)" = "$TAG" ] && rm -rf "$ROOTD/logs/slot$i"; done
