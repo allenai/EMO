@@ -20,9 +20,10 @@ ce() { python -c "import json; print(round(json.load(open('$H/$1/none/meta.json'
 launch_evals() { local name=$1 cf=$2 mark=$3; [ -s $cf ] || return 0; [ -f $mark ] && return 0; local u
   u=$(python3 scripts/sparse_experts/olmoe3_beaker_cmd_cli.py --name "$name-$(date +%m%d%H%M%S)" --gpus 8 -- bash scripts/sparse_experts/olmoe3_squares/eval_batch_8gpu.sh ${cf/$S/$W} 2>&1 | tail -n 1)
   say "evals $name ($(wc -l < $cf) commands): $u"; echo "$u" | grep -q beaker.org && echo "$u" > $mark; }
-# at most 3 branches in flight (slice -> train -> merge -> score -> delete); a slot is re-entered by its own branch after a restart and is stale after 12 h
+# at most 2 branches in flight, and only with > 1.2 TB free (slice -> train -> merge -> score -> delete); a slot is re-entered by its own branch after a restart and is stale after 12 h
 slot_get() { local i; for i in 0 1 2; do [ "$(cat $ROOTD/logs/slot$i/owner 2>/dev/null)" = "$TAG" ] && { SLOT=$i; return; }; done
-  while true; do for i in 0 1 2; do mkdir $ROOTD/logs/slot$i 2>/dev/null && { echo $TAG > $ROOTD/logs/slot$i/owner; SLOT=$i; return; }; [ $(( $(date +%s) - $(stat -c %Y $ROOTD/logs/slot$i 2>/dev/null || date +%s) )) -gt 43200 ] && rm -rf $ROOTD/logs/slot$i; done; sleep 30; done; }
+  until [ "$(df --output=avail -BG /root | tail -1 | tr -dc 0-9)" -gt 1200 ]; do sleep 300; done   # a branch needs ~0.5 TB until it is scored
+  while true; do for i in 0 1; do mkdir $ROOTD/logs/slot$i 2>/dev/null && { echo $TAG > $ROOTD/logs/slot$i/owner; SLOT=$i; return; }; [ $(( $(date +%s) - $(stat -c %Y $ROOTD/logs/slot$i 2>/dev/null || date +%s) )) -gt 43200 ] && rm -rf $ROOTD/logs/slot$i; done; sleep 30; done; }
 slot_put() { rm -rf "$ROOTD/logs/slot${SLOT:?}"; }
 OFFS="48 96 144 191"
 MODE="${1:?<B> <K> | joint | all}"
@@ -31,8 +32,9 @@ if [ $MODE = all ]; then   # start every driver that is not running (after a ses
     setsid nohup bash scripts/sparse_experts/olmoe3_squares/squares_branch.sh "$@" >> $ROOTD/logs/driver_${a/:/_k}.log 2>&1 < /dev/null & done; exit 0; fi
 if [ $MODE = joint ]; then say() { echo "$(date -u +%m-%d\ %H:%M) [branch joint] $*"; }; LOG=$ROOTD/logs/joint; mkdir -p $LOG
   JS=$(for b in $BS; do echo $b; for o in $OFFS; do echo $((b + o)); done; done | sort -n | uniq | tr '\n' ' ')
-  until [ -f $S/$JOINT/step$((1907 + SPAN))/train/rank0.pt ]; do sleep 120; done; say "joint run complete"
-  CF=$LOG/evals.txt; : > $CF; for s in $JS; do done_ev joint_step$s || evline joint_step$s $W/$JOINT/step$s >> $CF; done; launch_evals branch-joint $CF $LOG/evals.launched
+  # scores the checkpoints that exist now and prunes them (rerun after the trunk's last steps land: 2026-11-15 the disk filled at step 1955)
+  JS=$(for s in $JS; do [ -f $S/$JOINT/step$s/train/rank0.pt ] || done_ev joint_step$s && echo -n "$s "; done); say "scoring joint steps: $JS"
+  CF=$LOG/evals.txt; : > $CF; for s in $JS; do done_ev joint_step$s || evline joint_step$s $W/$JOINT/step$s >> $CF; done; rm -f $LOG/evals.launched; launch_evals branch-joint $CF $LOG/evals.launched
   for s in $JS; do until done_ev joint_step$s; do sleep 120; done; done; say "joint: $(for s in $JS; do echo -n "s$s=$(ce joint_step$s) "; done)"
   # only the branch points themselves are kept
   for s in $JS; do case " $BS " in *" $s "*) ;; *) rm -rf "$S/${JOINT:?}/step${s:?}";; esac; done; say done; exit 0; fi
