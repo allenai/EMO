@@ -277,7 +277,8 @@ FIXED_STEPS = [int(x) for x in os.environ.get("OLMOE3_FIXED_STEPS", "").split(",
 HARD_STOP = int(os.environ["OLMOE3_HARD_STOP"]) if os.environ.get("OLMOE3_HARD_STOP") else None
 LB_WEIGHT = float(os.environ.get("OLMOE3_LB_WEIGHT", "0.01"))   # load-balancing loss weight (the recipe's 0.01); OLMOE3_LB_WEIGHT for the 2000e LB-weight sweep (user request 2026-11-07)   # stop after this many steps, everything else (data order, schedule) unchanged: the first-steps probe of the squares (2026-11-07)
 WARMUP_STEPS = int(os.environ.get("OLMOE3_WARMUP", "2000"))
-PRE_TRAIN_CKPT = os.environ.get("OLMOE3_PRE_TRAIN_CKPT", "0") == "1"   # save the random-init model as step0 (from-scratch squares, user request 2026-11-13)
+WARMUP_MIN_LR = float(os.environ.get("OLMOE3_WARMUP_MIN_LR", "0"))   # LR at step 0 of the warmup: sub-models branched off a joint run inside its warmup continue its ramp (2026-11-15)
+PRE_TRAIN_CKPT = os.environ.get("OLMOE3_PRE_TRAIN_CKPT", "OLMOE3_WARMUP_MIN_LR", "0") == "1"   # save the random-init model as step0 (from-scratch squares, user request 2026-11-13)
 
 
 def _parse_pool_dist(spec: str):
@@ -828,7 +829,7 @@ def _wsd_decay_start_step(tokens: int) -> int:
 
 def _scheduler(tokens: int):
     if SCHEDULER == "wsd":
-        return ConstantWithWarmup(warmup=WARMUP_STEPS)
+        return ConstantWithWarmup(warmup=WARMUP_STEPS, warmup_min_lr=WARMUP_MIN_LR)
     if SCHEDULER == "wsd_decay":
         return WSD(warmup=WARMUP_STEPS, decay_fraction=WSD_DECAY_FRACTION)
     if SCHEDULER != "cosine":
