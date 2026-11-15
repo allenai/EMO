@@ -1742,6 +1742,66 @@ def scratch_section():
     return out
 
 
+BRANCH_TAKE = []   # observations, filled in when all branches are scored
+
+
+def branch_section():
+    """Box 5M, branch-point experiment (user request 2026-11-15): the joint standard-MoE 512e run olmoe3_275m_scratch_joint_1b split into 4 / 8 random
+    sub-models at nine log-spaced points of its first 1B tokens (joint steps 10 .. 1907), each branch trained for the next 100M tokens in total and scored
+    at 8 points (squares_branch.sh). One chart: the joint curve with every branch's merged model and its sub-models' mean."""
+    import math
+    HB = ROOT / "sparse_experts/olmoe3_routing/runs_heldout300b_branch"; LG = ROOT / "sparse_experts/olmoe3_squares_branch/logs"
+    c = lambda n: _ce(HB / n / "none")
+    BS = [10, 25, 50, 100, 200, 400, 800, 1300, 1907]; MT = lambda st: st * 0.524288
+    jsteps = sorted({b + o for b in BS for o in (0, 48, 96, 144, 191)}); J = {st: c(f"joint_step{st}") for st in jsteps}; J = {k: v for k, v in J.items() if v is not None}
+    if len(J) < 5: return ""
+    def jat(st):   # joint CE at a joint step, linear interpolation between scored checkpoints
+        ks = sorted(J)
+        if st in J: return J[st]
+        lo = max((k for k in ks if k < st), default=None); hi = min((k for k in ks if k > st), default=None)
+        if lo is None or hi is None: return None
+        return J[lo] + (J[hi] - J[lo]) * (st - lo) / (hi - lo)
+    def mean(v): return sum(v) / len(v) if v and all(x is not None for x in v) else None
+    br = {}   # (B, K) -> list of (joint-step-equivalent, merged, sub mean)
+    for B in BS:
+        for K in (4, 8):
+            f = LG / f"b{B}_k{K}/steps.txt"
+            if not f.exists(): continue
+            pts = [(B + K * s, c(f"b{B}_k{K}_merged_s{s}"), mean([c(f"b{B}_k{K}_sub{g}_s{s}") for g in range(K)])) for s in map(int, f.read_text().split())]
+            if all(p[1] is not None for p in pts): br[(B, K)] = pts
+    what = ("The joint standard-MoE 512e run from the random initialisation is checkpointed at nine log-spaced points of its first 1B tokens (joint steps 10, 25, 50, 100, 200, 400, 800, 1,300 and 1,907, "
+            "i.e. 5M to 1B tokens). From each point the model is cut into 4 or 8 random sub-models (the from-scratch arms' expert groups; optimizer state carried) which train for the next 100M tokens of the "
+            "stream in total, split at random, about 48 steps each for 4 sub-models and 24 for 8. The sub-models continue the joint run's learning-rate ramp at the same tokens, so a branch differs from joint "
+            "training only by the split. Every 12.6M tokens the sub-models are merged and the merge and each sub-model alone are scored; the joint run is scored at the branch point and 25M, 50M, 75M and "
+            "100M tokens later.")
+    out = card("info", "Where does splitting start to work? Branching off the joint run", f"<p>{what}</p>")
+    if not br:
+        return out + card("info", "Branches", "<p>The joint run is scored (" + ", ".join(f"{J[b]:.2f} at {MT(b):.0f}M" for b in BS if b in J) + "); the branches are training and being scored, two at a time.</p>")
+    xs = sorted(set(J) | {p[0] for v in br.values() for p in v}); LX = [math.log10(x) for x in xs]
+    ser = [{"name": "joint training", "y": [J.get(x) for x in xs], "color": "#059669", "gap": True}]
+    for (B, K), pts in sorted(br.items()):
+        col = "#2563eb" if K == 4 else "#ea580c"; d = {p[0]: p for p in pts}; d[B] = (B, J.get(B), None)
+        ser.append({"name": f"merged {K}, from {MT(B):.0f}M", "y": [d[x][1] if x in d else None for x in xs], "color": col, "gap": True})
+        ser.append({"name": f"{K} alone (mean), from {MT(B):.0f}M", "y": [d[x][2] if x in d else None for x in xs], "color": col, "dotted": True, "gap": True})
+    lab = set(BS); TL = lambda st: "1B" if st == 1907 else f"{MT(st):.0f}M"
+    legend = ('<div style="font-size:12px;margin:2px 0 8px 46px">' + "".join(f'<span style="display:inline-block;margin-right:14px"><span style="display:inline-block;width:18px;border-top:2px {sty} {col};vertical-align:middle"></span> {n}</span>'
+              for n, col, sty in (("joint training", "#059669", "solid"), ("merged 4 sub-models", "#2563eb", "solid"), ("merged 8 sub-models", "#ea580c", "solid"), ("4 sub-models alone, mean", "#2563eb", "dotted"), ("8 sub-models alone, mean", "#ea580c", "dotted"))) + "</div>")
+    ch = line_chart(LX, ser, title="Joint training with 4- and 8-sub-model branches of 100M tokens each", x_label="tokens trained on (log scale); every branch starts on the joint line",
+                    xlabels=[TL(x) if x in lab else "" for x in xs], W=980, H=520, legend_on=False)
+    # end-of-branch summary: gap to joint at the same tokens, and merge cost (merged minus sub-models' mean)
+    f = lambda v: "&ndash;" if v is None else f"{v:.3f}"; g = lambda a, b: None if a is None or b is None else a - b; td = "padding:2px 10px;text-align:right"
+    end = {k: v[-1] for k, v in br.items()}; BX = [b for b in BS if (b, 4) in end or (b, 8) in end]
+    gap = line_chart([math.log10(b) for b in BX], [{"name": f"merged {K} minus joint", "y": [g(end[(b, K)][1], jat(end[(b, K)][0])) if (b, K) in end else None for b in BX], "color": col, "gap": True} for K, col in ((4, "#2563eb"), (8, "#ea580c"))]
+                     + [{"name": f"merged {K} minus its sub-models' mean", "y": [g(end[(b, K)][1], end[(b, K)][2]) if (b, K) in end else None for b in BX], "color": col, "dashed": True, "gap": True} for K, col in ((4, "#2563eb"), (8, "#ea580c"))],
+                     title="After 100M tokens of split training: distance to joint training, and merged model vs its sub-models", y_label="CE difference", x_label="branch point (tokens of joint training before the split, log scale)",
+                     xlabels=[TL(b) for b in BX], W=720, H=340)
+    tab = ("<table style='border-collapse:collapse;font-size:13px'><tr>" + "".join(f"<th style='{td}'>{h}</th>" for h in ("split after", "joint at split", "joint +100M", "merged 4", "4 alone, mean", "merged 8", "8 alone, mean")) + "</tr>"
+           + "".join(f"<tr><td style='{td}'>{TL(b)}</td><td style='{td}'>{f(J.get(b))}</td><td style='{td}'>{f(jat(b + 191))}</td>" + "".join(f"<td style='{td}'>{f(end[(b, K)][1]) if (b, K) in end else '&ndash;'}</td><td style='{td}'>{f(end[(b, K)][2]) if (b, K) in end else '&ndash;'}</td>" for K in (4, 8)) + "</tr>" for b in BS) + "</table>")
+    note = f"<p>{len(br)} of 18 branches scored so far; the rest fill in as they finish.</p>" if len(br) < 18 else ""
+    return out + card("results", "Branches", CHART_CSS + ch + legend + gap + "<p>Held-out CE at the end of each branch (100M tokens after the split); a sub-model alone keeps a quarter or an eighth of the experts.</p>" + tab + note
+                      + ("<ol>" + "".join(f"<li>{t}</li>" for t in BRANCH_TAKE) + "</ol>" if BRANCH_TAKE else ""))
+
+
 FIRST_STEPS_TAKE = [   # short observations, one line each, no numbers (user rule 2026-11-04); continued probe 2026-11-09
     "The degradation is immediate: one training step of every square already makes the merge worse than the start model, and it worsens step by step.",
     "Eight squares pay about three times the four-square jump.",
@@ -1995,6 +2055,7 @@ def build_q5_controls():
     boxes["5K"] = first_steps_section()
     boxes["5L"] = overlap_section()
     boxes["5M"] = scratch_section()
+    if boxes["5M"]: boxes["5M"] += branch_section()
     boxes = {L: inner for L, inner in boxes.items() if inner}
     body += VARIANT_CSS + card("info", "Experiments",
         '<ul class="q3index">' + "".join(f'<li><a href="#q5-{L}"><b>{L}</b> &middot; {t}</a> &mdash; {bl}</li>' for L, t, _, bl in VARIANTS if L in boxes) + "</ul>")
