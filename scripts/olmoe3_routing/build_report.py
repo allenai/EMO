@@ -1681,7 +1681,7 @@ SCRATCH_TAKE = [   # short observations, one line each, no numbers (user rule 20
 SCRATCH_TAKE_10B = [
     "Split at the random init, the merged model is far behind joint training at every point of the first 10B tokens, many times the gap of any split that starts from a 10B joint checkpoint, and eight sub-models are much further behind than four.",
     "The sub-models themselves keep learning: alone, each improves steadily through the whole window, although a sub-model trained on its share of 10B tokens only reaches about where joint training stood at 2.6B.",
-    "The merge does not follow them: the merged model is clearly worse than its sub-models at the first point already, and with four sub-models it stops improving after that and gets worse through the second half of the window, so the cost of merging grows as the sub-models train.",
+    "The merge does not follow them: the merged model is clearly worse than its sub-models at the first point already, and it stops improving early and then gets worse through the second half of the window (from the first point on with four sub-models, from the second with eight), so the cost of merging grows as the sub-models train.",
     "Sub-model learning rate does not fix it: a higher rate makes the sub-models better alone but their merge worse, and a lower rate makes both worse.",
     "The load-balancing weight makes almost no difference to the merge."]
 
