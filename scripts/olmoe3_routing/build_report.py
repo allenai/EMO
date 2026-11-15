@@ -267,7 +267,8 @@ VARIANTS = [("A", "EMO 512e, 4 sub-models", "#2563eb", "the main experiment"),
             ("5I", "Sparser squares", "#16a34a", "an eight-way split leaves each square with 64 experts per layer but still 16 active, far denser than the 16 of 512 it is merged back into: the same 8 squares at LR 4e-4 with only 4 of 64 active"),
             ("5J", "Router weights and logits after disjoint training", "#9333ea", "do the squares' routers drift apart in scale or offset while they train separately: router rows and router logits of the squares, the merged models and the joint baselines, layer by layer"),
             ("5K", "The first steps of disjoint training", "#b91c1c", "is the merge degradation immediate: the random squares of EMO 512e at LR 4e-4 trained from the 10B checkpoint for a handful of steps, merged after every step and evaluated"),
-            ("5L", "Overlapping sub-models", "#0e7490", "does letting the sub-models share experts help the merge: EMO 512e at LR 4e-4 split into 16 random groups of 64 experts in which every expert belongs to two groups, the documents split 16 ways, each expert merged as the mean of its two copies")]
+            ("5L", "Overlapping sub-models", "#0e7490", "does letting the sub-models share experts help the merge: EMO 512e at LR 4e-4 split into 16 random groups of 64 experts in which every expert belongs to two groups, the documents split 16 ways, each expert merged as the mean of its two copies"),
+            ("5M", "Disjoint training from scratch", "#be185d", "can the split start at the random init instead of a 10B joint checkpoint: standard MoE 512e cut into 4 or 8 random sub-models before any training, first 100 steps and the first 10B tokens, with sub-model LR and load-balancing ablations")]
 
 
 def variant(letter, inner, tab="q3"):
@@ -1673,6 +1674,73 @@ def overlap_section():
     return card("info", "Setup", f"<p>{what}</p>") + card("results", "Results", btn + "<ol>" + "".join(f"<li>{t}</li>" for t in OVERLAP_TAKE) + "</ol>")
 
 
+SCRATCH_TAKE = [   # short observations, one line each, no numbers (user rule 2026-11-04)
+    "Split at the random init, every sub-model trains: its loss falls from the first steps, and the sub-models of an arm stay indistinguishable from one another.",
+    "Merging works even this early: the merged model is level with its sub-models at every probe step and marginally better by step one hundred.",
+    "Step for step the sub-models are ahead of joint training in the first hundred steps, but that is their shorter warm-up (a higher learning rate at the same step), not a gain.",
+    "Token for token the merge is far behind joint training in the first hundred steps, and eight sub-models are further behind than four: each sub-model has taken only a quarter or an eighth of the updates the joint model took on the same tokens."]
+SCRATCH_TAKE_10B = []   # filled in when the 10B arms and the ablations are scored
+
+
+def scratch_section():
+    """Box 5M (user request 2026-11-13): standard MoE 512e split into 4 / 8 random squares at the random init (step0 of olmoe3_275m_scratch_joint_steps800),
+    documents of the run's own first 10B tokens split at random. Probe: 100 square steps, merges at 10..100 vs the joint run's first 800 steps
+    (squares_scratch_probe.sh). 10B arms and LR / LB ablations stopped at 2.6B: squares_scratch.sh; joint baseline = olmoe3_275m_10b."""
+    HP = ROOT / "sparse_experts/olmoe3_routing/runs_heldout300b_scratch_steps"; HT = ROOT / "sparse_experts/olmoe3_routing/runs_heldout300b_scratch"
+    c = lambda H, n: _ce(H / n / "none")
+    def mean(v): return sum(v) / len(v) if v and all(x is not None for x in v) else None
+    if c(HP, "joint_step0") is None: return ""
+    PS = [10, 20, 30, 50, 70, 100]; JS = [0, 10, 20, 30, 50, 70, 100, 150, 200, 300, 400, 600, 800]
+    what = ("The standard-routing 512e model is cut into 4 groups of 128 or 8 groups of 64 random experts per layer (layer 1 whole) <b>before any training</b>: every sub-model starts from the same random "
+            "initialisation, sliced. The documents of the joint run's own first 10B tokens are split uniformly at random into 4 or 8 packs, one per sub-model. Each sub-model trains on its pack with the "
+            "joint recipe (peak LR 8e-4, load-balancing weight 0.01, global batch of 0.5M tokens) and a linear warm-up of 2000/K steps, which is the joint run's 2,000-step warm-up measured in tokens "
+            "(K sub-models together consume K batches per step). The sub-models are never merged during training; at each evaluation point their checkpoints are merged with token-share weights and "
+            "the merge and every sub-model alone are scored on the 300B held-out sample. The reference is always joint training from the same random initialisation on the same stream.")
+    js = {st: c(HP, f"joint_step{st}") for st in JS}
+    step_chart = line_chart(PS, [{"name": "joint training", "y": [js[st] for st in PS], "color": "#059669"},
+                                 {"name": "merged 4 sub-models", "y": [c(HP, f"k4_merged_step{st}") for st in PS], "color": "#2563eb"},
+                                 {"name": "merged 8 sub-models", "y": [c(HP, f"k8_merged_step{st}") for st in PS], "color": "#ea580c"},
+                                 {"name": "4 sub-models alone, mean", "y": [mean([c(HP, f"k4_sub{g}_step{st}") for g in range(4)]) for st in PS], "color": "#2563eb", "dotted": True},
+                                 {"name": "8 sub-models alone, mean", "y": [mean([c(HP, f"k8_sub{g}_step{st}") for g in range(8)]) for st in PS], "color": "#ea580c", "dotted": True}],
+                            title="First 100 steps, same step count", x_label="training steps (per sub-model for the split arms)", xfmt=lambda v: f"{v:.0f}", W=520, H=320)
+    xs = sorted(set(JS) | {4 * st for st in PS} | {8 * st for st in PS}); lab = {0, 100, 200, 300, 400, 600, 800}
+    tok_chart = line_chart(xs, [{"name": "joint training", "y": [js.get(x) for x in xs], "color": "#059669", "gap": True},
+                                {"name": "merged 4 sub-models", "y": [c(HP, f"k4_merged_step{x // 4}") if x % 4 == 0 and x // 4 in PS else None for x in xs], "color": "#2563eb", "gap": True},
+                                {"name": "merged 8 sub-models", "y": [c(HP, f"k8_merged_step{x // 8}") if x % 8 == 0 and x // 8 in PS else None for x in xs], "color": "#ea580c", "gap": True}],
+                           title="Same span, same total tokens", x_label="total tokens consumed, in global batches of 0.5M (= joint steps)", xlabels=[f"{x}" if x in lab else "" for x in xs], W=520, H=320)
+    f = lambda v: "&ndash;" if v is None else f"{v:.3f}"; td = "padding:2px 10px;text-align:right"
+    ptab = ("<table style='border-collapse:collapse;font-size:13px'><tr>" + "".join(f"<th style='{td}'>{h}</th>" for h in
+            ("sub-model steps", "merged 4", "merged 8", "joint, same step", "joint, same tokens as 4", "joint, same tokens as 8")) + "</tr>"
+            + "".join(f"<tr><td style='{td}'>{st}</td><td style='{td}'>{f(c(HP, f'k4_merged_step{st}'))}</td><td style='{td}'>{f(c(HP, f'k8_merged_step{st}'))}</td><td style='{td}'>{f(js.get(st))}</td>"
+                      f"<td style='{td}'>{f(js.get(4 * st))}</td><td style='{td}'>{f(js.get(8 * st))}</td></tr>" for st in PS) + "</table>")
+    out = card("info", "Setup", f"<p>{what}</p>")
+    out += card("results", "First 100 steps", CHART_CSS + step_chart + tok_chart + f"<p>Held-out CE; the random initialisation scores {f(js[0])}.</p>" + ptab
+                + "<ol>" + "".join(f"<li>{t}</li>" for t in SCRATCH_TAKE) + "</ol>")
+    # ---- 10B arms and ablations (fill in as their points are scored) ----
+    MS = [5000, 10000, 15000, 19074]; TOK = {5000: "2.6B", 10000: "5.2B", 15000: "7.9B", 19074: "10B"}; base = [c(HT, f"baseline_step{m}") for m in MS]
+    arm = lambda K, lr, lb, m: c(HT, f"k{K}_lr{lr}_lb{lb}_merged_match{m}")
+    sub = lambda K, lr, lb, m: mean([c(HT, f"k{K}_lr{lr}_lb{lb}_sub{g}_match{m}") for g in range(K)])
+    main = {K: [arm(K, "8e-4", "1e-2", m) for m in MS] for K in (4, 8)}
+    rows = [("LR 4e-4", "4e-4", "1e-2"), ("LR 8e-4 (main arm)", "8e-4", "1e-2"), ("LR 1.6e-3", "1.6e-3", "1e-2"), ("LB 0.001", "8e-4", "1e-3"), ("LB 0.01 (main arm)", "8e-4", "1e-2"), ("LB 0.1", "8e-4", "1e-1")]
+    if any(arm(K, lr, lb, m) is not None for K in (4, 8) for _, lr, lb in rows for m in MS):
+        ch = line_chart([2.6, 5.2, 7.9, 10.0], [{"name": "joint training", "y": base, "color": "#059669"},
+                         {"name": "merged 4 sub-models", "y": main[4], "color": "#2563eb"}, {"name": "merged 8 sub-models", "y": main[8], "color": "#ea580c"},
+                         {"name": "4 sub-models alone, mean", "y": [sub(4, "8e-4", "1e-2", m) for m in MS], "color": "#2563eb", "dotted": True},
+                         {"name": "8 sub-models alone, mean", "y": [sub(8, "8e-4", "1e-2", m) for m in MS], "color": "#ea580c", "dotted": True}],
+                        title="First 10B tokens from scratch (LR 8e-4, LB 0.01)", x_label="tokens trained", xfmt=lambda v: f"{v:g}B", W=560, H=340)
+        tab = ("<table style='border-collapse:collapse;font-size:13px'><tr>" + "".join(f"<th style='{td}'>{h}</th>" for h in ("tokens", "joint", "merged 4", "4 alone", "merged 8", "8 alone")) + "</tr>"
+               + "".join(f"<tr><td style='{td}'>{TOK[m]}</td><td style='{td}'>{f(base[i])}</td><td style='{td}'>{f(main[4][i])}</td><td style='{td}'>{f(sub(4, '8e-4', '1e-2', m))}</td>"
+                         f"<td style='{td}'>{f(main[8][i])}</td><td style='{td}'>{f(sub(8, '8e-4', '1e-2', m))}</td></tr>" for i, m in enumerate(MS)) + "</table>")
+        abl = ("<p>Sub-model LR and load-balancing weight, merged model at 2.6B tokens (joint training: " + f(base[0]) + "). One knob changes at a time; the joint baseline is not re-tuned.</p>"
+               "<table style='border-collapse:collapse;font-size:13px'><tr>" + "".join(f"<th style='{td}'>{h}</th>" for h in ("sub-model setting", "merged 4", "merged 8")) + "</tr>"
+               + "".join(f"<tr><td style='{td};text-align:left'>{n}</td><td style='{td}'>{f(arm(4, lr, lb, 5000))}</td><td style='{td}'>{f(arm(8, lr, lb, 5000))}</td></tr>" for n, lr, lb in rows) + "</table>")
+        out += card("results", "First 10B tokens", CHART_CSS + ch + tab + abl + ("<ol>" + "".join(f"<li>{t}</li>" for t in SCRATCH_TAKE_10B) + "</ol>" if SCRATCH_TAKE_10B else "<p>Points still being scored are shown as &ndash;.</p>"))
+    else:
+        out += card("info", "First 10B tokens", "<p>The 4- and 8-sub-model arms have trained through 10B tokens from the random initialisation, with LR (4e-4, 1.6e-3) and load-balancing (0.001, 0.1) ablation arms "
+                    "stopped at 2.6B; their merges are being scored. Joint training on the held-out sample: " + ", ".join(f"{f(b)} at {TOK[m]}" for m, b in zip(MS, base)) + ".</p>")
+    return out
+
+
 FIRST_STEPS_TAKE = [   # short observations, one line each, no numbers (user rule 2026-11-04); continued probe 2026-11-09
     "The degradation is immediate: one training step of every square already makes the merge worse than the start model, and it worsens step by step.",
     "Eight squares pay about three times the four-square jump.",
@@ -1925,6 +1993,7 @@ def build_q5_controls():
     boxes["5J"] = router_logits_section()
     boxes["5K"] = first_steps_section()
     boxes["5L"] = overlap_section()
+    boxes["5M"] = scratch_section()
     boxes = {L: inner for L, inner in boxes.items() if inner}
     body += VARIANT_CSS + card("info", "Experiments",
         '<ul class="q3index">' + "".join(f'<li><a href="#q5-{L}"><b>{L}</b> &middot; {t}</a> &mdash; {bl}</li>' for L, t, _, bl in VARIANTS if L in boxes) + "</ul>")
@@ -2453,11 +2522,11 @@ def artifact_page(body, path):
     """The Disjoint Training Report: Q5 as its own page (a Claude artifact). Same content as the Q5 tab, renumbered 1-8 (the 5A-5H
     letters only mean something inside the parent report), with a header, a sticky contents rail and its own stylesheet."""
     import datetime, re
-    letters = "ABCEFGHIJKL"; num = lambda L: str(letters.index(L) + 1)   # no 5D any more (its sweeps live in 5B)
+    letters = "ABCEFGHIJKLM"; num = lambda L: str(letters.index(L) + 1)   # no 5D any more (its sweeps live in 5B)
     for L in letters:
         body = body.replace(f'id="q5-5{L}"', f'id="s{num(L)}"').replace(f'href="#q5-5{L}"', f'href="#s{num(L)}"').replace(f'<span class="vb">5{L}</span>', f'<span class="vb">{num(L)}</span>').replace(f'<b>5{L}</b> &middot;', f'<b>{num(L)}</b> &middot;')
-    body = re.sub(r"boxes 5([A-L])((?:, 5[A-L])+)", lambda m: "sections " + ", ".join(num(x) for x in re.findall(r"5([A-L])", m.group(0))), body)
-    body = re.sub(r"box 5([A-L])", lambda m: "section " + num(m.group(1)), body)
+    body = re.sub(r"boxes 5([A-M])((?:, 5[A-M])+)", lambda m: "sections " + ", ".join(num(x) for x in re.findall(r"5([A-M])", m.group(0))), body)
+    body = re.sub(r"box 5([A-M])", lambda m: "section " + num(m.group(1)), body)
     body = body.replace('<div class="card info"><h3>Experiments</h3>', '<div class="card info rp-index"><h3>Experiments</h3>')
     body = re.sub(r'<div class="card ok"><h3>Question</h3>.*?</div>', "", body, count=1, flags=re.S)   # the question card (user 2026-11-03: title only, no question box)
     toc = "".join(f'<li><a href="#s{num(L[1])}"><span class="n">{num(L[1])}</span> {t}</a></li>' for L, t, _, _ in VARIANTS if L.startswith("5") and f'id="s{num(L[1])}"' in body)
