@@ -66,7 +66,10 @@ PY
   if [ ! -f $LOG/worker.launched ]; then
     u=$(python3 scripts/sparse_experts/olmoe3_beaker_cmd_cli.py --name "branch-$TAG-$(date +%m%d%H%M%S)" --gpus 8 -- bash -c "SQUARES_NAME=$SQN RUN_PREFIX=$RP OLMOE3_EMO=0 OLMOE3_LR=8e-4 OLMOE3_WARMUP=$WARM OLMOE3_WARMUP_MIN_LR=$MINLR STEPS=$N CKPT_STEPS=${CK// /,} OLMOE3_WANDB_TAGS=olmoe3_squares_branch,square,$TAG bash scripts/sparse_experts/olmoe3_squares/steps_worker.sh $(seq -s' ' 0 $((K-1)))" 2>&1 | tail -n 1)
     say "squares ($N steps each, checkpoints at $CK, warmup $WARM from LR $MINLR): $u"; echo "$u" | grep -q beaker.org && echo "$u" > $LOG/worker.launched; fi
-  for g in $(seq 0 $((K-1))); do until [ -f $S/${RP}$g/step$N/train/rank0.pt ]; do sleep 120; done; done; say "all $K squares done"
+  # as each square finishes, its checkpoints are cut down to the weights (a third of the size; strip_optim.py) -- the disk filled twice on 2026-11-15
+  for g in $(seq 0 $((K-1))); do until [ -f $S/${RP}$g/step$N/train/rank0.pt ]; do sleep 60; done; sleep 90
+    PYTHONPATH=external/OLMo-core/src python scripts/sparse_experts/olmoe3_squares/strip_optim.py $(for s in $CK; do echo $S/${RP}$g/step$s; done) >> $LOG/strip.log 2>&1; done
+  for g in $(seq 0 $((K-1))); do for s in $CK; do [ -f $S/${RP}$g/step$s/.main_only ] || { say "ABORT: strip of square $g step $s failed"; exit 1; }; done; done; say "all $K squares done and stripped"
   SH=$(python -c "import json; print(','.join(f'{x:.4f}' for x in json.load(open('$SQ/pack/stats.json'))['token_share']))")
   n=0; for s in $CK; do [ -f $SQ/merged/s$s/merge_info.json ] || { subs=(); for g in $(seq 0 $((K-1))); do subs+=("$S/${RP}$g/step$s"); done
       PYTHONPATH=external/OLMo-core/src OPENBLAS_NUM_THREADS=8 python scripts/sparse_experts/olmoe3_squares/merge_models.py --groups $SQ/groups.json --full $S/$JOINT/step$B --subs "$(IFS=,; echo "${subs[*]}")" --weights "$SH" --out $SQ/merged/s$s --overwrite > $LOG/merge_s$s.log 2>&1 & n=$((n+1)); [ $((n % 3)) = 0 ] && wait; }; done; wait
