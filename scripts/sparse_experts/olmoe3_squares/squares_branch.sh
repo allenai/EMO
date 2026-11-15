@@ -10,7 +10,7 @@
 # joint run's branch-point checkpoints are kept, its B+191 checkpoints deleted.
 #   bash scripts/sparse_experts/olmoe3_squares/squares_branch.sh <B> <K> | joint | all      (idempotent; detach; commit + push first)
 set -u; cd "$(git rev-parse --show-toplevel)"; export PATH=/root/.conda/envs/emo/bin:$PATH
-BS="0 10 25 50 100 200 400 800 1300 1907"; SPAN=191
+BS="10 25 50 100 200 400 800 1300 1907"; SPAN=191   # branch point 0 = the from-scratch arms (squares_scratch*.sh), not repeated (user 2026-11-15)
 S=sparse_experts; W=/weka/oe-training-default/ryanwang/EMO/sparse_experts; SAMPLE=sample_8k_300b.npz; JOINT=olmoe3_275m_scratch_joint_1b; ST=$S/olmoe3_routing/stream_0b_10b
 HR=runs_heldout300b_branch; H=$S/olmoe3_routing/$HR; ROOTD=$S/olmoe3_squares_branch; mkdir -p $H $ROOTD/logs
 evline() { echo "python scripts/sparse_experts/olmoe3_routing/extract_routing.py --checkpoint $2 --instances $W/olmoe3_routing/$SAMPLE --out-dir $W/olmoe3_routing/$HR/$1/none --restrict none --batch-size 8 --log-every 100 --ce-only --max-first-ce 100"; }
