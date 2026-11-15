@@ -1697,19 +1697,20 @@ def scratch_section():
             "the merge and every sub-model alone are scored on the 300B held-out sample. The reference is always joint training from the same random initialisation on the same stream.")
     js = {st: c(HP, f"joint_step{st}") for st in JS}
     xs = sorted(set(JS) | {4 * st for st in PS} | {8 * st for st in PS}); lab = {0, 100, 200, 300, 400, 600, 800}
-    tok_chart = line_chart(xs, [{"name": "joint training", "y": [js.get(x) for x in xs], "color": "#059669", "gap": True},
+    MT = lambda x: x * 0.524288   # joint steps -> million tokens (one global batch = 524,288 tokens)
+    tok_chart = line_chart([MT(x) for x in xs], [{"name": "joint training", "y": [js.get(x) for x in xs], "color": "#059669", "gap": True},
                                 {"name": "merged 4 sub-models", "y": [c(HP, f"k4_merged_step{x // 4}") if x % 4 == 0 and x // 4 in PS else None for x in xs], "color": "#2563eb", "gap": True},
                                 {"name": "merged 8 sub-models", "y": [c(HP, f"k8_merged_step{x // 8}") if x % 8 == 0 and x // 8 in PS else None for x in xs], "color": "#ea580c", "gap": True},
                                 {"name": "4 sub-models alone, mean", "y": [mean([c(HP, f"k4_sub{g}_step{x // 4}") for g in range(4)]) if x % 4 == 0 and x // 4 in PS else None for x in xs], "color": "#2563eb", "dotted": True, "gap": True},
                                 {"name": "8 sub-models alone, mean", "y": [mean([c(HP, f"k8_sub{g}_step{x // 8}") for g in range(8)]) if x % 8 == 0 and x // 8 in PS else None for x in xs], "color": "#ea580c", "dotted": True, "gap": True}],
-                           title="First 100 sub-model steps, at the same total tokens", x_label="total tokens consumed, in global batches of 0.5M (= joint steps)", xlabels=[f"{x}" if x in lab else "" for x in xs], W=640, H=380)
+                           title="First 100 steps of every sub-model, plotted against the tokens the whole arm has trained on", x_label="tokens trained on, summed over all sub-models of an arm (millions)", xlabels=[f"{MT(x):.0f}M" if x in lab else "" for x in xs], W=640, H=380)
     f = lambda v: "&ndash;" if v is None else f"{v:.3f}"; td = "padding:2px 10px;text-align:right"
     ptab = ("<table style='border-collapse:collapse;font-size:13px'><tr>" + "".join(f"<th style='{td}'>{h}</th>" for h in
-            ("sub-model steps", "merged 4", "4 alone, mean", "joint, same tokens as 4", "merged 8", "8 alone, mean", "joint, same tokens as 8")) + "</tr>"
-            + "".join(f"<tr><td style='{td}'>{st}</td><td style='{td}'>{f(c(HP, f'k4_merged_step{st}'))}</td><td style='{td}'>{f(mean([c(HP, f'k4_sub{g}_step{st}') for g in range(4)]))}</td><td style='{td}'>{f(js.get(4 * st))}</td>"
-                      f"<td style='{td}'>{f(c(HP, f'k8_merged_step{st}'))}</td><td style='{td}'>{f(mean([c(HP, f'k8_sub{g}_step{st}') for g in range(8)]))}</td><td style='{td}'>{f(js.get(8 * st))}</td></tr>" for st in PS) + "</table>")
+            ("steps per sub-model", "4 sub-models: tokens", "merged 4", "4 alone, mean", "joint, same tokens", "8 sub-models: tokens", "merged 8", "8 alone, mean", "joint, same tokens")) + "</tr>"
+            + "".join(f"<tr><td style='{td}'>{st}</td><td style='{td}'>{MT(4 * st):.0f}M</td><td style='{td}'>{f(c(HP, f'k4_merged_step{st}'))}</td><td style='{td}'>{f(mean([c(HP, f'k4_sub{g}_step{st}') for g in range(4)]))}</td><td style='{td}'>{f(js.get(4 * st))}</td>"
+                      f"<td style='{td}'>{MT(8 * st):.0f}M</td><td style='{td}'>{f(c(HP, f'k8_merged_step{st}'))}</td><td style='{td}'>{f(mean([c(HP, f'k8_sub{g}_step{st}') for g in range(8)]))}</td><td style='{td}'>{f(js.get(8 * st))}</td></tr>" for st in PS) + "</table>")
     out = card("info", "Setup", f"<p>{what}</p>")
-    out += card("results", "First 100 steps", CHART_CSS + tok_chart + f"<p>Held-out CE; the random initialisation scores {f(js[0])}. Every line is placed at the total tokens its arm has consumed: K sub-models after s steps each sit at K &times; s joint steps. A sub-model alone keeps only a quarter or an eighth of the experts.</p>" + ptab
+    out += card("results", "First 100 steps", CHART_CSS + tok_chart + f"<p>Held-out CE; the random initialisation scores {f(js[0])}. The x-axis is training tokens in millions. One step is one batch of 524,288 tokens (about 0.5M), for the joint model and for every sub-model alike, so the joint model after 800 steps has trained on 419M tokens, 4 sub-models after 100 steps each on 4 &times; 100 batches = 210M, and 8 sub-models after 100 steps each on 8 &times; 100 batches = 419M. Each line is placed at the tokens its whole arm has trained on, so points above one another have seen the same amount of data. A sub-model alone keeps only a quarter or an eighth of the experts.</p>" + ptab
                 + "<ol>" + "".join(f"<li>{t}</li>" for t in SCRATCH_TAKE) + "</ol>")
     # ---- 10B arms and ablations (fill in as their points are scored) ----
     MS = [5000, 10000, 15000, 19074]; TOK = {5000: "2.6B", 10000: "5.2B", 15000: "7.9B", 19074: "10B"}; base = [c(HT, f"baseline_step{m}") for m in MS]
