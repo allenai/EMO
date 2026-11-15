@@ -1742,7 +1742,13 @@ def scratch_section():
     return out
 
 
-BRANCH_TAKE = []   # observations, filled in when all branches are scored
+BRANCH_TAKE = [
+    "The later the split, the smaller its cost: after 100M tokens of split training the merged model trails joint training by a wide margin when split within the first few million tokens, and the margin shrinks steadily with every later branch point.",
+    "Split after 1B tokens, four sub-models merged are level with joint training 100M tokens later, and eight are only slightly behind.",
+    "Eight sub-models are behind four at every branch point, and the difference between them shrinks along with the gap itself.",
+    "The transition is in how the merge relates to its sub-models: up to about 100M tokens of joint training the merged model is no better than a sub-model alone; from about 200M on it is better, and by more at each later branch point.",
+    "There is no sharp switch: both the gap to joint training and the merge's advantage over its sub-models change gradually across the first billion tokens.",
+    "Within a branch nothing breaks at the split: the merged model keeps improving through its 100M tokens at every branch point, just more slowly than joint training when the split is early."]
 
 
 def branch_section():
