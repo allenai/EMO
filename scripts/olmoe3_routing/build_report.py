@@ -1742,6 +1742,64 @@ def scratch_section():
     return out
 
 
+ZOOM_CHART_JS = r"""<script>(function(){
+function nice(lo,hi,n){var st=(hi-lo)/n,m=Math.pow(10,Math.floor(Math.log10(st))),f=st/m;st=(f<1.5?1:f<3?2:f<7?5:10)*m;var t=[],v=Math.ceil(lo/st)*st;for(;v<=hi+1e-9;v+=st)t.push(+v.toFixed(10));return [t,st];}
+function fmtTok(m){return m>=1000?(+(m/1000).toPrecision(4))+'B':(+m.toPrecision(4))+'M';}
+document.querySelectorAll('.zc').forEach(function(el){
+  var D=JSON.parse(el.getAttribute('data-z')),W=D.W,H=D.H,x0=58,y0=12,pw=W-x0-20,ph=H-y0-46,NS='http://www.w3.org/2000/svg';
+  var all=[];D.series.forEach(function(s){s.p.forEach(function(p){all.push(p);});});
+  var full={xa:Math.log10(Math.min.apply(null,all.map(function(p){return p[0];}))),xb:Math.log10(Math.max.apply(null,all.map(function(p){return p[0];}))),ya:Math.min.apply(null,all.map(function(p){return p[1];})),yb:Math.max.apply(null,all.map(function(p){return p[1];}))};
+  var px=(full.xb-full.xa)*0.02,py=(full.yb-full.ya)*0.04;full={xa:full.xa-px,xb:full.xb+px,ya:full.ya-py,yb:full.yb+py};
+  var dom=Object.assign({},full),svg=el.querySelector('svg'),tip=el.querySelector('.zc-tip'),btn=el.querySelector('.zc-reset'),id='zc'+Math.random().toString(36).slice(2);
+  function X(v){return x0+(Math.log10(v)-dom.xa)/(dom.xb-dom.xa)*pw;} function Y(v){return y0+(dom.yb-v)/(dom.yb-dom.ya)*ph;}
+  function mk(n,a,t){var e=document.createElementNS(NS,n);for(var k in a)e.setAttribute(k,a[k]);if(t!=null)e.textContent=t;svg.appendChild(e);return e;}
+  var pts=[];
+  function draw(){
+    while(svg.firstChild)svg.removeChild(svg.firstChild);pts=[];
+    var cp=mk('clipPath',{id:id});var r=document.createElementNS(NS,'rect');r.setAttribute('x',x0);r.setAttribute('y',y0);r.setAttribute('width',pw);r.setAttribute('height',ph);cp.appendChild(r);
+    var yt=nice(dom.ya,dom.yb,5),dec=Math.max(0,Math.min(4,-Math.floor(Math.log10(yt[1]))));
+    yt[0].forEach(function(t){mk('line',{x1:x0,x2:x0+pw,y1:Y(t),y2:Y(t),stroke:'#e5e7eb'});mk('text',{x:x0-6,y:Y(t)+4,'font-size':11,'text-anchor':'end',fill:'#475569'},t.toFixed(dec));});
+    var xt=[],lo=Math.pow(10,dom.xa),hi=Math.pow(10,dom.xb);
+    for(var k=Math.floor(dom.xa)-1;k<=Math.ceil(dom.xb);k++)[1,2,5].forEach(function(f){var v=f*Math.pow(10,k);if(v>=lo&&v<=hi)xt.push(v);});
+    if(xt.length<4)xt=nice(lo,hi,6)[0].filter(function(v){return v>0;});
+    xt.forEach(function(v){mk('line',{x1:X(v),x2:X(v),y1:y0+ph,y2:y0+ph+4,stroke:'#94a3b8'});mk('text',{x:X(v),y:y0+ph+17,'font-size':11,'text-anchor':'middle',fill:'#475569'},fmtTok(v));});
+    mk('line',{x1:x0,x2:x0+pw,y1:y0+ph,y2:y0+ph,stroke:'#94a3b8'});mk('line',{x1:x0,x2:x0,y1:y0,y2:y0+ph,stroke:'#94a3b8'});
+    mk('text',{x:x0+pw/2,y:H-6,'font-size':11,'text-anchor':'middle',fill:'#475569'},D.xl);
+    mk('text',{transform:'translate(13,'+(y0+ph/2)+') rotate(-90)','font-size':11,'text-anchor':'middle',fill:'#475569'},'CE');
+    D.series.forEach(function(s){
+      mk('polyline',{fill:'none',stroke:s.c,'stroke-width':s.w||1.8,'stroke-dasharray':s.d?'2,3':'none','clip-path':'url(#'+id+')',points:s.p.map(function(p){return X(p[0]).toFixed(1)+','+Y(p[1]).toFixed(1);}).join(' ')});
+      s.p.forEach(function(p){var a=X(p[0]),b=Y(p[1]);if(a<x0-1||a>x0+pw+1||b<y0-1||b>y0+ph+1)return;if(!s.d)mk('circle',{cx:a,cy:b,r:2.6,fill:s.c});pts.push([a,b,s,p]);});});
+    btn.style.display=(dom.xa===full.xa&&dom.xb===full.xb&&dom.ya===full.ya&&dom.yb===full.yb)?'none':'inline-block';
+  }
+  var sel=null,box=null;
+  function pos(e){var r=svg.getBoundingClientRect(),k=W/r.width;return [(e.clientX-r.left)*k,(e.clientY-r.top)*k];}
+  svg.addEventListener('mousedown',function(e){var p=pos(e);if(p[0]<x0||p[0]>x0+pw||p[1]<y0||p[1]>y0+ph)return;sel=p;box=mk('rect',{x:p[0],y:p[1],width:0,height:0,fill:'#2563eb22',stroke:'#2563eb','stroke-dasharray':'3,2'});e.preventDefault();});
+  svg.addEventListener('mousemove',function(e){var p=pos(e);
+    if(sel){var a=Math.max(x0,Math.min(x0+pw,p[0])),b=Math.max(y0,Math.min(y0+ph,p[1]));box.setAttribute('x',Math.min(a,sel[0]));box.setAttribute('y',Math.min(b,sel[1]));box.setAttribute('width',Math.abs(a-sel[0]));box.setAttribute('height',Math.abs(b-sel[1]));tip.style.display='none';return;}
+    var best=null,bd=400;pts.forEach(function(q){var d=(q[0]-p[0])*(q[0]-p[0])+(q[1]-p[1])*(q[1]-p[1]);if(d<bd){bd=d;best=q;}});
+    if(!best){tip.style.display='none';return;}
+    var r=svg.getBoundingClientRect(),k=r.width/W;tip.style.display='block';tip.style.left=(best[0]*k+12)+'px';tip.style.top=(best[1]*k-10)+'px';
+    tip.innerHTML='<b style="color:'+best[2].c+'">'+best[2].n+'</b><br>'+fmtTok(best[3][0])+' tokens &middot; CE '+best[3][1].toFixed(3);});
+  svg.addEventListener('mouseleave',function(){tip.style.display='none';});
+  window.addEventListener('mouseup',function(e){if(!sel)return;var p=pos(e),a=Math.max(x0,Math.min(x0+pw,p[0])),b=Math.max(y0,Math.min(y0+ph,p[1])),s=sel;sel=null;
+    if(Math.abs(a-s[0])>6&&Math.abs(b-s[1])>6){var xa=dom.xa+(Math.min(a,s[0])-x0)/pw*(dom.xb-dom.xa),xb=dom.xa+(Math.max(a,s[0])-x0)/pw*(dom.xb-dom.xa),yb=dom.yb-(Math.min(b,s[1])-y0)/ph*(dom.yb-dom.ya),ya=dom.yb-(Math.max(b,s[1])-y0)/ph*(dom.yb-dom.ya);dom={xa:xa,xb:xb,ya:ya,yb:yb};}
+    draw();});
+  svg.addEventListener('dblclick',function(){dom=Object.assign({},full);draw();});
+  btn.addEventListener('click',function(){dom=Object.assign({},full);draw();});
+  draw();});})();</script>"""
+
+
+def zoom_chart(series, *, title, x_label, W=980, H=520):
+    """Line chart with drag-to-zoom (user request 2026-11-15): drag a rectangle over the plot to zoom into it (both axes), double-click or the button to reset;
+    hovering a point shows its series, tokens and CE. series: dicts(n=name, c=colour, d=dotted, p=[[x in million tokens, y], ...]); log x axis."""
+    data = html.escape(json.dumps({"W": W, "H": H, "xl": x_label, "series": series}), quote=True)
+    return (f'<div class="zc" data-z="{data}" style="position:relative;display:inline-block;max-width:100%"><div class="lc-title">{title}</div>'
+            f'<svg viewBox="0 0 {W} {H}" width="{W}" height="{H}" style="max-width:100%;height:auto;cursor:crosshair;user-select:none"></svg>'
+            '<div class="zc-tip" style="display:none;position:absolute;pointer-events:none;background:#fff;border:1px solid #cbd5e1;border-radius:4px;padding:4px 8px;font-size:12px;box-shadow:0 1px 4px #0002;white-space:nowrap;z-index:5"></div>'
+            '<div style="font-size:12px;color:#64748b;margin:2px 0 0 58px">Drag over the plot to zoom into a region; double-click to reset. '
+            '<button type="button" class="zc-reset" style="display:none;font-size:12px;padding:1px 8px;margin-left:6px;cursor:pointer">Reset zoom</button></div></div>')
+
+
 BRANCH_TAKE = [
     "The later the split, the smaller its cost: after 100M tokens of split training the merged model trails joint training by a wide margin when split within the first few million tokens, and the margin shrinks steadily with every later branch point.",
     "Split after 1B tokens, four sub-models merged are level with joint training 100M tokens later, and eight are only slightly behind.",
@@ -1783,17 +1841,15 @@ def branch_section():
     out = card("info", "Where does splitting start to work? Branching off the joint run", f"<p>{what}</p>")
     if not br:
         return out + card("info", "Branches", "<p>The joint run is scored (" + ", ".join(f"{J[b]:.2f} at {MT(b):.0f}M" for b in BS if b in J) + "); the branches are training and being scored, two at a time.</p>")
-    xs = sorted(set(J) | {p[0] for v in br.values() for p in v}); LX = [math.log10(x) for x in xs]
-    ser = [{"name": "joint training", "y": [J.get(x) for x in xs], "color": "#059669", "gap": True}]
+    zs = [{"n": "joint training", "c": "#059669", "w": 2.2, "p": [[MT(x), J[x]] for x in sorted(J)]}]
     for (B, K), pts in sorted(br.items()):
-        col = "#2563eb" if K == 4 else "#ea580c"; d = {p[0]: p for p in pts}; d[B] = (B, J.get(B), None)
-        ser.append({"name": f"merged {K}, from {MT(B):.0f}M", "y": [d[x][1] if x in d else None for x in xs], "color": col, "gap": True})
-        ser.append({"name": f"{K} alone (mean), from {MT(B):.0f}M", "y": [d[x][2] if x in d else None for x in xs], "color": col, "dotted": True, "gap": True})
+        col = "#2563eb" if K == 4 else "#ea580c"; start = [[MT(B), J[B]]] if B in J else []
+        zs.append({"n": f"merged {K} sub-models, split after {MT(B):.0f}M", "c": col, "p": start + [[MT(p[0]), p[1]] for p in pts]})
+        zs.append({"n": f"{K} sub-models alone (mean), split after {MT(B):.0f}M", "c": col, "d": True, "p": start + [[MT(p[0]), p[2]] for p in pts if p[2] is not None]})
     lab = set(BS); TL = lambda st: "1B" if st == 1907 else f"{MT(st):.0f}M"
     legend = ('<div style="font-size:12px;margin:2px 0 8px 46px">' + "".join(f'<span style="display:inline-block;margin-right:14px"><span style="display:inline-block;width:18px;border-top:2px {sty} {col};vertical-align:middle"></span> {n}</span>'
               for n, col, sty in (("joint training", "#059669", "solid"), ("merged 4 sub-models", "#2563eb", "solid"), ("merged 8 sub-models", "#ea580c", "solid"), ("4 sub-models alone, mean", "#2563eb", "dotted"), ("8 sub-models alone, mean", "#ea580c", "dotted"))) + "</div>")
-    ch = line_chart(LX, ser, title="Joint training with 4- and 8-sub-model branches of 100M tokens each", x_label="tokens trained on (log scale); every branch starts on the joint line",
-                    xlabels=[TL(x) if x in lab else "" for x in xs], W=980, H=520, legend_on=False)
+    ch = zoom_chart(zs, title="Joint training with 4- and 8-sub-model branches of 100M tokens each", x_label="tokens trained on (log scale); every branch starts on the joint line") + ZOOM_CHART_JS
     # end-of-branch summary: gap to joint at the same tokens, and merge cost (merged minus sub-models' mean)
     f = lambda v: "&ndash;" if v is None else f"{v:.3f}"; g = lambda a, b: None if a is None or b is None else a - b; td = "padding:2px 10px;text-align:right"
     end = {k: v[-1] for k, v in br.items()}; BX = [b for b in BS if (b, 4) in end or (b, 8) in end]
