@@ -1705,7 +1705,28 @@ def kmeans_section():
             "router rows instead of at random, giving groups of 25 to 124 experts; clusters are matched across layers by centroid similarity and layer 1 stays whole. "
             "Documents, learning rate and matched points are the random-group control's.")
     btn = explorer_button("Show the k-means sub-models in the explorer", ["emo"], ["baseline", "l8", "s8", "km8", "skm8", "start"])
-    return card("info", "Setup", f"<p>{what}</p>") + card("results", "Results", btn + "<p>Held-out CE; alone = mean of the 8 sub-models.</p>" + tbl + "<ol>" + "".join(f"<li>{t}</li>" for t in KMEANS_TAKE) + "</ol>")
+    # how the groups are formed + their sizes (user request 2026-11-16); groups_stats.json: cosine statistics of the router rows / cluster centroids
+    SQK = ROOT / "sparse_experts/olmoe3_squares_emokm8"; G = _jload(SQK / "groups.json"); ST = _jload(SQK / "groups_stats.json") or {}; how = ""
+    if G:
+        sz = {l: G["sizes"][str(l)] for l in range(2, 10)}; lo = min(min(v) for v in sz.values()); hi = max(max(v) for v in sz.values())
+        shade = lambda n: f'background:rgba(190,24,93,{0.06 + 0.5 * (n - lo) / max(1, hi - lo):.2f})'
+        m = ST.get("matched", {}); u = ST.get("unmatched", {})
+        srows = "".join(f"<tr><td>layer {l}</td>" + "".join(f'<td style="{shade(n)}">{n}</td>' for n in sz[l]) + (f"<td>{m[str(l)]:.2f} / {u[str(l)]:.2f}</td>" if str(l) in m else "<td>&ndash;</td>") + "</tr>" for l in range(2, 10))
+        tot = [sum(sz[l][g] for l in sz) for g in range(8)]
+        srows += "<tr><td><b>layers 2&ndash;9</b></td>" + "".join(f"<td><b>{n}</b></td>" for n in tot) + "<td></td></tr>"
+        stbl = ('<table class="num"><thead><tr><th></th>' + "".join(f"<th>sub-model {g + 1}</th>" for g in range(8)) + "<th>similarity to the layer above:<br>matched / other clusters</th></tr></thead><tbody>" + srows + "</tbody></table>")
+        w = ST.get("within", {}); bt = ST.get("between", {})
+        tight = (f" The clusters are loose: two experts of the same cluster have a mean cosine of {min(w.values()):.2f}&ndash;{max(w.values()):.2f} between their router rows, "
+                 f"against {min(bt.values()):.2f}&ndash;{max(bt.values()):.2f} for experts of different clusters." if w and bt else "")
+        how = card("info", "How the groups are formed", "<ul>"
+            "<li><b>Within a layer.</b> An expert's router row is the direction of the hidden state that makes the router pick it, so experts with similar rows are picked for similar tokens. "
+            "K-means on the rows (scaled to unit length) puts each layer's 512 experts into 8 clusters. Nothing forces the clusters to be equal, so their sizes differ." + tight + "</li>"
+            "<li><b>Across layers.</b> Each layer is clustered on its own, so a sub-model needs one cluster picked from every layer. All routers read the same residual stream, which makes "
+            "cluster centres comparable between neighbouring layers: starting from layer 9, each layer's 8 clusters are paired one-to-one with the 8 clusters of the layer above so that paired "
+            "centres point as much alike as possible. A sub-model is one such chain of paired clusters, so it holds experts that fire for similar hidden states all the way up.</li>"
+            "<li><b>How good the pairing is.</b> Paired cluster centres have a cosine of about 0.4&ndash;0.6 with each other, unpaired ones 0.0&ndash;0.2 (last column), so the chains follow real structure.</li>"
+            "<li><b>Sizes.</b> Experts per sub-model in each layer (the random control has 64 everywhere). Layer 1 is kept whole in every sub-model.</li></ul>" + stbl)
+    return card("info", "Setup", f"<p>{what}</p>") + how + card("results", "Results", btn + "<p>Held-out CE; alone = mean of the 8 sub-models.</p>" + tbl + "<ol>" + "".join(f"<li>{t}</li>" for t in KMEANS_TAKE) + "</ol>")
 
 
 SCRATCH_TAKE = [   # short observations, one line each, no numbers (user rule 2026-11-04)
