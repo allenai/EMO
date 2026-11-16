@@ -29,6 +29,7 @@ def main():
     if a.unallocated: task["context"]["minRuntime"] = "0s"; task["context"]["autoResume"] = True
     for e in task["envVars"]:
         if e["name"] == "GIT_REF": e["value"] = head
+    if not any(e["name"] == "UV_HTTP_TIMEOUT" for e in task["envVars"]): task["envVars"].append({"name": "UV_HTTP_TIMEOUT", "value": "600"})   # 2026-11-16: the 30 s default timed out on PyPI and left the job without the pinned OLMo-core
     spec["description"] = f"{a.name} ({head[:9]})"
     if a.dry_run: print(json.dumps(task["arguments"])[:600]); return
     with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f: json.dump(spec, f); path = f.name

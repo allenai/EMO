@@ -5,6 +5,7 @@
 # passes that are still missing. Per-command logs: /results/pass_<i>.log.
 #   bash scripts/sparse_experts/olmoe3_squares/eval_batch_8gpu.sh <command file>
 set -u; F="${1:?command file}"
+source "$(dirname "${BASH_SOURCE[0]}")/ensure_env.sh"
 export PYTHONPATH="external/OLMo-core/src${PYTHONPATH:+:$PYTHONPATH}"
 say() { echo "== $(date -u +%m-%d\ %H:%M) [batch8] $*"; }
 mkdir -p /results; declare -a PID=(0 0 0 0 0 0 0 0); i=0; fails=0

@@ -9,6 +9,7 @@
 # square, the final merge) are claimed with mkdir locks + heartbeats (stale after 10 min), as in square_worker.sh. W&B is off (1600 runs).
 #   SQUARES_NAME=<arm dir> RUN_PREFIX=<prefix> FULL=<start model run> OLMOE3_LR=4e-4 [OLMOE3_EMO_POOL_SELECT=mix:0.2] bash scripts/sparse_experts/olmoe3_squares/repartition_worker.sh
 set -u
+source "$(dirname "${BASH_SOURCE[0]}")/ensure_env.sh"
 W=/weka/oe-training-default/ryanwang/EMO/sparse_experts
 SQ="$W/${SQUARES_NAME:?}"; RP="${RUN_PREFIX:?}"; FULLD="$W/${FULL:?}/step19074"; CLUSTER="${CLUSTER:-ai2/jupiter}"; K=8; P=scripts/sparse_experts/olmoe3_squares
 ME="${BEAKER_JOB_ID:-$(hostname)-$$}"; LOCKS="$SQ/logs/locks"; mkdir -p "$LOCKS" "$SQ/groups" "$SQ/cyc" "$SQ/merged"; STALE=600
