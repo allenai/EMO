@@ -268,7 +268,8 @@ VARIANTS = [("A", "EMO 512e, 4 sub-models", "#2563eb", "the main experiment"),
             ("5J", "Router weights and logits after disjoint training", "#9333ea", "do the squares' routers drift apart in scale or offset while they train separately: router rows and router logits of the squares, the merged models and the joint baselines, layer by layer"),
             ("5K", "The first steps of disjoint training", "#b91c1c", "is the merge degradation immediate: the random squares of EMO 512e at LR 4e-4 trained from the 10B checkpoint for a handful of steps, merged after every step and evaluated"),
             ("5L", "Overlapping sub-models", "#0e7490", "does letting the sub-models share experts help the merge: EMO 512e at LR 4e-4 split into 16 random groups of 64 experts in which every expert belongs to two groups, the documents split 16 ways, each expert merged as the mean of its two copies"),
-            ("5M", "Disjoint training from scratch", "#be185d", "can the split start at the random init instead of a 10B joint checkpoint: standard MoE 512e cut into 4 or 8 random sub-models before any training, first 100 steps and the first 10B tokens, with sub-model LR and load-balancing ablations")]
+            ("5M", "Disjoint training from scratch", "#be185d", "can the split start at the random init instead of a 10B joint checkpoint: standard MoE 512e cut into 4 or 8 random sub-models before any training, first 100 steps and the first 10B tokens, with sub-model LR and load-balancing ablations"),
+            ("5N", "K-means expert groups", "#be185d", "does grouping similar experts help: EMO 512e cut into 8 sub-models by k-means on the experts' router rows instead of at random, 10B to 20B")]
 
 
 def variant(letter, inner, tab="q3"):
@@ -1684,6 +1685,29 @@ def overlap_section():
     return card("info", "Setup", f"<p>{what}</p>") + card("results", "Results", btn + "<ol>" + "".join(f"<li>{t}</li>" for t in OVERLAP_TAKE) + "</ol>")
 
 
+KMEANS_TAKE = [   # short observations, one line each, no numbers
+    "The merged k-means sub-models are closer to joint training than the merged random ones at both points.",
+    "Alone, the k-means sub-models are worse than the random ones, so the gain appears only after merging.",
+    "The k-means groups are unequal in size, so this arm changes both which experts are grouped and how evenly."]
+
+
+def kmeans_section():
+    """Box 5N (user request 2026-11-15): EMO 512e 8-square control at LR 4e-4 with k-means expert groups (partition_kmeans.py, squares_kmeans.sh), 10B -> 20B. Explorer lines km8 / skm8."""
+    R = ROOT / "sparse_experts/olmoe3_routing"; HK = R / "runs_heldout300b_emokm8"; HRD = R / "runs_heldout300b_emorand8_lr4e-4"; HB = R / "runs_heldout300b_emo"
+    if not any(_ce(HK / f"merged_match{st}/none") is not None for st in (30000, 38148)): return ""
+    f = lambda v: "&ndash;" if v is None else f"{v:.3f}"
+    def mean(H, st):
+        v = [_ce(H / f"sub{g}_match{st}/none") for g in range(8)]; return sum(v) / 8 if all(x is not None for x in v) else None
+    rows = "".join(f"<tr><td>{tl}</td><td>{f(_ce(HK / f'merged_match{st}/none'))}</td><td>{f(_ce(HRD / f'merged_match{st}/none'))}</td><td>{f(_ce(HB / f'baseline_step{st}/none'))}</td><td>{f(mean(HK, st))}</td><td>{f(mean(HRD, st))}</td></tr>"
+                   for st, tl in ((30000, "15.7B"), (38148, "20B")))
+    tbl = ('<table class="num"><thead><tr><th>tokens</th><th>merged, k-means</th><th>merged, random</th><th>joint</th><th>alone, k-means</th><th>alone, random</th></tr></thead><tbody>' + rows + "</tbody></table>")
+    what = ("The 8-sub-model control of the EMO 512e model at sub-model LR 4e-4 with one change: in every layer 2&ndash;9 the experts are grouped by k-means (k = 8) on their "
+            "router rows instead of at random, giving groups of 25 to 124 experts; clusters are matched across layers by centroid similarity and layer 1 stays whole. "
+            "Documents, learning rate and matched points are the random-group control's.")
+    btn = explorer_button("Show the k-means sub-models in the explorer", ["emo"], ["baseline", "l8", "s8", "km8", "skm8", "start"])
+    return card("info", "Setup", f"<p>{what}</p>") + card("results", "Results", btn + "<p>Held-out CE; alone = mean of the 8 sub-models.</p>" + tbl + "<ol>" + "".join(f"<li>{t}</li>" for t in KMEANS_TAKE) + "</ol>")
+
+
 SCRATCH_TAKE = [   # short observations, one line each, no numbers (user rule 2026-11-04)
     "Split at the random init, every sub-model trains: its loss falls from the first steps, and the sub-models of an arm stay indistinguishable from one another.",
     "Merging works even this early: the merged model is level with its sub-models at every probe step and marginally better by step one hundred.",
@@ -2128,6 +2152,7 @@ def build_q5_controls():
     boxes["5L"] = overlap_section()
     boxes["5M"] = scratch_section()
     if boxes["5M"]: boxes["5M"] += branch_section()
+    boxes["5N"] = kmeans_section()
     boxes = {L: inner for L, inner in boxes.items() if inner}
     body += VARIANT_CSS + card("info", "Experiments",
         '<ul class="q3index">' + "".join(f'<li><a href="#q5-{L}"><b>{L}</b> &middot; {t}</a> &mdash; {bl}</li>' for L, t, _, bl in VARIANTS if L in boxes) + "</ul>")
@@ -2656,7 +2681,7 @@ def artifact_page(body, path):
     """The Disjoint Training Report: Q5 as its own page (a Claude artifact). Same content as the Q5 tab, renumbered 1-8 (the 5A-5H
     letters only mean something inside the parent report), with a header, a sticky contents rail and its own stylesheet."""
     import datetime, re
-    letters = "ABCEFGHIJKLM"; num = lambda L: str(letters.index(L) + 1)   # no 5D any more (its sweeps live in 5B)
+    letters = "ABCEFGHIJKLMN"; num = lambda L: str(letters.index(L) + 1)   # no 5D any more (its sweeps live in 5B)
     for L in letters:
         body = body.replace(f'id="q5-5{L}"', f'id="s{num(L)}"').replace(f'href="#q5-5{L}"', f'href="#s{num(L)}"').replace(f'<span class="vb">5{L}</span>', f'<span class="vb">{num(L)}</span>').replace(f'<b>5{L}</b> &middot;', f'<b>{num(L)}</b> &middot;')
     body = re.sub(r"boxes 5([A-M])((?:, 5[A-M])+)", lambda m: "sections " + ", ".join(num(x) for x in re.findall(r"5([A-M])", m.group(0))), body)
