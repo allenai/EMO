@@ -54,6 +54,8 @@ train() { local c=$1 g=$2 r; r=($(row $c $g)); local pack=pack; [ ${r[0]} = 2 ] 
   local rc=$?; grep -a "train/CE loss\|step=" "/results/train_c${c}_g$g.log" | tail -n 1 | cut -c1-200; return $rc; }
 fails=0
 while [ ! -f "$SQ/DONE" ]; do did=0
+  # shared filesystem full (2026-11-16: 0 bytes free, every write failed and the workers gave up): wait instead of failing
+  until [ "$(df --output=avail -BG "$W" | tail -n 1 | tr -dc 0-9)" -gt 300 ]; do say "less than 300 GB free on the shared filesystem: waiting"; sleep 600; done
   cur=0; for c in $(ls "$SQ/cyc" 2>/dev/null | sed 's/^c//' | sort -n); do [ -f "$SQ/cyc/c$c/PREP_DONE" ] && cur=$c; done
   if [ $cur -ge 1 ] && ! all_sq $cur; then
     for g in $(seq 0 $((K-1))); do sq_done $cur $g && continue

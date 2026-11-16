@@ -37,9 +37,10 @@ PY
 fin_of() { awk -v c="$1" -v g="$2" -v p="$S/${RP}_c$1_g$2/step" '$1 == c && $2 == g { print p $5 }' $SQ/plan.tsv; }
 # ---- workers: NWORK identical 8-GPU jobs; one that exits before the run is complete is replaced (at most 8 launches per slot) ----
 workers() { local i e n u; [ -f $SQ/DONE ] && return 0
+  [ "$(df --output=avail -BG /root | tail -n 1 | tr -dc 0-9)" -gt 500 ] || { [ "${fullsaid:-}" = 1 ] || say "less than 500 GB free on the shared filesystem: no worker launched until space returns"; fullsaid=1; return 0; }; fullsaid=0
   for i in $(seq 1 $NWORK); do e=$(tail -n 1 $LOG/worker$i.launched 2>/dev/null | grep -o '01[A-Z0-9]\{20,\}' | head -1)
     if [ -n "$e" ]; then beaker experiment get $e --format json 2>/dev/null | grep -q '"exited"\|"canceled"' || continue; fi
-    n=$(cat $LOG/worker$i.launched 2>/dev/null | wc -l); [ $n -ge 8 ] && continue
+    n=$(cat $LOG/worker$i.launched 2>/dev/null | wc -l); [ $n -ge 12 ] && continue
     u=$(python3 scripts/sparse_experts/olmoe3_beaker_cmd_cli.py --name "rp100m-worker$i-$(date +%m%d%H%M%S)" --gpus 8 -- bash -c "SQUARES_NAME=$SQN RUN_PREFIX=$RP FULL=$FULL OLMOE3_LR=$LR OLMOE3_EMO_POOL_SELECT=mix:0.2 bash scripts/sparse_experts/olmoe3_squares/repartition_worker.sh" 2>&1 | tail -n 1)
     say "worker $i (launch $((n+1))): $u"; echo "$u" | grep -q beaker.org && echo "$u" >> $LOG/worker$i.launched; done; }
 # ---- evaluations of a kept point ----
