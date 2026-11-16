@@ -1136,6 +1136,14 @@ def control_explorer_data():
                 i20 = steps.index(38148)
                 ser["rp4"] = {"h": [ser["l4"]["h"][i20] if st == 38148 else (_ce(RPH / f"merged_c{rp_pts[st]}/none") if st in rp_pts else None) for st in steps],
                               "p": [ser["l4"]["p"][i20] if st == 38148 else (_ppl(RPP / f"c{rp_pts[st]}.json") if st in rp_pts else None) for st in steps]}
+        # 2026-11-16: k-means expert groups (EMO 512e, 10B -> 20B; squares_kmeans.sh) and re-partition every ~100M tokens (mixed-pool EMO 512e, 10B -> 30B; squares_repartition100m.sh)
+        for model, tag, mk, sk, col in (("emo", "emokm8", "km8", "skm8", "#be185d"), ("mix20", "mix20rand8_rp100m", "rp100", "srp100", "#be123c")):
+            HX = R / f"runs_heldout300b_{tag}"; PX = ROOT / f"sparse_experts/olmoe3_squares_{tag}/ppl_validation/merged"; PTS_X = (30000, 38148, 57221)
+            if which != model or not any(_ce(HX / f"merged_match{st}/none") is not None for st in PTS_X): continue
+            ser[mk] = {"h": [hb(C["start"]) if st == 19074 else (_ce(HX / f"merged_match{st}/none") if st in PTS_X else None) for st in steps],
+                       "p": [ref_ppl if st == 19074 else (_ppl(PX / f"match{st}.json") if st in PTS_X else None) for st in steps]}
+            sx = [[_ce(HX / f"sub{g}_match{st}/none") for g in range(8)] if st in PTS_X else [None] for st in steps]
+            ser[sk] = {"h": [sum(v) / 8 if all(x is not None for x in v) and len(v) == 8 else None for v in sx], "c": col}
         name = C["model"] + (" (all squares at sub-model LR 4e-4)" if arms and all(a.get("lr") == "4e-4" for a in arms) else "")
         out.append({"id": which, "name": name, "toks": [round(st * 524288 / 1e9, 3) for st in steps], "series": ser})
     return out
@@ -1151,6 +1159,8 @@ EXPLORER_LINES = [  # key, label, colour, dashed, needs-ppl
     ("f8e", "merged, 8 squares, LR 4e-4, everything frozen except experts (EMO only)", "#0891b2", True),
     ("t8", "merged, 8 squares, LR 4e-4, squares activate 4 of 64 (EMO only)", "#16a34a", False), ("t8n", "merged, 8 squares, LR 4e-4, squares activate 4 of 64 with top-16 weights (EMO only)", "#16a34a", True),
     ("o16", "merged, 16 overlapping sub-models of 64 (every expert in two), LR 4e-4 (EMO 512e only)", "#9333ea", False), ("so16", "overlapping sub-models alone, mean of 16 (EMO 512e only)", "#9333ea", True),
+("km8", "merged, 8 squares of k-means expert groups (unequal sizes), LR 4e-4 (EMO 512e only)", "#be185d", False), ("skm8", "k-means squares alone, mean of 8 (EMO 512e only)", "#be185d", True),
+    ("rp100", "merged, 8 squares, LR 4e-4, re-merged + re-partitioned every ~100M tokens (mixed-pool EMO only)", "#be123c", False), ("srp100", "squares of the ~100M re-partition arm alone, mean of 8 (mixed-pool EMO only)", "#be123c", True),
     ("rm", "re-merged + re-partitioned at 61B (std only)", "#7c3aed", False), ("rs", "squares after re-partition, mean of 4 (std only)", "#7c3aed", True),
     ("start", "start model (10B)", "#64748b", True)]
 EXPLORER_DEFAULT = ["baseline", "m4", "m8", "l4", "l8", "s4", "s8", "start"]
