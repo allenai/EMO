@@ -35,12 +35,13 @@ build() { : > $CF; local s arr g st
   for point in 30000:MID 38148:FIN; do s=${point%%:*}; arr=${point##*:}
     have merged_match$s || hline merged_match$s $W/$SQN/merged/match$s >> $CF; [ -f $SQ/ppl_validation/merged/match$s.json ] || pline $W/$SQN/merged/match$s >> $CF
     for g in $GS; do eval "st=\${$arr[$g]}"; have sub${g}_match$s || hline sub${g}_match$s $W/${RP}$g/step$st >> $CF; [ -f $SQ/ppl_validation/${RP}$g/step$st.json ] || pline $W/${RP}$g/step$st >> $CF; done; done; }
-CF=$LOG/evals.txt; tries=0
+CF=$LOG/evals_cur.txt; tries=$(ls $LOG/evals_try*.txt 2>/dev/null | wc -l); [ -f $LOG/evals.txt ] && tries=$((tries+2))   # the list of missing passes, rebuilt every 5 min; a job reads its own SNAPSHOT (2026-11-16: the job read the list while it was being rewritten -> garbled commands, 10 of 36 passes skipped)
 while true; do build; [ -s $CF ] || break
   e=$(grep -o '01[A-Z0-9]\{20,\}' $LOG/evals.launched 2>/dev/null | head -1)
   if [ -z "$e" ] || beaker experiment get $e --format json 2>/dev/null | grep -q '"exited"'; then
-    [ -n "$e" ] && { sleep 60; build; [ -s $CF ] || break; }; tries=$((tries+1)); [ $tries -gt 4 ] && { say "ABORT: evaluations still missing after 3 resubmissions"; exit 1; }
-    u=$(python3 scripts/sparse_experts/olmoe3_beaker_cmd_cli.py --name "emokm8-evals-$(date +%m%d%H%M%S)" --gpus 8 -- bash scripts/sparse_experts/olmoe3_squares/eval_batch_8gpu.sh $W/$SQN/logs/evals.txt 2>&1 | tail -n 1)
+    [ -n "$e" ] && { sleep 60; build; [ -s $CF ] || break; }; tries=$((tries+1)); [ $tries -gt 6 ] && { say "ABORT: evaluations still missing after 3 resubmissions"; exit 1; }
+    cp $CF $LOG/evals_try$tries.txt
+    u=$(python3 scripts/sparse_experts/olmoe3_beaker_cmd_cli.py --name "emokm8-evals-$(date +%m%d%H%M%S)" --gpus 8 -- bash scripts/sparse_experts/olmoe3_squares/eval_batch_8gpu.sh $W/$SQN/logs/evals_try$tries.txt 2>&1 | tail -n 1)
     say "evals ($(wc -l < $CF) commands, try $tries): $u"; echo "$u" > $LOG/evals.launched; fi
   sleep 300; done
 for d in $H/*/none; do [ -f $d/rank0/DONE ] && [ ! -f $d/meta.json ] && python scripts/sparse_experts/olmoe3_routing/merge_routing.py $d 2>&1 | tail -1; done

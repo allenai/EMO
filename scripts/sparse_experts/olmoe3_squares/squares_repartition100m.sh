@@ -39,7 +39,7 @@ fin_of() { awk -v c="$1" -v g="$2" -v p="$S/${RP}_c$1_g$2/step" '$1 == c && $2 =
 workers() { local i e n u; [ -f $SQ/DONE ] && return 0
   for i in $(seq 1 $NWORK); do e=$(tail -n 1 $LOG/worker$i.launched 2>/dev/null | grep -o '01[A-Z0-9]\{20,\}' | head -1)
     if [ -n "$e" ]; then beaker experiment get $e --format json 2>/dev/null | grep -q '"exited"\|"canceled"' || continue; fi
-    n=$(wc -l < $LOG/worker$i.launched 2>/dev/null || echo 0); [ $n -ge 8 ] && continue
+    n=$(cat $LOG/worker$i.launched 2>/dev/null | wc -l); [ $n -ge 8 ] && continue
     u=$(python3 scripts/sparse_experts/olmoe3_beaker_cmd_cli.py --name "rp100m-worker$i-$(date +%m%d%H%M%S)" --gpus 8 -- bash -c "SQUARES_NAME=$SQN RUN_PREFIX=$RP FULL=$FULL OLMOE3_LR=$LR OLMOE3_EMO_POOL_SELECT=mix:0.2 bash scripts/sparse_experts/olmoe3_squares/repartition_worker.sh" 2>&1 | tail -n 1)
     say "worker $i (launch $((n+1))): $u"; echo "$u" | grep -q beaker.org && echo "$u" >> $LOG/worker$i.launched; done; }
 # ---- evaluations of a kept point ----
@@ -49,12 +49,13 @@ pline() { echo "python scripts/debug_validation/eval_ppl_validation.py --checkpo
 build() { local c=$1 s=$2 g d; : > $CF
   have merged_match$s || hline merged_match$s $W/$SQN/merged/match$s >> $CF; [ -f $SQ/ppl_validation/merged/match$s.json ] || pline $W/$SQN/merged/match$s >> $CF
   for g in $GS; do d=$(fin_of $c $g); have sub${g}_match$s || hline sub${g}_match$s ${d/$S/$W} >> $CF; [ -f $SQ/ppl_validation/$(basename $(dirname $d))/$(basename $d).json ] || pline ${d/$S/$W} >> $CF; done; }
-point() { local c=$1 s=$2 e u tries; CF=$LOG/evals_$s.txt; [ -f $LOG/point_$s.done ] && return 0; [ -f $SQ/merged/match$s/merge_info.json ] || return 1
+point() { local c=$1 s=$2 e u tries; CF=$LOG/evals_${s}_cur.txt;   # rebuilt every pass; a job reads its own snapshot (a list rewritten under a running job garbled its commands, 2026-11-16)
+  [ -f $LOG/point_$s.done ] && return 0; [ -f $SQ/merged/match$s/merge_info.json ] || return 1
   build $c $s
   if [ -s $CF ]; then e=$(tail -n 1 $LOG/evals_$s.launched 2>/dev/null | grep -o '01[A-Z0-9]\{20,\}' | head -1)
     if [ -z "$e" ] || beaker experiment get $e --format json 2>/dev/null | grep -q '"exited"\|"canceled"'; then
-      [ -n "$e" ] && { sleep 60; build $c $s; }; tries=$(wc -l < $LOG/evals_$s.launched 2>/dev/null || echo 0)
-      if [ -s $CF ] && [ $tries -lt 4 ]; then u=$(python3 scripts/sparse_experts/olmoe3_beaker_cmd_cli.py --name "rp100m-evals-$s-$(date +%m%d%H%M%S)" --gpus 8 -- bash scripts/sparse_experts/olmoe3_squares/eval_batch_8gpu.sh $W/$SQN/logs/evals_$s.txt 2>&1 | tail -n 1)
+      [ -n "$e" ] && { sleep 60; build $c $s; }; tries=$(cat $LOG/evals_$s.launched 2>/dev/null | wc -l)
+      if [ -s $CF ] && [ $tries -lt 4 ]; then cp $CF $LOG/evals_${s}_try$tries.txt; u=$(python3 scripts/sparse_experts/olmoe3_beaker_cmd_cli.py --name "rp100m-evals-$s-$(date +%m%d%H%M%S)" --gpus 8 -- bash scripts/sparse_experts/olmoe3_squares/eval_batch_8gpu.sh $W/$SQN/logs/evals_${s}_try$tries.txt 2>&1 | tail -n 1)
         say "evals at $s ($(wc -l < $CF) commands): $u"; echo "$u" | grep -q beaker.org && echo "$u" >> $LOG/evals_$s.launched; fi; fi
     [ -s $CF ] && return 1; fi
   # all passes in: the point's squares are cut down to their weights (the merged model keeps its Adam state)
