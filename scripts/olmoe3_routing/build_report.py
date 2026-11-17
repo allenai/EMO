@@ -413,7 +413,7 @@ RANDOM_CONTROL = {  # random expert groups + random document split; arms = (sub-
                  arms=[dict(k=4, sqn="olmoe3_squares_s128rand4", hr="runs_heldout300b_s128rand4", color="#2563eb"), dict(k=8, sqn="olmoe3_squares_s128rand8", hr="runs_heldout300b_s128rand8", color="#ea580c")],
                  remerge=False, take=lambda: S128_TAKE),
     "mix20": dict(hrb="runs_heldout300b_mix20", start="baseline_step19074", ppl_dirs=("olmoe3_squares_mix20rand8/ppl_validation", "olmoe3_squares_mix20rand4/ppl_validation"),
-                  base_runs=("olmoe3_275m_mix20_30b",), start_ppl="olmoe3_275m_emo_mix20_10b", model="mixed-pool EMO 512e (20% random pools)", E=512,
+                  base_runs=("olmoe3_275m_mix20_30b", "olmoe3_275m_mix20_61b"), start_ppl="olmoe3_275m_emo_mix20_10b", model="mixed-pool EMO 512e (20% random pools)", E=512,
                   arms=[dict(k=4, lr="4e-4", sqn="olmoe3_squares_mix20rand4", hr="runs_heldout300b_mix20rand4", color="#2563eb"), dict(k=8, lr="4e-4", sqn="olmoe3_squares_mix20rand8", hr="runs_heldout300b_mix20rand8", color="#ea580c")],
                   remerge=False, take=lambda: ""),
     "randsel": dict(hrb="runs_heldout300b_randsel", start="baseline_step19074", ppl_dirs=("olmoe3_squares_randsel4/ppl_validation",),
@@ -448,6 +448,7 @@ RANDOM_CONTROL = {  # random expert groups + random document split; arms = (sub-
                                "shuffle of the 1000 experts into 8 groups of 125 (seed 2), and the squares train at LR 4e-4, the winner of the 512e sub-model LR sweep."),
 }
 W3_STEPS = (66481, 116479, 166478, 216477, 247956)
+RP5B_STEPS = (28611, 38148, 47685, 57221, 66757, 76293, 85833, 95369, 104905, 114441, 116479)   # cycle ends of the 4-square re-partition-every-5B arm (mixed-pool EMO 512e), in joint-equivalent steps
 EMORAND_TAKE = ("Same picture as the standard model with a smaller gap: 0.03 at 20B, 0.08 at 130B (2.373 vs 2.295). Eight squares cost about "
                 "twice as much (gap 0.10 at 20B, 0.15 at 130B: 2.442 vs 2.295) and, unlike the standard model's, the eight-square merge stays ahead of "
                 "its best single square (2.473) at 130B.")
@@ -1084,6 +1085,8 @@ def control_explorer_data():
         RPH = R / "runs_heldout300b_emorand_lr4e-4_rp"; RPP = ROOT / "sparse_experts/olmoe3_squares_emorand_lr4e-4_rp/ppl_validation/merged_optim"
         rp_pts = {end: c for c, end in enumerate(RP_ENDS[1:], 1) if which == "emo" and _ce(RPH / f"merged_c{c}/none") is not None}
         steps = sorted(set(steps) | set(rp_pts))
+        if which == "mix20":   # 2026-11-17: 61B extensions (squares_repartition_ext.sh): joint 34.9B / 61B, the ~100M arm continued, the 4-square arm re-partitioned every 5B (a point per cycle end)
+            steps = sorted(set(steps) | {st for st in (66481, 116479) if hb(f"baseline_step{st}") is not None} | {st for st in RP5B_STEPS if _ce(R / f"runs_heldout300b_mix20rand4_rp5b/merged_match{st}/none") is not None})
         ref_ppl = _ppl(ROOT / f"claude_outputs/debug_validation/ppl_validation/{C['start_ppl']}/step19074.json")
         def bppl(st):
             if st == 19074: return ref_ppl
@@ -1138,13 +1141,14 @@ def control_explorer_data():
                 ser["rp4"] = {"h": [ser["l4"]["h"][i20] if st == 38148 else (_ce(RPH / f"merged_c{rp_pts[st]}/none") if st in rp_pts else None) for st in steps],
                               "p": [ser["l4"]["p"][i20] if st == 38148 else (_ppl(RPP / f"c{rp_pts[st]}.json") if st in rp_pts else None) for st in steps]}
         # 2026-11-16: k-means expert groups (EMO 512e, 10B -> 20B; squares_kmeans.sh) and re-partition every ~100M tokens (mixed-pool EMO 512e, 10B -> 30B; squares_repartition100m.sh)
-        for model, tag, mk, sk, col in (("emo", "emokm8", "km8", "skm8", "#be185d"), ("mix20", "mix20rand8_rp100m", "rp100", "srp100", "#be123c")):
-            HX = R / f"runs_heldout300b_{tag}"; PX = ROOT / f"sparse_experts/olmoe3_squares_{tag}/ppl_validation/merged"; PTS_X = (30000, 38148, 57221)
+        for model, tag, mk, sk, col, kx, PTS_X in (("emo", "emokm8", "km8", "skm8", "#be185d", 8, (30000, 38148, 57221)), ("mix20", "mix20rand8_rp100m", "rp100", "srp100", "#be123c", 8, (30000, 38148, 57221, 66481, 116479)),
+                                                 ("mix20", "mix20rand4_rp5b", "rp5", "srp5", "#7c3aed", 4, RP5B_STEPS)):
+            HX = R / f"runs_heldout300b_{tag}"; PX = ROOT / f"sparse_experts/olmoe3_squares_{tag}/ppl_validation/merged"
             if which != model or not any(_ce(HX / f"merged_match{st}/none") is not None for st in PTS_X): continue
             ser[mk] = {"h": [hb(C["start"]) if st == 19074 else (_ce(HX / f"merged_match{st}/none") if st in PTS_X else None) for st in steps],
                        "p": [ref_ppl if st == 19074 else (_ppl(PX / f"match{st}.json") if st in PTS_X else None) for st in steps]}
-            sx = [[_ce(HX / f"sub{g}_match{st}/none") for g in range(8)] if st in PTS_X else [None] for st in steps]
-            ser[sk] = {"h": [sum(v) / 8 if all(x is not None for x in v) and len(v) == 8 else None for v in sx], "c": col}
+            sx = [[_ce(HX / f"sub{g}_match{st}/none") for g in range(kx)] if st in PTS_X else [None] for st in steps]
+            ser[sk] = {"h": [sum(v) / kx if all(x is not None for x in v) and len(v) == kx else None for v in sx], "c": col}
         name = C["model"] + (" (all squares at sub-model LR 4e-4)" if arms and all(a.get("lr") == "4e-4" for a in arms) else "")
         out.append({"id": which, "name": name, "toks": [round(st * 524288 / 1e9, 3) for st in steps], "series": ser})
     return out
@@ -1162,6 +1166,7 @@ EXPLORER_LINES = [  # key, label, colour, dashed, needs-ppl
     ("o16", "merged, 16 overlapping sub-models of 64 (every expert in two), LR 4e-4 (EMO 512e only)", "#9333ea", False), ("so16", "overlapping sub-models alone, mean of 16 (EMO 512e only)", "#9333ea", True),
 ("km8", "merged, 8 squares of k-means expert groups (unequal sizes), LR 4e-4 (EMO 512e only)", "#be185d", False), ("skm8", "k-means squares alone, mean of 8 (EMO 512e only)", "#be185d", True),
     ("rp100", "merged, 8 squares, LR 4e-4, re-merged + re-partitioned every ~100M tokens (mixed-pool EMO only)", "#be123c", False), ("srp100", "squares of the ~100M re-partition arm alone, mean of 8 (mixed-pool EMO only)", "#be123c", True),
+    ("rp5", "merged, 4 squares, LR 4e-4, re-merged + re-partitioned every 5B tokens (mixed-pool EMO only)", "#7c3aed", False), ("srp5", "squares of the 5B re-partition arm alone, mean of 4 (mixed-pool EMO only)", "#7c3aed", True),
     ("rm", "re-merged + re-partitioned at 61B (std only)", "#7c3aed", False), ("rs", "squares after re-partition, mean of 4 (std only)", "#7c3aed", True),
     ("start", "start model (10B)", "#64748b", True)]
 EXPLORER_DEFAULT = ["baseline", "m4", "m8", "l4", "l8", "s4", "s8", "start"]
