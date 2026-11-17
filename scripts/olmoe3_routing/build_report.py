@@ -269,7 +269,8 @@ VARIANTS = [("A", "EMO 512e, 4 sub-models", "#2563eb", "the main experiment"),
             ("5K", "The first steps of disjoint training", "#b91c1c", "is the merge degradation immediate: the random squares of EMO 512e at LR 4e-4 trained from the 10B checkpoint for a handful of steps, merged after every step and evaluated"),
             ("5L", "Overlapping sub-models", "#0e7490", "does letting the sub-models share experts help the merge: EMO 512e at LR 4e-4 split into 16 random groups of 64 experts in which every expert belongs to two groups, the documents split 16 ways, each expert merged as the mean of its two copies"),
             ("5M", "Disjoint training from scratch", "#be185d", "can the split start at the random init instead of a 10B joint checkpoint: standard MoE 512e cut into 4 or 8 random sub-models before any training, first 100 steps and the first 10B tokens, with sub-model LR and load-balancing ablations"),
-            ("5N", "K-means expert groups", "#be185d", "does grouping similar experts help: EMO 512e cut into 8 sub-models by k-means on the experts' router rows instead of at random, 10B to 20B")]
+            ("5N", "K-means expert groups", "#be185d", "does grouping similar experts help: EMO 512e cut into 8 sub-models by k-means on the experts' router rows instead of at random, 10B to 20B"),
+            ("5O", "Frequent re-partitioning", "#be123c", "does re-drawing the expert groups often keep the merge close to joint training: mixed-pool EMO 512e, 8 sub-models re-partitioned every ~100M tokens and 4 sub-models every 5B, 10B to 61B")]
 
 
 def variant(letter, inner, tab="q3"):
@@ -1696,6 +1697,33 @@ KMEANS_TAKE = [   # short observations, one line each, no numbers
     "The k-means groups are unequal in size, so this arm changes both which experts are grouped and how evenly."]
 
 
+REPART_OFTEN_TAKE = [   # short observations, one line each, no numbers
+    "Re-partitioning every ~100M tokens removes more than half of the 8-sub-model merge's gap to joint training, and the remaining gap grows only slowly.",
+    "That gain is in the merge: its sub-models alone are no better than the fixed-group ones.",
+    "With 4 sub-models, re-partitioning every 5B changes nothing measurable up to 30B; the fixed-group merge is already ahead of joint training there.",
+    "The 4-sub-model merge's lead over joint training shrinks steadily and is gone at 61B."]
+
+
+def repartition_often_section():
+    """Box 5O (user requests 2026-11-15 / 2026-11-17): mixed-pool EMO 512e (20% random pools), sub-model LR 4e-4. 8 squares re-merged + re-partitioned every ~100M tokens
+    (squares_repartition100m.sh to 30B, squares_repartition_ext.sh rp100m61 to 61B), 4 squares every 5B (rp5b), joint baseline to 61B. Explorer lines rp100 / srp100 / rp5 / srp5."""
+    R = ROOT / "sparse_experts/olmoe3_routing"; HB = R / "runs_heldout300b_mix20"; H1 = R / "runs_heldout300b_mix20rand8_rp100m"; H5 = R / "runs_heldout300b_mix20rand4_rp5b"
+    C4 = R / "runs_heldout300b_mix20rand4"; C8 = R / "runs_heldout300b_mix20rand8"
+    if not any(_ce(H / f"merged_match{st}/none") is not None for H in (H1, H5) for st in (30000, 38148, 57221)): return ""
+    f = lambda v: "&ndash;" if v is None else f"{v:.3f}"; m = lambda H, st: _ce(H / f"merged_match{st}/none") if st else None
+    PTS = [("15.7B", 30000, 30000, None), ("20B", 38148, 38148, 38148), ("30B", 57221, 57221, 57221), ("35B", 66481, 66481, 66757), ("61B", 116479, 116479, 116479)]   # label, joint step, 8-square step, 5B-arm step
+    rows = "".join(f"<tr><td>{tl}</td><td>{f(_ce(HB / f'baseline_step{sj}/none'))}</td><td>{f(m(H1, s8))}</td><td>{f(m(C8, s8))}</td><td>{f(m(H5, s5))}</td><td>{f(m(C4, s8))}</td></tr>" for tl, sj, s8, s5 in PTS)
+    tbl = ('<table class="num"><thead><tr><th>tokens</th><th>joint</th><th>8 sub-models,<br>every ~100M</th><th>8 sub-models,<br>fixed groups</th><th>4 sub-models,<br>every 5B</th><th>4 sub-models,<br>fixed groups</th></tr></thead><tbody>' + rows + "</tbody></table>")
+    what = ("Start model: mixed-pool EMO 512e at 10B (20% of documents get a random expert pool). All sub-models train at LR 4e-4. At every re-partition the sub-models are merged (optimizer state "
+            "carried) and the merged model is cut into new sub-models with freshly drawn random expert groups (layer 1 whole). <b>8 sub-models:</b> re-partitioned every ~100M tokens, about 24 steps "
+            "of each sub-model. <b>4 sub-models:</b> re-partitioned every 5B tokens. Documents are the fixed-group controls' random document packs up to 30B (same documents, same order); after 30B "
+            "each sub-model reads its own contiguous slice of the training stream, a random subset of the documents. The fixed-group controls stop at 30B.")
+    btn = explorer_button("Show these runs in the explorer", ["mix20"], ["baseline", "l4", "l8", "rp5", "srp5", "rp100", "srp100", "start"])
+    pending = "" if m(H1, 116479) is not None else '<p class="note">The 8-sub-model run is still training towards 61B; its 61B cell fills in when it is evaluated.</p>'
+    return card("info", "Setup", f"<p>{what}</p>") + card("results", "Results", btn + "<p>Held-out CE of the merged models (the 35B row is 34.9B for joint and 8 sub-models, 35.0B for 4).</p>" + tbl + pending
+                                                          + "<ol>" + "".join(f"<li>{t}</li>" for t in REPART_OFTEN_TAKE) + "</ol>")
+
+
 def kmeans_section():
     """Box 5N (user request 2026-11-15): EMO 512e 8-square control at LR 4e-4 with k-means expert groups (partition_kmeans.py, squares_kmeans.sh), 10B -> 20B. Explorer lines km8 / skm8."""
     R = ROOT / "sparse_experts/olmoe3_routing"; HK = R / "runs_heldout300b_emokm8"; HRD = R / "runs_heldout300b_emorand8_lr4e-4"; HB = R / "runs_heldout300b_emo"
@@ -2180,6 +2208,7 @@ def build_q5_controls():
     boxes["5M"] = scratch_section()
     if boxes["5M"]: boxes["5M"] += branch_section()
     boxes["5N"] = kmeans_section()
+    boxes["5O"] = repartition_often_section()
     boxes = {L: inner for L, inner in boxes.items() if inner}
     body += VARIANT_CSS + card("info", "Experiments",
         '<ul class="q3index">' + "".join(f'<li><a href="#q5-{L}"><b>{L}</b> &middot; {t}</a> &mdash; {bl}</li>' for L, t, _, bl in VARIANTS if L in boxes) + "</ul>")
@@ -2708,7 +2737,7 @@ def artifact_page(body, path):
     """The Disjoint Training Report: Q5 as its own page (a Claude artifact). Same content as the Q5 tab, renumbered 1-8 (the 5A-5H
     letters only mean something inside the parent report), with a header, a sticky contents rail and its own stylesheet."""
     import datetime, re
-    letters = "ABCEFGHIJKLMN"; num = lambda L: str(letters.index(L) + 1)   # no 5D any more (its sweeps live in 5B)
+    letters = "ABCEFGHIJKLMNO"; num = lambda L: str(letters.index(L) + 1)   # no 5D any more (its sweeps live in 5B)
     for L in letters:
         body = body.replace(f'id="q5-5{L}"', f'id="s{num(L)}"').replace(f'href="#q5-5{L}"', f'href="#s{num(L)}"').replace(f'<span class="vb">5{L}</span>', f'<span class="vb">{num(L)}</span>').replace(f'<b>5{L}</b> &middot;', f'<b>{num(L)}</b> &middot;')
     body = re.sub(r"boxes 5([A-M])((?:, 5[A-M])+)", lambda m: "sections " + ", ".join(num(x) for x in re.findall(r"5([A-M])", m.group(0))), body)
