@@ -1988,12 +1988,13 @@ def first_steps_model(M):
         for tk, lab in ((15.729, "15.7B"), (20.0, "20B"), (30.0, "30B")):
             i = next((i for i, t in enumerate(d["toks"]) if abs(t - tk) < 0.01), None); v = d["series"]["baseline"]["h"][i] if i is not None else None
             if v is not None: ser2.append({"name": f"joint training at {lab}", "y": [v] * len(xs2), "const": True, "dotted": True, "color": "#059669"})
-    ch2 = line_chart(lx, ser2, title=f"{M['label']}: the same probe continued, held-out CE vs square steps (log axis) up to the control arms' regular points", y_label="CE",
+    ch2 = line_chart(lx, ser2, title=f"{M['label']}: held-out CE of the merged model vs training steps of the squares (log axis), up to the control arms' regular points", y_label="CE",
                      x_label=f"training steps of every square (log scale); the last three points of each line are {M['ref_note']}", xfmt=lambda v: f"{10 ** v:.0f}", xlabels=xl, W=720, H=340)
     f3 = lambda v: "&ndash;" if v is None else f"{v:.3f}"; rows2 = []
     for name, hr1, n, hr2, hrc, reg, col in M["arms"]:
         regs = sorted(reg.values()); rows2.append([f"merged, {name}"] + [f3(pts[(name, "m")].get(s)) for s in E_STEPS + regs]); rows2.append([f"square 0 alone, {name}"] + [f3(pts[(name, "q")].get(s)) for s in E_STEPS + regs])
-    return ch + tbl + ch2 + table(["", *[f"step {s}" for s in E_STEPS], "15.7B", "20B", "30B"], rows2)
+    # the linear chart of steps 0-10 is dropped when the log-axis chart exists: it shows the same points (user request 2026-11-17); the per-step table stays
+    return ch2 + tbl + table(["", *[f"step {s}" for s in E_STEPS], "15.7B", "20B", "30B"], rows2)
 
 
 def first_steps_section():
@@ -2006,8 +2007,8 @@ def first_steps_section():
     what = ("Each square trains from its start slice on its own documents exactly as in the control arm (same data order, constant LR 4e-4, one warm-up step) and is checkpointed after every one of the first "
             "steps and at 15, 20, 30, 50, 70, 100, 150, 200 and 300; after every checkpoint the squares are merged with the control arms' token-share weights and the merge is scored on the 300B held-out "
             "sample; from step 15 on square 0 is also scored alone (a square keeps a quarter or an eighth of the experts, so its own CE is far above the merge's). One step is one global batch of 0.5M "
-            "tokens per square. Dotted lines: where the control arms' merges and the joint model stand at the first regular point (15.7B, about 1,365 / 2,731 square steps later for 8 / 4 squares); the "
-            "log-axis charts end with the control arms' 15.7B / 20B / 30B points. The standard-routing model's control arms train at the pretraining LR 8e-4, so its probe (LR 4e-4) is not an exact prefix "
+            "tokens per square. The charts have a log step axis and end with the control arms' 15.7B / 20B / 30B points (15.7B is about 1,365 / 2,731 square steps for 8 / 4 squares); "
+            "dotted lines: joint training at those three points. The standard-routing model's control arms train at the pretraining LR 8e-4, so its probe (LR 4e-4) is not an exact prefix "
             "of them; EMO's is.")
     body = "".join(f"<h4>{lab}</h4>{h}" for lab, h in parts)
     return card("info", "Setup", f"<p>{what}</p>") + card("results", "Results", ("<ol>" + "".join(f"<li>{t}</li>" for t in FIRST_STEPS_TAKE) + "</ol>" if FIRST_STEPS_TAKE else "") + CHART_CSS + body)
