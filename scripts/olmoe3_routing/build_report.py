@@ -270,7 +270,8 @@ VARIANTS = [("A", "EMO 512e, 4 sub-models", "#2563eb", "the main experiment"),
             ("5L", "Overlapping sub-models", "#0e7490", "does letting the sub-models share experts help the merge: EMO 512e at LR 4e-4 split into 16 random groups of 64 experts in which every expert belongs to two groups, the documents split 16 ways, each expert merged as the mean of its two copies"),
             ("5M", "Disjoint training from scratch", "#be185d", "can the split start at the random init instead of a 10B joint checkpoint: standard MoE 512e cut into 4 or 8 random sub-models before any training, first 100 steps and the first 10B tokens, with sub-model LR and load-balancing ablations"),
             ("5N", "K-means expert groups", "#be185d", "does grouping similar experts help: EMO 512e cut into 8 sub-models by k-means on the experts' router rows instead of at random, 10B to 20B"),
-            ("5O", "Frequent re-partitioning", "#be123c", "does re-drawing the expert groups often keep the merge close to joint training: mixed-pool EMO 512e, 8 sub-models re-partitioned every ~100M tokens and 4 sub-models every 5B, 10B to 61B")]
+            ("5O", "Frequent re-partitioning", "#be123c", "does re-drawing the expert groups often keep the merge close to joint training: mixed-pool EMO 512e, 8 sub-models re-partitioned every ~100M tokens and 4 sub-models every 5B, 10B to 61B"),
+            ("5P", "More shared experts", "#0f766e", "does a larger always-active shared part make the split cheaper: EMO 512e with 4 shared experts instead of 1, trained from scratch, 4 and 8 sub-models at LR 4e-4, 10B to 30B")]
 
 
 def variant(letter, inner, tab="q3"):
@@ -417,6 +418,10 @@ RANDOM_CONTROL = {  # random expert groups + random document split; arms = (sub-
                   base_runs=("olmoe3_275m_mix20_30b", "olmoe3_275m_mix20_61b"), start_ppl="olmoe3_275m_emo_mix20_10b", model="mixed-pool EMO 512e (20% random pools)", E=512,
                   arms=[dict(k=4, lr="4e-4", sqn="olmoe3_squares_mix20rand4", hr="runs_heldout300b_mix20rand4", color="#2563eb"), dict(k=8, lr="4e-4", sqn="olmoe3_squares_mix20rand8", hr="runs_heldout300b_mix20rand8", color="#ea580c")],
                   remerge=False, take=lambda: ""),
+    "emosh4": dict(hrb="runs_heldout300b_emosh4", start="baseline_step19074", ppl_dirs=("olmoe3_squares_emosh4rand8/ppl_validation", "olmoe3_squares_emosh4rand4/ppl_validation"),   # 2026-11-19: 4 shared experts (squares_shared4.sh)
+                   base_runs=("olmoe3_275m_emo_sh4_30b",), start_ppl="olmoe3_275m_emo_sh4_10b", model="EMO 512e with 4 shared experts", E=512,
+                   arms=[dict(k=4, lr="4e-4", sqn="olmoe3_squares_emosh4rand4", hr="runs_heldout300b_emosh4rand4", color="#2563eb"), dict(k=8, lr="4e-4", sqn="olmoe3_squares_emosh4rand8", hr="runs_heldout300b_emosh4rand8", color="#ea580c")],
+                   remerge=False, take=lambda: ""),
     "randsel": dict(hrb="runs_heldout300b_randsel", start="baseline_step19074", ppl_dirs=("olmoe3_squares_randsel4/ppl_validation",),
                     base_runs=("olmoe3_275m_randsel_30b", "olmoe3_275m_randsel_130b"), start_ppl="olmoe3_275m_emo_randsel_10b", model="random-pool EMO 512e", E=512,
                     arms=[dict(k=4, sqn="olmoe3_squares_randsel4", hr="runs_heldout300b_randsel4", color="#2563eb"), dict(k=8, sqn="olmoe3_squares_randsel8", hr="runs_heldout300b_randsel8", color="#ea580c")],
@@ -1073,7 +1078,7 @@ def control_explorer_data():
     interactive explorer of Q5. Same loaders and same points as random_control()."""
     out = []
     R = ROOT / "sparse_experts/olmoe3_routing"
-    order = ["std", "emo", "s128", "randsel", "randsel64", "mix20", "emo1024h272k32", "emo1024h272k16", "emo1000", "emo2000"]   # panel order (user: 1000e before 2000e, 2026-10-20)
+    order = ["std", "emo", "s128", "randsel", "randsel64", "mix20", "emosh4", "emo1024h272k32", "emo1024h272k16", "emo1000", "emo2000"]   # panel order (user: 1000e before 2000e, 2026-10-20)
     for which in sorted(RANDOM_CONTROL, key=lambda w: order.index(w) if w in order else len(order)):
         C = RANDOM_CONTROL[which]
         HRB = R / C["hrb"]; arms = [dict(a, HR=R / a["hr"], SQ=ROOT / "sparse_experts" / a["sqn"]) for a in C["arms"] if (ROOT / "sparse_experts" / a["sqn"] / "groups.json").exists()]
@@ -1697,6 +1702,35 @@ KMEANS_TAKE = [   # short observations, one line each, no numbers
     "The k-means groups are unequal in size, so this arm changes both which experts are grouped and how evenly."]
 
 
+SHARED4_TAKE = []   # short observations, one line each, no numbers; filled in when the runs are evaluated
+
+
+def shared4_section():
+    """Box 5P (user request 2026-11-19): EMO 512e with 4 shared experts per MoE block (olmoe3_275m_emo_sh4_10b, from scratch), its joint baseline to 30B and its 4- / 8-square
+    controls at LR 4e-4 (squares_shared4.sh), against the same arms of the 1-shared-expert EMO 512e model. Explorer panel emosh4."""
+    R = ROOT / "sparse_experts/olmoe3_routing"; B4 = R / "runs_heldout300b_emosh4"; B1 = R / "runs_heldout300b_emo"
+    A = {(4, 4): R / "runs_heldout300b_emosh4rand4", (8, 4): R / "runs_heldout300b_emosh4rand8", (4, 1): R / "runs_heldout300b_emorand_lr4e-4", (8, 1): R / "runs_heldout300b_emorand8_lr4e-4"}
+    if _ce(B4 / "baseline_step19074/none") is None: return ""
+    f = lambda v: "&ndash;" if v is None else f"{v:.3f}"; g = lambda a, b: "&ndash;" if a is None or b is None else f"{a - b:+.3f}"
+    def row(tl, st):
+        j4 = _ce(B4 / f"baseline_step{st}/none"); j1 = _ce(B1 / (f"baseline_step{st}/none" if st != 19074 else "emo_step19074/none"))
+        if st == 19074: return f"<tr><td>{tl}</td><td>{f(j1)}</td><td>{f(j4)}</td>" + "<td>&ndash;</td>" * 4 + "</tr>"
+        m = {k: _ce(H / f"merged_match{st}/none") for k, H in A.items()}
+        return (f"<tr><td>{tl}</td><td>{f(j1)}</td><td>{f(j4)}</td><td>{g(m[(4, 1)], j1)}</td><td>{g(m[(4, 4)], j4)}</td><td>{g(m[(8, 1)], j1)}</td><td>{g(m[(8, 4)], j4)}</td></tr>")
+    tbl = ('<table class="num"><thead><tr><th rowspan="2">tokens</th><th colspan="2">joint training, CE</th><th colspan="2">4 sub-models merged,<br>gap to its joint model</th><th colspan="2">8 sub-models merged,<br>gap to its joint model</th></tr>'
+           "<tr><th>1 shared</th><th>4 shared</th><th>1 shared</th><th>4 shared</th><th>1 shared</th><th>4 shared</th></tr></thead><tbody>"
+           + "".join(row(tl, st) for tl, st in (("10B (start)", 19074), ("15.7B", 30000), ("20B", 38148), ("30B", 57221))) + "</tbody></table>")
+    what = ("Every MoE block of the EMO 512e model has one shared expert: a full-width feed-forward that every token passes through, next to its 16 routed experts. This arm has four "
+            "(all always active, mixed by a small learned gate) and is otherwise the EMO 512e recipe, trained from scratch to 10B. The routed side is unchanged, so the model is about 10% "
+            "larger in active parameters (305M against 277M). From 10B it is split exactly like the EMO 512e controls: 4 or 8 sub-models with random expert groups, the same random "
+            "document packs, sub-model LR 4e-4, merged at 15.7B, 20B and 30B. Shared experts are never split: every sub-model holds all four and they are averaged at the merge.")
+    btn = explorer_button("Compare with EMO 512e in the explorer", ["emo", "emosh4"], ["baseline", "l4", "l8", "s4", "s8", "start"])
+    done = all(_ce(H / "merged_match57221/none") is not None for k, H in A.items() if k[1] == 4) and _ce(B4 / "baseline_step57221/none") is not None
+    pending = "" if done else '<p class="note">Runs still training or awaiting evaluation show a dash.</p>'
+    return card("info", "Setup", f"<p>{what}</p>") + card("results", "Results", btn + "<p>Held-out CE. Gap = merged model minus the jointly trained model with the same number of shared experts (negative = the merge is ahead).</p>" + tbl + pending
+                                                          + ("<ol>" + "".join(f"<li>{t}</li>" for t in SHARED4_TAKE) + "</ol>" if SHARED4_TAKE and done else ""))
+
+
 REPART_OFTEN_TAKE = [   # short observations, one line each, no numbers
     "Re-partitioning every ~100M tokens removes more than half of the 8-sub-model merge's gap to joint training, and the remaining gap grows only slowly.",
     "That gain is in the merge: its sub-models alone are no better than the fixed-group ones.",
@@ -2209,6 +2243,7 @@ def build_q5_controls():
     if boxes["5M"]: boxes["5M"] += branch_section()
     boxes["5N"] = kmeans_section()
     boxes["5O"] = repartition_often_section()
+    boxes["5P"] = shared4_section()
     boxes = {L: inner for L, inner in boxes.items() if inner}
     body += VARIANT_CSS + card("info", "Experiments",
         '<ul class="q3index">' + "".join(f'<li><a href="#q5-{L}"><b>{L}</b> &middot; {t}</a> &mdash; {bl}</li>' for L, t, _, bl in VARIANTS if L in boxes) + "</ul>")
@@ -2737,7 +2772,7 @@ def artifact_page(body, path):
     """The Disjoint Training Report: Q5 as its own page (a Claude artifact). Same content as the Q5 tab, renumbered 1-8 (the 5A-5H
     letters only mean something inside the parent report), with a header, a sticky contents rail and its own stylesheet."""
     import datetime, re
-    letters = "ABCEFGHIJKLMNO"; num = lambda L: str(letters.index(L) + 1)   # no 5D any more (its sweeps live in 5B)
+    letters = "ABCEFGHIJKLMNOP"; num = lambda L: str(letters.index(L) + 1)   # no 5D any more (its sweeps live in 5B)
     for L in letters:
         body = body.replace(f'id="q5-5{L}"', f'id="s{num(L)}"').replace(f'href="#q5-5{L}"', f'href="#s{num(L)}"').replace(f'<span class="vb">5{L}</span>', f'<span class="vb">{num(L)}</span>').replace(f'<b>5{L}</b> &middot;', f'<b>{num(L)}</b> &middot;')
     body = re.sub(r"boxes 5([A-M])((?:, 5[A-M])+)", lambda m: "sections " + ", ".join(num(x) for x in re.findall(r"5([A-M])", m.group(0))), body)
