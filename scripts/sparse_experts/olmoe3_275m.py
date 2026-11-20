@@ -189,6 +189,7 @@ ROUTED_EXPERT_HIDDEN_SIZE = int(os.environ.get("OLMOE3_EXPERT_HIDDEN", str(EXPER
 # top-k, shared expert, router, LB/z losses) stays fixed when this changes, which is exactly the
 # ladder's own variable-sparsity -> uniform-512 move (275M went 64 -> 512 the same way).
 NUM_ROUTED_EXPERTS = int(os.environ.get("OLMOE3_NUM_EXPERTS", "512"))
+NUM_SHARED = int(os.environ.get("OLMOE3_NUM_SHARED", "1"))  # shared (always-active, full-width) experts per MoE block; the ladder has 1
 LATENT_DIM = D_MODEL // LATENT_COMPRESSION
 FULL_ATTENTION_LAYERS = tuple(range(4, N_LAYERS, 5))  # (4, 9); layer 0 is dense KDA
 KDA_LAYERS = tuple(i for i in range(N_LAYERS) if i not in FULL_ATTENTION_LAYERS)
@@ -451,9 +452,23 @@ def _full_attention(layer_norm: LayerNormConfig) -> AttentionConfig:
     )
 
 
-def _shared_expert(hidden_size: int = EXPERT_HIDDEN_SIZE) -> SharedExpertsConfig:
+def _shared_expert(hidden_size: int = EXPERT_HIDDEN_SIZE, num_experts: int = 1) -> SharedExpertsConfig:
     return SharedExpertsConfig(
-        d_model=D_MODEL, hidden_size=hidden_size, num_experts=1, bias=False, dtype=DType.float32
+        d_model=D_MODEL, hidden_size=hidden_size, num_experts=num_experts, bias=False, dtype=DType.float32
+    )
+
+
+def _shared_router():
+    """Mixing weights over the shared experts of an MoE block; needed (and built) only for more than one (OLMOE3_NUM_SHARED, user request
+    2026-11-19). The settings of OLMo-core's own multi-shared-expert configs (examples/olmo_ddp/OLMoE3-dev-*.py): every shared expert is
+    always active, sigmoid gates, no load-balancing or z loss."""
+    if NUM_SHARED <= 1:
+        return None
+    return MoERouterConfigV2(
+        d_model=D_MODEL, num_experts=NUM_SHARED, top_k=NUM_SHARED, gating_function=MoERouterGatingFunction.sigmoid,
+        uniform_expert_assignment=False, lb_loss_weight=None, z_loss_weight=None,
+        lb_loss_granularity=MoELoadBalancingLossGranularity.local_batch, dtype=DType.float32,
+        normalize_expert_weights=1.0, restore_weight_scale=True, use_recompute_fp32_cast=False,
     )
 
 
@@ -508,7 +523,8 @@ def _moe_block(layer_norm: LayerNormConfig, sequence_mixer, num_experts: Optiona
         name=TransformerBlockType.moe_fused_v2,
         sequence_mixer=sequence_mixer,
         layer_norm=deepcopy(layer_norm),
-        shared_experts=_shared_expert(),
+        shared_experts=_shared_expert(num_experts=NUM_SHARED),
+        shared_experts_router=_shared_router(),
         routed_experts=RoutedExpertsConfig(
             d_model=LATENT_DIM,
             hidden_size=ROUTED_EXPERT_HIDDEN_SIZE,
@@ -619,6 +635,8 @@ def build_model_config(common: CommonComponents) -> OLMoDDPModelConfig:
         expected = EXPECTED_PARAMS[NUM_ROUTED_EXPERTS] if default_shape else EXPECTED_PARAMS_SHAPED[shape]
         if LEARNED_D:  # one d_head (d_model weights + 64-entry padded bias) per MoE layer
             expected = tuple(v + (N_LAYERS - 1) * (D_MODEL + 64) for v in expected)
+        if NUM_SHARED != 1:  # every extra shared expert (3 x d_model x hidden) + the shared router's rows, per MoE layer; all of it is active
+            expected = tuple(v + (N_LAYERS - 1) * ((NUM_SHARED - 1) * 3 * D_MODEL * EXPERT_HIDDEN_SIZE + NUM_SHARED * D_MODEL) for v in expected)
         if actual != expected:
             raise ValueError(f"parameter-count drift: expected {expected}, found {actual}")
     return model
@@ -684,7 +702,7 @@ FORWARDED_ENV = (
     "OLMOE3_ATTN_BACKEND", "OLMOE3_USE_CUTE_KDA", "OLMOE3_PREEMPTIBLE", "OLMOE3_DATA_ROOT",
     "OLMOE3_SAVE_ROOT", "OLMOE3_WORK_DIR", "OLMOE3_WANDB_TAGS", "OLMOE3_IMAGE", "OLMOE3_SAVE_INTERVAL",
     "OLMOE3_EMO", "OLMOE3_EMO_MIN_POOL", "OLMOE3_EMO_MAX_POOL", "OLMOE3_EMO_EVAL_POOL", "OLMOE3_NUM_EXPERTS",
-    "OLMOE3_EMO_POOL_DIST", "OLMOE3_EMO_POOL_SELECT", "OLMOE3_EXPERIMENT", "OLMOE3_PPL_EVAL_INTERVAL", "OLMOE3_TOP_K", "OLMOE3_EXPERT_HIDDEN",
+    "OLMOE3_EMO_POOL_DIST", "OLMOE3_EMO_POOL_SELECT", "OLMOE3_EXPERIMENT", "OLMOE3_PPL_EVAL_INTERVAL", "OLMOE3_TOP_K", "OLMOE3_EXPERT_HIDDEN", "OLMOE3_NUM_SHARED",
     "OLMOE3_EMO_LEARNED_D", "OLMOE3_LD_TEMP", "OLMOE3_LD_LAMBDA", "OLMOE3_LD_WARMUP", "OLMOE3_LD_FLOOR_WARMUP",
     "OLMOE3_LD_LAMBDA_WARMUP", "OLMOE3_LD_INIT", "OLMOE3_LD_EVAL", "OLMOE3_LD_DETACH", "OLMOE3_LD_LR_MULT",
     "OLMOE3_LD_SIGNAL", "OLMOE3_LD_LAMBDA_COV", "OLMOE3_ROUTER_ONLY_LR", "OLMOE3_FREEZE_ROUTER", "OLMOE3_FREEZE_PATTERNS", "OLMOE3_FREEZE_TAG",

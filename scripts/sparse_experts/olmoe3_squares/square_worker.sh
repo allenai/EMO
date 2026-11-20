@@ -13,6 +13,7 @@
 # (squares_lr_sweep.sh ... with OLMOE3_W2_EXTERNAL=1).
 #   SQUARES_NAME=<arm dir> RUN_PREFIX=<run prefix incl. _square> OLMOE3_LR=4e-4 [SQUARES_K=8] [WORKER_OFFSET=0] bash scripts/sparse_experts/olmoe3_squares/square_worker.sh
 set -u
+source "$(dirname "${BASH_SOURCE[0]}")/ensure_env.sh"
 W=/weka/oe-training-default/ryanwang/EMO/sparse_experts
 SQ="$W/${SQUARES_NAME:?}"; RP="${RUN_PREFIX:?}"; CLUSTER="${CLUSTER:-ai2/jupiter}"; K="${SQUARES_K:-8}"; OFF="${WORKER_OFFSET:-0}"
 ME="${BEAKER_JOB_ID:-$(hostname)-$$}"; LOCKS="$SQ/logs/locks${LOCK_TAG:+_$LOCK_TAG}"; mkdir -p "$LOCKS"; STALE=900
