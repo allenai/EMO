@@ -1702,7 +1702,11 @@ KMEANS_TAKE = [   # short observations, one line each, no numbers
     "The k-means groups are unequal in size, so this arm changes both which experts are grouped and how evenly."]
 
 
-SHARED4_TAKE = []   # short observations, one line each, no numbers; filled in when the runs are evaluated
+SHARED4_TAKE = [   # short observations, one line each, no numbers
+    "Four shared experts make the jointly trained model slightly better at every point, at about a tenth more active parameters.",
+    "The 8-sub-model merge is still far behind joint training; the gap is only marginally smaller than with one shared expert.",
+    "The 4-sub-model merge tracks joint training as closely as with one shared expert: level to 20B, slightly behind at 30B.",
+    "So a larger shared, never-split part does not remove the cost of merging 8 sub-models."]
 
 
 def shared4_section():
