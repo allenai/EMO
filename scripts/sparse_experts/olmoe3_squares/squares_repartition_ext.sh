@@ -13,15 +13,21 @@
 #             are kept at 20B / 30B / 61B (squares weights only, also scored alone), deleted elsewhere once the next cycle is cut.
 #   joint     the joint baseline 30B -> 61B (olmoe3_275m_mix20_61b, 4 nodes, keeper), scored at 66,481 and 116,479.
 # Workers: repartition_worker.sh (symmetric 8-GPU jobs, mkdir locks); evaluations: one 8-GPU job per point (eval_batch_8gpu.sh).
-#   bash scripts/sparse_experts/olmoe3_squares/squares_repartition_ext.sh rp100m61|rp5b|joint     (idempotent; detach; commit + push first)   NWORK=<jobs>
+# To 130B (user request 2026-11-20): rp5b130 continues the rp5b arm from its 61B merge, cycles 12..25 ending at 65 / 70 / ... / 130B (same stream
+# quarters, 57,221 + g x 47,684 + 14,815 -> + 47,684); every merge evaluated, merge + squares kept at 130B only. joint130 continues the joint
+# baseline 61B -> 130B (olmoe3_275m_mix20_130b), scored at 87B / 113B / 130B and at the arm's cycle ends at 70 / 80 / ... / 120B (those
+# checkpoints are deleted once the run is finished and evaluated).
+#   bash scripts/sparse_experts/olmoe3_squares/squares_repartition_ext.sh rp100m61|rp5b|joint|rp5b130|joint130     (idempotent; detach; commit + push first)   NWORK=<jobs>
 set -u; cd "$(git rev-parse --show-toplevel)"; export PATH=/root/.conda/envs/emo/bin:$PATH
-ARM="${1:?rp100m61|rp5b|joint}"
+ARM="${1:?rp100m61|rp5b|joint|rp5b130|joint130}"; PLANMARK=ext61
 S=sparse_experts; W=/weka/oe-training-default/ryanwang/EMO/sparse_experts; FULL=olmoe3_275m_emo_mix20_10b; SAMPLE=sample_8k_300b.npz; LR=4e-4; B30=olmoe3_275m_mix20_30b/step57221
 SP=/tmp/claude-0/-root-EMO/c7db74f2-bbe3-4a2c-9d37-93c64250d7c6/scratchpad; mkdir -p $SP
 case $ARM in
   rp100m61) K=8; NWORK="${NWORK:-3}"; CTRL=olmoe3_squares_mix20rand8; CRP=olmoe3_275m_mix20rand8_square; SQN=olmoe3_squares_mix20rand8_rp100m; RP=olmoe3_275m_mix20rand8_rp100m; HR=runs_heldout300b_mix20rand8_rp100m; FIRST=201; SEED=1000; WANDB=false;;
   rp5b)     K=4; NWORK="${NWORK:-4}"; CTRL=olmoe3_squares_mix20rand4; CRP=olmoe3_275m_mix20rand4_square; SQN=olmoe3_squares_mix20rand4_rp5b;   RP=olmoe3_275m_mix20rand4_rp5b;   HR=runs_heldout300b_mix20rand4_rp5b;   FIRST=1;   SEED=2000; WANDB=true;;
-  joint)    SQN=olmoe3_squares_mix20rand8; HR=runs_heldout300b_mix20; BRUN=olmoe3_275m_mix20_61b;;
+  rp5b130)  K=4; NWORK="${NWORK:-4}"; CTRL=olmoe3_squares_mix20rand4; CRP=olmoe3_275m_mix20rand4_square; SQN=olmoe3_squares_mix20rand4_rp5b;   RP=olmoe3_275m_mix20rand4_rp5b;   HR=runs_heldout300b_mix20rand4_rp5b;   FIRST=12;  SEED=2000; WANDB=true; PLANMARK=ext130;;
+  joint)    SQN=olmoe3_squares_mix20rand8; HR=runs_heldout300b_mix20; BRUN=olmoe3_275m_mix20_61b;  JSTEPS="66481 116479"; JURL=mix20_61b; JSCRIPT=olmoe3_275m_mix20_61b_baseline.sh; JTEMP="";;
+  joint130) SQN=olmoe3_squares_mix20rand8; HR=runs_heldout300b_mix20; BRUN=olmoe3_275m_mix20_130b; JSTEPS="133513 152589 166478 171661 190737 209809 216477 228881 247956"; JURL=mix20_130b; JSCRIPT=olmoe3_275m_mix20_130b_baseline.sh; JTEMP="133513 152589 171661 190737 209809 228881";;
   *) echo "rp100m61|rp5b|joint"; exit 1;;
 esac
 SQ=$S/$SQN; H=$S/olmoe3_routing/$HR; LOG=$SQ/logs; mkdir -p $LOG $H
@@ -42,24 +48,25 @@ jobstate() { local e; e=$(tail -n 1 $LOG/evals_$1.launched 2>/dev/null | grep -o
 fold() { local d; for d in $H/*/none; do [ -f $d/rank0/DONE ] && [ ! -f $d/meta.json ] && python scripts/sparse_experts/olmoe3_routing/merge_routing.py $d 2>&1 | tail -1; done; }
 
 # =========================== joint baseline 30B -> 61B ===========================
-if [ $ARM = joint ]; then KEEP=$S/olmoe3_routing/baseline_keeper; mkdir -p $KEEP
-  if [ ! -f $S/$BRUN/step116479/train/rank0.pt ] && [ ! -f $KEEP/mix20_61b.url ]; then u=""
-    for attempt in 1 2 3 4 5 6; do OLMOE3_FOLLOW=0 bash scripts/sparse_experts/model_scripts/olmoe3_275m_mix20_61b_baseline.sh launch > $SP/launch_mix20_61b.log 2>&1
-      u=$(sed 's/\x1b\[[0-9;]*m//g' $SP/launch_mix20_61b.log | grep -aoE 'beaker.org/ex/[A-Z0-9]+' | head -1); [ -n "$u" ] && break; sleep 60; done
-    say "joint 30B -> 61B: ${u:-LAUNCH FAILED}"; [ -n "$u" ] && echo "$u" > $KEEP/mix20_61b.url; fi
+if [ $ARM = joint ] || [ $ARM = joint130 ]; then JF=${JSTEPS##* }; KEEP=$S/olmoe3_routing/baseline_keeper; mkdir -p $KEEP
+  if [ ! -f $S/$BRUN/step$JF/train/rank0.pt ] && [ ! -f $KEEP/$JURL.url ]; then u=""
+    for attempt in 1 2 3 4 5 6; do OLMOE3_FOLLOW=0 bash scripts/sparse_experts/model_scripts/$JSCRIPT launch > $SP/launch_$JURL.log 2>&1
+      u=$(sed 's/\x1b\[[0-9;]*m//g' $SP/launch_$JURL.log | grep -aoE 'beaker.org/ex/[A-Z0-9]+' | head -1); [ -n "$u" ] && break; sleep 60; done
+    say "$BRUN: ${u:-LAUNCH FAILED}"; [ -n "$u" ] && echo "$u" > $KEEP/$JURL.url; fi
   pgrep -f "^bash scripts/sparse_experts/olmoe3_squares/baseline_keeper.sh" > /dev/null || { ( setsid nohup bash scripts/sparse_experts/olmoe3_squares/baseline_keeper.sh >> $KEEP/log.txt 2>&1 < /dev/null & ); say "baseline keeper started"; }
   jpoint() { local st=$1 js; [ -f $LOG/joint_$st.done ] && return 0; [ -f $S/$BRUN/step$st/train/rank0.pt ] || return 1; CF=$LOG/evals_joint${st}_cur.txt; js=$(jobstate joint$st); : > $CF
     have baseline_step$st || hline baseline_step$st $W/$BRUN/step$st >> $CF; [ -f $SQ/ppl_validation/$BRUN/step$st.json ] || pline $W/$BRUN/step$st >> $CF
     [ -s $CF ] && [ $js = live ] && return 1; evaljob joint$st $js || return 1; touch $LOG/joint_$st.done; say "joint step $st: evaluated"; }
-  while true; do ok=1; jpoint 66481 || ok=0; jpoint 116479 || ok=0; [ $ok = 1 ] && break
+  while true; do ok=1; for st in $JSTEPS; do jpoint $st || ok=0; done; [ $ok = 1 ] && break
     l=$(ls $S/$BRUN 2>/dev/null | grep -E '^step[0-9]+$' | sed 's/step//' | sort -n | tail -1); [ "${l:-}" != "${last:-}" ] && { say "latest checkpoint: step ${l:-none}"; last=${l:-}; }; sleep 600; done
-  fold; say done; exit 0
+  fold; for st in $JTEMP; do [ -f $LOG/joint_$st.done ] && [ -f $LOG/joint_$JF.done ] && rm -rf "$S/${BRUN:?}/step$st"; done   # cycle-end checkpoints: evaluated, not kept
+  say done; exit 0
 fi
 
 # =========================== the two re-partitioned arms ===========================
 mkdir -p $SQ/templates $SQ/merged; GS=$(seq 0 $((K-1)))
 for d in pack pack2; do [ -e $SQ/$d ] || ln -s ../$CTRL/$d $SQ/$d; done
-if [ ! -f $LOG/ext61.planned ]; then python - <<PY || { say "ABORT: plan failed"; exit 1; }
+if [ ! -f $LOG/$PLANMARK.planned ]; then python - <<PY || { say "ABORT: plan failed"; exit 1; }
 import json, shutil, os
 S, SQ, K, arm = "$S", "$SQ", $K, "$ARM"; rows = []; keep = []; points = []
 def template(w, g, train_from, config_from):   # trainer state (data order / position) + the config of a square of this size
@@ -72,6 +79,13 @@ if arm == "rp100m61":
     old = [tuple(map(int, l.split())) for l in open(f"{SQ}/plan.tsv")]; assert max(r[0] for r in old) == 200, "plan already extended?"; rows = old + rows
     keep = [l.split() for l in open(f"{SQ}/keep.tsv")] + [["203", "probe_c203"], ["248", "match66481"], ["510", "match116479"]]
     points = [(203, "probe_c203", "probe"), (248, "match66481", "temp"), (510, "match116479", "perm")]
+elif arm == "rp5b130":
+    o = [14815] + [round(5e9 / 524288 / K * c) for c in range(7, 21)]   # 61B, then 65B / 70B / ... / 130B of each square's stream quarter (47,684 steps)
+    old = [tuple(map(int, l.split())) for l in open(f"{SQ}/plan.tsv")]; assert max(r[0] for r in old) == 11, "plan already extended?"
+    rows = old + [(12 + i, g, 3, 57221 + g * 47684 + o[i], 57221 + g * 47684 + o[i + 1]) for g in range(K) for i in range(14)]
+    names = [57221 + 4 * x for x in o[1:-1]] + [247956]   # joint-equivalent step of each cycle end; the last = the matched 130B point
+    keep = [l.split() for l in open(f"{SQ}/keep.tsv")] + [[str(12 + i), f"match{n}"] for i, n in enumerate(names)]
+    points = [tuple(l.split()) for l in open(f"{SQ}/points.tsv")]; points = [(int(c), n, k) for c, n, k in points] + [(12 + i, f"match{n}", "perm" if n == 247956 else "temp") for i, n in enumerate(names)]
 else:
     t1 = json.load(open(f"{SQ}/pack/stats.json"))["tokens_per_group"]; t2 = json.load(open(f"{SQ}/pack2/stats.json"))["tokens_per_group"]
     o = [0] + [round(5e9 / 524288 / K * c) for c in range(1, 7)] + [14815]   # window 3: 5B per cycle = 2,384 steps per square; 14,815 = the control's 61B point
@@ -87,7 +101,7 @@ open(f"{SQ}/keep.tsv", "w").write("".join(" ".join(k) + "\n" for k in keep)); op
 open(f"{SQ}/plan.tsv.tmp", "w").write("".join("%d %d %d %d %d\n" % r for r in sorted(rows))); os.replace(f"{SQ}/plan.tsv.tmp", f"{SQ}/plan.tsv")
 new = [r for r in rows if r[0] >= $FIRST]; print("plan: cycles", min(r[0] for r in new), "to", max(r[0] for r in new), "- steps per square and cycle", min(r[4] - r[3] for r in new), "to", max(r[4] - r[3] for r in new))
 PY
-  rm -f $SQ/DONE; rm -rf "${LOG:?}/locks"; touch $LOG/ext61.planned; fi
+  rm -f $SQ/DONE; rm -rf "${LOG:?}/locks"; touch $LOG/$PLANMARK.planned; fi
 NC=$(awk '{ if ($1 > m) m = $1 } END { print m }' $SQ/plan.tsv)
 fin_of() { awk -v c="$1" -v g="$2" -v p="$S/${RP}_c$1_g$2/step" '$1 == c && $2 == g { print p $5 }' $SQ/plan.tsv; }
 workers() { local i e n u; [ -f $SQ/DONE ] && return 0

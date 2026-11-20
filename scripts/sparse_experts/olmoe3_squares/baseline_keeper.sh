@@ -39,6 +39,7 @@ JOBS=("olmoe3_275m_emo_130b|247956|olmoe3_275m_emo_130b_baseline.sh|$KEEP/emo_13
       "olmoe3_275m_1000e_emo_130b|247956|olmoe3_275m_1000e_emo_130b_baseline.sh|$S/olmoe3_squares_emo1000rand4/logs/baseline130_launched"
       "olmoe3_275m_mix20_30b|57221|olmoe3_275m_mix20_30b_baseline.sh|$S/olmoe3_squares_mix20rand8/logs/baseline_launched"
       "olmoe3_275m_mix20_61b|116479|olmoe3_275m_mix20_61b_baseline.sh|$KEEP/mix20_61b.url"
+      "olmoe3_275m_mix20_130b|247956|olmoe3_275m_mix20_130b_baseline.sh|$KEEP/mix20_130b.url"
       "olmoe3_275m_emo_sh4_10b|19074|olmoe3_275m_emo_sh4_10b.sh|$KEEP/emo_sh4_10b.url"
       "olmoe3_275m_emo_sh4_30b|57221|olmoe3_275m_emo_sh4_30b_baseline.sh|$KEEP/emo_sh4_30b.url")
 RETIRED=$S/olmoe3_routing/twin_scheduler/retired.txt   # same retired-run globs as twin_scheduler.py: a listed run is never relaunched
