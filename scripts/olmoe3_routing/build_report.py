@@ -415,7 +415,7 @@ RANDOM_CONTROL = {  # random expert groups + random document split; arms = (sub-
                  arms=[dict(k=4, sqn="olmoe3_squares_s128rand4", hr="runs_heldout300b_s128rand4", color="#2563eb"), dict(k=8, sqn="olmoe3_squares_s128rand8", hr="runs_heldout300b_s128rand8", color="#ea580c")],
                  remerge=False, take=lambda: S128_TAKE),
     "mix20": dict(hrb="runs_heldout300b_mix20", start="baseline_step19074", ppl_dirs=("olmoe3_squares_mix20rand8/ppl_validation", "olmoe3_squares_mix20rand4/ppl_validation"),
-                  base_runs=("olmoe3_275m_mix20_30b", "olmoe3_275m_mix20_61b"), start_ppl="olmoe3_275m_emo_mix20_10b", model="mixed-pool EMO 512e (20% random pools)", E=512,
+                  base_runs=("olmoe3_275m_mix20_30b", "olmoe3_275m_mix20_61b", "olmoe3_275m_mix20_130b"), start_ppl="olmoe3_275m_emo_mix20_10b", model="mixed-pool EMO 512e (20% random pools)", E=512,
                   arms=[dict(k=4, lr="4e-4", sqn="olmoe3_squares_mix20rand4", hr="runs_heldout300b_mix20rand4", color="#2563eb"), dict(k=8, lr="4e-4", sqn="olmoe3_squares_mix20rand8", hr="runs_heldout300b_mix20rand8", color="#ea580c")],
                   remerge=False, take=lambda: ""),
     "emosh4": dict(hrb="runs_heldout300b_emosh4", start="baseline_step19074", ppl_dirs=("olmoe3_squares_emosh4rand8/ppl_validation", "olmoe3_squares_emosh4rand4/ppl_validation"),   # 2026-11-19: 4 shared experts (squares_shared4.sh)
@@ -454,7 +454,9 @@ RANDOM_CONTROL = {  # random expert groups + random document split; arms = (sub-
                                "shuffle of the 1000 experts into 8 groups of 125 (seed 2), and the squares train at LR 4e-4, the winner of the 512e sub-model LR sweep."),
 }
 W3_STEPS = (66481, 116479, 166478, 216477, 247956)
-RP5B_STEPS = (28611, 38148, 47685, 57221, 66757, 76293, 85833, 95369, 104905, 114441, 116479)   # cycle ends of the 4-square re-partition-every-5B arm (mixed-pool EMO 512e), in joint-equivalent steps
+RP5B_STEPS = (28611, 38148, 47685, 57221, 66757, 76293, 85833, 95369, 104905, 114441, 116479,
+              123977, 133513, 143053, 152589, 162125, 171661, 181197, 190737, 200273, 209809, 219345, 228881, 238421, 247956)   # 65B ... 130B: the 130B extension (2026-11-20)
+MIX20_JOINT_STEPS = (66481, 116479, 133513, 152589, 166478, 171661, 190737, 209809, 216477, 228881, 247956)   # joint points beyond 30B: 34.9B / 61B, then 87B / 113B / 130B and the 5B arm's cycle ends at 70 / 80 / ... / 120B   # cycle ends of the 4-square re-partition-every-5B arm (mixed-pool EMO 512e), in joint-equivalent steps
 EMORAND_TAKE = ("Same picture as the standard model with a smaller gap: 0.03 at 20B, 0.08 at 130B (2.373 vs 2.295). Eight squares cost about "
                 "twice as much (gap 0.10 at 20B, 0.15 at 130B: 2.442 vs 2.295) and, unlike the standard model's, the eight-square merge stays ahead of "
                 "its best single square (2.473) at 130B.")
@@ -1092,7 +1094,7 @@ def control_explorer_data():
         rp_pts = {end: c for c, end in enumerate(RP_ENDS[1:], 1) if which == "emo" and _ce(RPH / f"merged_c{c}/none") is not None}
         steps = sorted(set(steps) | set(rp_pts))
         if which == "mix20":   # 2026-11-17: 61B extensions (squares_repartition_ext.sh): joint 34.9B / 61B, the ~100M arm continued, the 4-square arm re-partitioned every 5B (a point per cycle end)
-            steps = sorted(set(steps) | {st for st in (66481, 116479) if hb(f"baseline_step{st}") is not None} | {st for st in RP5B_STEPS if _ce(R / f"runs_heldout300b_mix20rand4_rp5b/merged_match{st}/none") is not None})
+            steps = sorted(set(steps) | {st for st in MIX20_JOINT_STEPS if hb(f"baseline_step{st}") is not None} | {st for st in RP5B_STEPS if _ce(R / f"runs_heldout300b_mix20rand4_rp5b/merged_match{st}/none") is not None})
         ref_ppl = _ppl(ROOT / f"claude_outputs/debug_validation/ppl_validation/{C['start_ppl']}/step19074.json")
         def bppl(st):
             if st == 19074: return ref_ppl
@@ -1749,13 +1751,16 @@ def repartition_often_section():
     C4 = R / "runs_heldout300b_mix20rand4"; C8 = R / "runs_heldout300b_mix20rand8"
     if not any(_ce(H / f"merged_match{st}/none") is not None for H in (H1, H5) for st in (30000, 38148, 57221)): return ""
     f = lambda v: "&ndash;" if v is None else f"{v:.3f}"; m = lambda H, st: _ce(H / f"merged_match{st}/none") if st else None
-    PTS = [("15.7B", 30000, 30000, None), ("20B", 38148, 38148, 38148), ("30B", 57221, 57221, 57221), ("35B", 66481, 66481, 66757), ("61B", 116479, 116479, 116479)]   # label, joint step, 8-square step, 5B-arm step
-    rows = "".join(f"<tr><td>{tl}</td><td>{f(_ce(HB / f'baseline_step{sj}/none'))}</td><td>{f(m(H1, s8))}</td><td>{f(m(C8, s8))}</td><td>{f(m(H5, s5))}</td><td>{f(m(C4, s8))}</td></tr>" for tl, sj, s8, s5 in PTS)
+    PTS = [("15.7B", 30000, 30000, None), ("20B", 38148, 38148, 38148), ("30B", 57221, 57221, 57221), ("35B", 66481, 66481, 66757), ("61B", 116479, 116479, 116479),
+           ("70B", 133513, None, 133513), ("80B", 152589, None, 152589), ("90B", 171661, None, 171661), ("100B", 190737, None, 190737), ("110B", 209809, None, 209809), ("120B", 228881, None, 228881), ("130B", 247956, None, 247956)]
+    PTS = [p for p in PTS if p[1] <= 116479 or _ce(HB / f"baseline_step{p[1]}/none") is not None or m(H5, p[3]) is not None]   # rows of the 130B extension appear as they are evaluated   # label, joint step, 8-square step, 5B-arm step
+    rows = "".join(f"<tr><td>{tl}</td><td>{f(_ce(HB / f'baseline_step{sj}/none'))}</td><td>{f(m(H1, s8))}</td><td>{f(m(C8, s8))}</td><td>{f(m(H5, s5))}</td><td>{f(m(C4, s8))}</td></tr>" for tl, sj, s8, s5 in PTS)   # m() returns None for a step of None
     tbl = ('<table class="num"><thead><tr><th>tokens</th><th>joint</th><th>8 sub-models,<br>every ~100M</th><th>8 sub-models,<br>fixed groups</th><th>4 sub-models,<br>every 5B</th><th>4 sub-models,<br>fixed groups</th></tr></thead><tbody>' + rows + "</tbody></table>")
     what = ("Start model: mixed-pool EMO 512e at 10B (20% of documents get a random expert pool). All sub-models train at LR 4e-4. At every re-partition the sub-models are merged (optimizer state "
             "carried) and the merged model is cut into new sub-models with freshly drawn random expert groups (layer 1 whole). <b>8 sub-models:</b> re-partitioned every ~100M tokens, about 24 steps "
             "of each sub-model. <b>4 sub-models:</b> re-partitioned every 5B tokens. Documents are the fixed-group controls' random document packs up to 30B (same documents, same order); after 30B "
-            "each sub-model reads its own contiguous slice of the training stream, a random subset of the documents. The fixed-group controls stop at 30B.")
+            "each sub-model reads its own contiguous slice of the training stream, a random subset of the documents. The fixed-group controls stop at 30B; the 8-sub-model run stops at 61B; "
+            "joint training and the 4-sub-model run continue to 130B.")
     btn = explorer_button("Show these runs in the explorer", ["mix20"], ["baseline", "l4", "l8", "rp5", "srp5", "rp100", "srp100", "start"])
     pending = "" if m(H1, 116479) is not None else '<p class="note">The 8-sub-model run is still training towards 61B; its 61B cell fills in when it is evaluated.</p>'
     return card("info", "Setup", f"<p>{what}</p>") + card("results", "Results", btn + "<p>Held-out CE of the merged models (the 35B row is 34.9B for joint and 8 sub-models, 35.0B for 4).</p>" + tbl + pending
