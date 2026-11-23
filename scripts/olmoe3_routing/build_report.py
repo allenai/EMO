@@ -271,7 +271,8 @@ VARIANTS = [("A", "EMO 512e, 4 sub-models", "#2563eb", "the main experiment"),
             ("5M", "Disjoint training from scratch", "#be185d", "can the split start at the random init instead of a 10B joint checkpoint: standard MoE 512e cut into 4 or 8 random sub-models before any training, first 100 steps and the first 10B tokens, with sub-model LR and load-balancing ablations"),
             ("5N", "K-means expert groups", "#be185d", "does grouping similar experts help: EMO 512e cut into 8 sub-models by k-means on the experts' router rows instead of at random, 10B to 20B"),
             ("5O", "Frequent re-partitioning", "#be123c", "does re-drawing the expert groups often keep the merge close to joint training: mixed-pool EMO 512e, 8 sub-models re-partitioned every ~100M tokens and 4 sub-models every 5B, 10B to 61B"),
-            ("5P", "More shared experts", "#0f766e", "does a larger always-active shared part make the split cheaper: EMO 512e with 4 shared experts instead of 1, trained from scratch, 4 and 8 sub-models at LR 4e-4, 10B to 30B")]
+            ("5P", "More shared experts", "#0f766e", "does a larger always-active shared part make the split cheaper: EMO 512e with 4 shared experts instead of 1, trained from scratch, 4 and 8 sub-models at LR 4e-4, 10B to 30B"),
+            ("5Q", "12 sub-models with periodic syncs", "#b45309", "can the split go finer if the sub-models are averaged often: mixed-pool EMO 512e cut into 12 sub-models that are merged every 2B tokens, with the sub-model LR re-tuned, 10B to 30B")]
 
 
 def variant(letter, inner, tab="q3"):
@@ -1150,7 +1151,8 @@ def control_explorer_data():
                               "p": [ser["l4"]["p"][i20] if st == 38148 else (_ppl(RPP / f"c{rp_pts[st]}.json") if st in rp_pts else None) for st in steps]}
         # 2026-11-16: k-means expert groups (EMO 512e, 10B -> 20B; squares_kmeans.sh) and re-partition every ~100M tokens (mixed-pool EMO 512e, 10B -> 30B; squares_repartition100m.sh)
         for model, tag, mk, sk, col, kx, PTS_X in (("emo", "emokm8", "km8", "skm8", "#be185d", 8, (30000, 38148, 57221)), ("mix20", "mix20rand8_rp100m", "rp100", "srp100", "#be123c", 8, (30000, 38148, 57221, 66481, 116479)),
-                                                 ("mix20", "mix20rand4_rp5b", "rp5", "srp5", "#7c3aed", 4, RP5B_STEPS)):
+                                                 ("mix20", "mix20rand4_rp5b", "rp5", "srp5", "#7c3aed", 4, RP5B_STEPS),
+                                                 ("mix20", "mix20sync12_lr4e-4", "sy12", "ssy12", "#0f766e", 12, (30000, 38148, 57221))):   # 2026-11-23: 12 sub-models, sync every 2B (squares_sync12.sh)
             HX = R / f"runs_heldout300b_{tag}"; PX = ROOT / f"sparse_experts/olmoe3_squares_{tag}/ppl_validation/merged"
             if which != model or not any(_ce(HX / f"merged_match{st}/none") is not None for st in PTS_X): continue
             ser[mk] = {"h": [hb(C["start"]) if st == 19074 else (_ce(HX / f"merged_match{st}/none") if st in PTS_X else None) for st in steps],
@@ -1175,6 +1177,7 @@ EXPLORER_LINES = [  # key, label, colour, dashed, needs-ppl
 ("km8", "merged, 8 squares of k-means expert groups (unequal sizes), LR 4e-4 (EMO 512e only)", "#be185d", False), ("skm8", "k-means squares alone, mean of 8 (EMO 512e only)", "#be185d", True),
     ("rp100", "merged, 8 squares, LR 4e-4, re-merged + re-partitioned every ~100M tokens (mixed-pool EMO only)", "#be123c", False), ("srp100", "squares of the ~100M re-partition arm alone, mean of 8 (mixed-pool EMO only)", "#be123c", True),
     ("rp5", "merged, 4 squares, LR 4e-4, re-merged + re-partitioned every 5B tokens (mixed-pool EMO only)", "#7c3aed", False), ("srp5", "squares of the 5B re-partition arm alone, mean of 4 (mixed-pool EMO only)", "#7c3aed", True),
+    ("sy12", "merged, 12 squares, LR 4e-4, synced (merged, same partition) every 2B tokens (mixed-pool EMO only)", "#0f766e", False), ("ssy12", "squares of the 12-square synced arm alone, mean of 12 (mixed-pool EMO only)", "#0f766e", True),
     ("rm", "re-merged + re-partitioned at 61B (std only)", "#7c3aed", False), ("rs", "squares after re-partition, mean of 4 (std only)", "#7c3aed", True),
     ("start", "start model (10B)", "#64748b", True)]
 EXPLORER_DEFAULT = ["baseline", "m4", "m8", "l4", "l8", "s4", "s8", "start"]
@@ -1702,6 +1705,42 @@ KMEANS_TAKE = [   # short observations, one line each, no numbers
     "The merged k-means sub-models are closer to joint training than the merged random ones at both points.",
     "Alone, the k-means sub-models are worse than the random ones, so the gain appears only after merging.",
     "The k-means groups are unequal in size, so this arm changes both which experts are grouped and how evenly."]
+
+
+SYNC12_TAKE = [   # short observations, one line each, no numbers
+    "The best sub-model learning rate is unchanged with 12 sub-models; the optimum is shallow and only the pretraining learning rate is clearly worse.",
+    "The 12-sub-model merge is far behind joint training and the gap grows; at 30B it is still worse than the 10B start model.",
+    "It is also clearly behind 8 sub-models with fixed groups that are never synced, so syncing every 2B does not make up for the finer split.",
+    "Merging still pays: the merged model is well ahead of its sub-models alone."]
+
+
+def sync12_section():
+    """Box 5Q (user request 2026-11-23): mixed-pool EMO 512e, 12 random sub-models (fixed partition), merged + cut again along the same partition every 2B tokens
+    (squares_sync12.sh): sub-model LR ablation 10B -> 20B on the selection sample, then the chosen LR to 30B. Explorer lines sy12 / ssy12."""
+    R = ROOT / "sparse_experts/olmoe3_routing"; HB = R / "runs_heldout300b_mix20"; LRS = ("1e-4", "2e-4", "4e-4", "8e-4")
+    H = lambda lr, val=False: R / (f"runs_heldout300b_mix20sync12_lr{lr}" + ("_val" if val else "")); m = lambda Hd, st: _ce(Hd / f"merged_match{st}/none")
+    if not any(m(H(lr, True), 38148) is not None for lr in LRS): return ""
+    cf = ROOT / "sparse_experts/olmoe3_squares_mix20sync12_choice.txt"; best = cf.read_text().strip() if cf.exists() else None
+    f = lambda v: "&ndash;" if v is None else f"{v:.3f}"
+    lrt = ('<table class="num"><thead><tr><th>sub-model LR</th><th>selection sample, 20B</th><th>reporting sample, 20B</th><th>reporting sample, 15.7B</th></tr></thead><tbody>'
+           + "".join(f"<tr><td>{'<b>' + lr + '</b> (chosen)' if lr == best else lr}</td><td>{f(m(H(lr, True), 38148))}</td><td>{f(m(H(lr), 38148))}</td><td>{f(m(H(lr), 30000))}</td></tr>" for lr in LRS) + "</tbody></table>")
+    out = card("info", "Setup", "<p>" + (
+        "Start model: mixed-pool EMO 512e at 10B. It is cut into 12 sub-models with one fixed random partition (43 or 42 experts per layer 2&ndash;9, layer 1 whole). Every 2B tokens the 12 are "
+        "merged and cut again along the <i>same</i> partition, so a sync only averages what the sub-models share (attention, layer 1, the shared expert, embeddings); the experts stay with their "
+        "sub-model. Each sub-model reads its own twelfth of the training stream, a random twelfth of the documents. <b>Learning rate:</b> the sub-model LR ablation of the 4- and 8-sub-model "
+        "controls is repeated in this setting (10B to 20B, chosen on a separate selection sample at 20B); the chosen LR then runs to 30B. The 15.7B point is not a sync: the sub-models' "
+        "checkpoints there are merged for evaluation only.") + "</p>")
+    res = "<p>Sub-model learning rate (held-out CE of the merged model):</p>" + lrt
+    if best:
+        HW = H(best); C8 = R / "runs_heldout300b_mix20rand8"; R8 = R / "runs_heldout300b_mix20rand8_rp100m"
+        def subs(st):
+            v = [_ce(HW / f"sub{g}_match{st}/none") for g in range(12)]; return sum(v) / 12 if all(x is not None for x in v) else None
+        rows = "".join(f"<tr><td>{tl}</td><td>{f(_ce(HB / f'baseline_step{st}/none'))}</td><td>{f(m(HW, st))}</td><td>{f(subs(st))}</td><td>{f(m(C8, st))}</td><td>{f(m(R8, st))}</td></tr>" for tl, st in (("15.7B", 30000), ("20B", 38148), ("30B", 57221)))
+        res += (f"<p>The chosen LR ({best}) to 30B, held-out CE:</p>" + '<table class="num"><thead><tr><th>tokens</th><th>joint</th><th>12 sub-models, synced every 2B:<br>merged</th><th>12 sub-models alone,<br>mean</th>'
+                "<th>8 sub-models, fixed groups,<br>never synced: merged</th><th>8 sub-models, re-partitioned<br>every ~100M: merged</th></tr></thead><tbody>" + rows + "</tbody></table>")
+        if m(HW, 57221) is None: res += '<p class="note">The run to 30B is still training or being evaluated; missing cells fill in when it is scored.</p>'
+    btn = explorer_button("Show the 12-sub-model run in the explorer", ["mix20"], ["baseline", "l8", "s8", "rp100", "sy12", "ssy12", "start"])
+    return out + card("results", "Results", btn + res + ("<ol>" + "".join(f"<li>{t}</li>" for t in SYNC12_TAKE) + "</ol>" if SYNC12_TAKE else ""))
 
 
 SHARED4_TAKE = [   # short observations, one line each, no numbers
@@ -2254,6 +2293,7 @@ def build_q5_controls():
     boxes["5N"] = kmeans_section()
     boxes["5O"] = repartition_often_section()
     boxes["5P"] = shared4_section()
+    boxes["5Q"] = sync12_section()
     boxes = {L: inner for L, inner in boxes.items() if inner}
     body += VARIANT_CSS + card("info", "Experiments",
         '<ul class="q3index">' + "".join(f'<li><a href="#q5-{L}"><b>{L}</b> &middot; {t}</a> &mdash; {bl}</li>' for L, t, _, bl in VARIANTS if L in boxes) + "</ul>")
@@ -2782,7 +2822,7 @@ def artifact_page(body, path):
     """The Disjoint Training Report: Q5 as its own page (a Claude artifact). Same content as the Q5 tab, renumbered 1-8 (the 5A-5H
     letters only mean something inside the parent report), with a header, a sticky contents rail and its own stylesheet."""
     import datetime, re
-    letters = "ABCEFGHIJKLMNOP"; num = lambda L: str(letters.index(L) + 1)   # no 5D any more (its sweeps live in 5B)
+    letters = "ABCEFGHIJKLMNOPQ"; num = lambda L: str(letters.index(L) + 1)   # no 5D any more (its sweeps live in 5B)
     for L in letters:
         body = body.replace(f'id="q5-5{L}"', f'id="s{num(L)}"').replace(f'href="#q5-5{L}"', f'href="#s{num(L)}"').replace(f'<span class="vb">5{L}</span>', f'<span class="vb">{num(L)}</span>').replace(f'<b>5{L}</b> &middot;', f'<b>{num(L)}</b> &middot;')
     body = re.sub(r"boxes 5([A-M])((?:, 5[A-M])+)", lambda m: "sections " + ", ".join(num(x) for x in re.findall(r"5([A-M])", m.group(0))), body)
