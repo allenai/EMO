@@ -1741,7 +1741,8 @@ REPART_OFTEN_TAKE = [   # short observations, one line each, no numbers
     "Re-partitioning every ~100M tokens removes more than half of the 8-sub-model merge's gap to joint training, and the remaining gap grows only slowly.",
     "That gain is in the merge: its sub-models alone are no better than the fixed-group ones.",
     "With 4 sub-models, re-partitioning every 5B changes nothing measurable up to 30B; the fixed-group merge is already ahead of joint training there.",
-    "The 4-sub-model merge's lead over joint training shrinks steadily and is gone at 61B."]
+    "The 4-sub-model merge's lead over joint training shrinks steadily and is gone at 61B.",
+    "From 61B to 130B the re-partitioned 4-sub-model merge stays just behind joint training and does not drift further away."]
 
 
 def repartition_often_section():
