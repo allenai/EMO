@@ -13,13 +13,18 @@
 #   final <lr> : the chosen arm continued 20B -> 30B (5 more syncs); 30B merge + every sub-model alone at 20B and 30B evaluated.
 # Storage (user): only the final model is kept (30B merge with Adam + its 12 sub-models, weights only); every other merge / cycle is deleted
 # as soon as it is evaluated and superseded. Workers: repartition_worker.sh (FIXED_GROUPS=1); evaluations: 8-GPU batch jobs.
+# More layers kept whole (user request 2026-11-23): SYNC_K=<8|12> SYNC_WHOLE=<N> ... run <lr> does the whole 10B -> 30B run in one go (10 syncs, no
+# ablation) with K sub-models that keep expert layers 1..N whole and split only layers N+1..9 (N = 4: layers 5-9 split; arm folders
+# olmoe3_squares_mix20sync<K>w<N>_lr<lr>, sub-model g reads a contiguous 1/K of the stream). Same evaluations and storage rule as `final`.
+#   SYNC_K=8 SYNC_WHOLE=4 bash scripts/sparse_experts/olmoe3_squares/squares_sync12.sh run 4e-4
 #   bash scripts/sparse_experts/olmoe3_squares/squares_sync12.sh sweep <lr> | choose | final <lr>      (idempotent; detach; commit + push first)
 set -u; cd "$(git rev-parse --show-toplevel)"; export PATH=/root/.conda/envs/emo/bin:$PATH
-MODE="${1:?sweep|choose|final}"; LR="${2:-}"; LRS="1e-4 2e-4 4e-4 8e-4"
-S=sparse_experts; W=/weka/oe-training-default/ryanwang/EMO/sparse_experts; FULL=olmoe3_275m_emo_mix20_10b; K=12; SAMPLE=sample_8k_300b.npz; VAL=sample_8k_300b_val.npz
-say() { echo "$(date -u +%m-%d\ %H:%M) [sync12 $MODE ${LR}] $*"; }
+MODE="${1:?sweep|choose|final|run}"; LR="${2:-}"; LRS="1e-4 2e-4 4e-4 8e-4"; K="${SYNC_K:-12}"; WH="${SYNC_WHOLE:-1}"
+AT=mix20sync12; SEEDB=3000; [ "$K-$WH" = 12-1 ] || { AT=mix20sync${K}w$WH; SEEDB=3100; }   # arm tag; the first run (12 sub-models, layer 1 whole) keeps its names
+S=sparse_experts; W=/weka/oe-training-default/ryanwang/EMO/sparse_experts; FULL=olmoe3_275m_emo_mix20_10b; SAMPLE=sample_8k_300b.npz; VAL=sample_8k_300b_val.npz
+say() { echo "$(date -u +%m-%d\ %H:%M) [$AT $MODE ${LR}] $*"; }
 ce_of() { python -c "import json, os; d = '$1/none/'; f = d + 'meta.json' if os.path.exists(d + 'meta.json') else d + 'rank0/meta.json'; print(round(json.load(open(f))['mean_ce'], 4))" 2>/dev/null; }
-arm() { SQN=olmoe3_squares_mix20sync12_lr$1; RP=olmoe3_275m_mix20sync12_lr$1; HR=runs_heldout300b_mix20sync12_lr$1; SQ=$S/$SQN; H=$S/olmoe3_routing/$HR; HV=${H}_val; LOG=$SQ/logs; }
+arm() { SQN=olmoe3_squares_${AT}_lr$1; RP=olmoe3_275m_${AT}_lr$1; HR=runs_heldout300b_${AT}_lr$1; SQ=$S/$SQN; H=$S/olmoe3_routing/$HR; HV=${H}_val; LOG=$SQ/logs; }
 
 # =========================== choose: the LR with the lowest selection CE at 20B ===========================
 if [ $MODE = choose ]; then CH=$S/olmoe3_squares_mix20sync12_choice.txt
@@ -35,13 +40,14 @@ fi
 # =========================== sweep / final: one arm ===========================
 [ -n "$LR" ] || { echo "sweep|final need an LR"; exit 1; }
 arm $LR; mkdir -p $LOG $H $HV $SQ/templates $SQ/merged; GS=$(seq 0 $((K-1)))
-NCYC=5; FIRST=1; [ $MODE = final ] && { NCYC=10; FIRST=6; }
+NCYC=5; FIRST=1; FULLRUN=0; [ $MODE = final ] && { NCYC=10; FIRST=6; FULLRUN=1; }; [ $MODE = run ] && { NCYC=10; FULLRUN=1; }
 if [ ! -f $SQ/plan.tsv ] || [ "$(awk '{ if ($1 > m) m = $1 } END { print m }' $SQ/plan.tsv)" -lt $NCYC ]; then python - <<PY || { say "ABORT: plan failed"; exit 1; }
 import shutil, os
 S, SQ, K, n = "$S", "$SQ", $K, $NCYC; rows = []
-b = [round(3178.9 * c / 10) for c in range(11)]   # per-sub-model steps at each sync: 2B = 3,814.7 stream steps / 12
+import math
+per = 38147 / K; width = math.ceil(per); b = [round(per * c / 10) for c in range(11)]   # per-sub-model steps at each sync: 2B = 3,814.7 stream steps / K
 for g in range(K):
-    base = 19074 + g * 3179; mid = base + (911 if g % 2 == 0 else 910)   # 15.7B = joint step 30,000: 10,926 stream steps / 12 = 910.5 per sub-model
+    base = 19074 + g * width; mid = base + round((g + 1) * 10926 / K) - round(g * 10926 / K)   # 15.7B = joint step 30,000: 10,926 stream steps, split over the K sub-models
     rows += [(c, g, 3, base + b[c - 1], base + b[c], mid if c == 3 else 0) for c in range(1, n + 1)]
     d = f"{SQ}/templates/w3/group{g}"
     if not os.path.exists(d + "/train"):   # trainer state (stream position) of the joint 10B checkpoint + a sub-model config (the trainer rewrites config.json at every save)
@@ -53,7 +59,7 @@ open(f"{SQ}/plan.tsv.tmp", "w").write("".join("%d %d %d %d %d %d\n" % r for r in
 print("plan:", n, "cycles, steps per sub-model and cycle", min(r[4] - r[3] for r in rows), "to", max(r[4] - r[3] for r in rows))
 PY
   rm -f $SQ/DONE; rm -rf "${LOG:?}/locks"; fi
-NWORK="${NWORK:-2}"; [ $MODE = final ] && NWORK="${NWORK_FINAL:-4}"
+NWORK="${NWORK:-2}"; [ $FULLRUN = 1 ] && NWORK="${NWORK_FINAL:-4}"
 ended() { beaker experiment get "$1" --format json 2>/dev/null | grep -q '"exited"\|"canceled"'; }
 row5() { awk -v c="$1" -v g="$2" -v k="$3" '$1 == c && $2 == g { print $k }' $SQ/plan.tsv; }
 fin_of() { echo "$S/${RP}_c$1_g$2/step$(row5 $1 $2 5)"; }
@@ -64,7 +70,7 @@ workers() { local i e n u; [ -f $SQ/DONE ] && return 0
   for i in $(seq 1 $NWORK); do e=$(tail -n 1 $LOG/${MODE}_worker$i.launched 2>/dev/null | grep -o '01[A-Z0-9]\{20,\}' | head -1)
     if [ -n "$e" ]; then ended $e || continue; fi
     n=$(cat $LOG/${MODE}_worker$i.launched 2>/dev/null | wc -l); [ $n -ge 10 ] && continue
-    u=$(python3 scripts/sparse_experts/olmoe3_beaker_cmd_cli.py --name "sync12-lr$LR-$MODE-worker$i-$(date +%m%d%H%M%S)" --gpus 8 -- bash -c "K=$K FIRST_CYCLE=$FIRST SEED_BASE=3000 FIXED_GROUPS=1 REPART_WANDB=false SQUARES_NAME=$SQN RUN_PREFIX=$RP FULL=$FULL OLMOE3_LR=$LR OLMOE3_EMO_POOL_SELECT=mix:0.2 bash scripts/sparse_experts/olmoe3_squares/repartition_worker.sh" 2>&1 | tail -n 1)
+    u=$(python3 scripts/sparse_experts/olmoe3_beaker_cmd_cli.py --name "$AT-lr$LR-$MODE-worker$i-$(date +%m%d%H%M%S)" --gpus 8 -- bash -c "K=$K WHOLE_LAYERS=$WH FIRST_CYCLE=$FIRST SEED_BASE=$SEEDB FIXED_GROUPS=1 REPART_WANDB=false SQUARES_NAME=$SQN RUN_PREFIX=$RP FULL=$FULL OLMOE3_LR=$LR OLMOE3_EMO_POOL_SELECT=mix:0.2 bash scripts/sparse_experts/olmoe3_squares/repartition_worker.sh" 2>&1 | tail -n 1)
     say "worker $i (launch $((n+1))): $u"; echo "$u" | grep -q beaker.org && echo "$u" >> $LOG/${MODE}_worker$i.launched; done; }
 # ---- the 15.7B matched point: the 12 extra checkpoints of cycle 3, merged for evaluation only ----
 midmerge() { local g; [ -f $LOG/mid.done ] && return 0; [ -f $SQ/merged/match30000/merge_info.json ] && return 0
@@ -82,28 +88,28 @@ build() { local s; : > $CF
   for s in 38148 57221; do [ -f $SQ/merged/match$s/merge_info.json ] || continue
     done_h $H/merged_match$s || hl $H/merged_match$s $W/$SQN/merged/match$s $SAMPLE >> $CF; done_h $HV/merged_match$s || hl $HV/merged_match$s $W/$SQN/merged/match$s $VAL >> $CF
     [ -f $SQ/ppl_validation/merged/match$s.json ] || pl $W/$SQN/merged/match$s >> $CF; done
-  if [ $MODE = final ]; then [ -f $LOG/c5.cleaned ] || subs_eval 5 38148; [ -f $SQ/merged/match57221/merge_info.json ] && subs_eval 10 57221; fi; }
+  if [ $FULLRUN = 1 ]; then [ -f $LOG/c5.cleaned ] || subs_eval 5 38148; [ -f $SQ/merged/match57221/merge_info.json ] && subs_eval 10 57221; fi; }
 evals() { local e tries u; CF=$LOG/evals_${MODE}_cur.txt
   e=$(tail -n 1 $LOG/evals_$MODE.launched 2>/dev/null | grep -o '01[A-Z0-9]\{20,\}' | head -1); if [ -n "$e" ] && ! ended $e; then return 0; fi
   build; [ -s $CF ] || return 0; tries=$(cat $LOG/evals_$MODE.launched 2>/dev/null | wc -l); [ $tries -ge 8 ] && return 0; cp $CF $LOG/evals_${MODE}_try$tries.txt
-  u=$(python3 scripts/sparse_experts/olmoe3_beaker_cmd_cli.py --name "sync12-lr$LR-$MODE-evals-$(date +%m%d%H%M%S)" --gpus 8 -- bash scripts/sparse_experts/olmoe3_squares/eval_batch_8gpu.sh $W/$SQN/logs/evals_${MODE}_try$tries.txt 2>&1 | tail -n 1)
+  u=$(python3 scripts/sparse_experts/olmoe3_beaker_cmd_cli.py --name "$AT-lr$LR-$MODE-evals-$(date +%m%d%H%M%S)" --gpus 8 -- bash scripts/sparse_experts/olmoe3_squares/eval_batch_8gpu.sh $W/$SQN/logs/evals_${MODE}_try$tries.txt 2>&1 | tail -n 1)
   say "evals ($(wc -l < $CF) commands): $u"; echo "$u" | grep -q beaker.org && echo "$u" >> $LOG/evals_$MODE.launched; }
 # ---- storage: delete what is evaluated and superseded ----
 cleanup() { local g
   if [ ! -f $LOG/mid.done ] && done_h $H/merged_match30000 && [ -f $SQ/ppl_validation/merged/match30000.json ] && later_cut 3; then
     rm -rf "${SQ:?}/merged/match30000" "${SQ:?}/merged/sync3"; for g in $GS; do rm -rf "$S/${RP:?}_c3_g$g"; done; touch $LOG/mid.done; say "15.7B point: evaluated (merged CE $(ce_of $H/merged_match30000)); its checkpoints deleted"; fi
-  if [ $MODE = final ] && [ ! -f $LOG/c5.cleaned ] && later_cut 5 && done_h $H/merged_match38148 && done_h $HV/merged_match38148; then
+  if [ $FULLRUN = 1 ] && [ ! -f $LOG/c5.cleaned ] && later_cut 5 && done_h $H/merged_match38148 && done_h $HV/merged_match38148; then
     for g in $GS; do done_h $H/sub${g}_match38148 || return 0; done
     rm -rf "${SQ:?}/merged/match38148"; for g in $GS; do rm -rf "$S/${RP:?}_c5_g$g"; done; touch $LOG/c5.cleaned; say "20B point: sub-models evaluated; its checkpoints deleted"; fi; }
 scored() { local s=$1; done_h $H/merged_match$s && done_h $HV/merged_match$s && [ -f $SQ/ppl_validation/merged/match$s.json ]; }
-LAST=38148; [ $MODE = final ] && LAST=57221
+LAST=38148; [ $FULLRUN = 1 ] && LAST=57221
 while true; do workers; midmerge; evals; cleanup
   if [ -f $SQ/DONE ] && [ -f $LOG/mid.done ] && scored $LAST; then
     if [ $MODE = sweep ]; then break; fi
     ok=1; for g in $GS; do done_h $H/sub${g}_match57221 || ok=0; done; [ -f $LOG/c5.cleaned ] || ok=0; [ $ok = 1 ] && break; fi
   c=$(ls $SQ/cyc 2>/dev/null | sed 's/^c//' | sort -n | tail -1); [ "${c:-0}" != "${lastc:-}" ] && { say "cycle ${c:-0} of $NCYC"; lastc=${c:-0}; }; sleep 300; done
 for d in $H/*/none $HV/*/none; do [ -f $d/rank0/DONE ] && [ ! -f $d/meta.json ] && python scripts/sparse_experts/olmoe3_routing/merge_routing.py $d 2>&1 | tail -1; done
-if [ $MODE = final ]; then PYTHONPATH=external/OLMo-core/src python scripts/sparse_experts/olmoe3_squares/strip_optim.py $(for g in $GS; do fin_of 10 $g; done) >> $LOG/strip.log 2>&1
+if [ $FULLRUN = 1 ]; then PYTHONPATH=external/OLMo-core/src python scripts/sparse_experts/olmoe3_squares/strip_optim.py $(for g in $GS; do fin_of 10 $g; done) >> $LOG/strip.log 2>&1
   rm -rf "${SQ:?}/cyc" "${SQ:?}/templates"; for c in 8 9; do for g in $GS; do rm -rf "$S/${RP:?}_c${c}_g$g"; done; done
   say "merged held-out CE: 15.7B $(ce_of $H/merged_match30000), 20B $(ce_of $H/merged_match38148), 30B $(ce_of $H/merged_match57221)"; fi
 say "selection CE at $LAST: $(ce_of $HV/merged_match$LAST); reporting $(ce_of $H/merged_match$LAST)"; say done
