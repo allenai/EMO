@@ -17,11 +17,16 @@
 # ablation) with K sub-models that keep expert layers 1..N whole and split only layers N+1..9 (N = 4: layers 5-9 split; arm folders
 # olmoe3_squares_mix20sync<K>w<N>_lr<lr>, sub-model g reads a contiguous 1/K of the stream). Same evaluations and storage rule as `final`.
 #   SYNC_K=8 SYNC_WHOLE=4 bash scripts/sparse_experts/olmoe3_squares/squares_sync12.sh run 4e-4
+# No re-merging (user request 2026-11-23): SYNC_MODEL=<mix20|emo> SYNC_K=<8|12> SYNC_WHOLE=<N> ... nosync <lr> trains every sub-model straight from
+# 10B to 30B on its 1/K of the stream (one fixed partition, never merged during training) with extra checkpoints at the 15.7B and 20B points;
+# the checkpoints of each point are merged for evaluation only. Arm folders olmoe3_squares_<model>fix<K>w<N>_lr<lr>. Kept: the 30B merge + its
+# sub-models (weights only). SYNC_MODEL=emo is the EMO 512e model (olmoe3_275m_emo_10b, relevance pools).
+#   SYNC_MODEL=emo SYNC_K=8 SYNC_WHOLE=4 bash scripts/sparse_experts/olmoe3_squares/squares_sync12.sh nosync 4e-4
 #   bash scripts/sparse_experts/olmoe3_squares/squares_sync12.sh sweep <lr> | choose | final <lr>      (idempotent; detach; commit + push first)
 set -u; cd "$(git rev-parse --show-toplevel)"; export PATH=/root/.conda/envs/emo/bin:$PATH
-MODE="${1:?sweep|choose|final|run}"; LR="${2:-}"; LRS="1e-4 2e-4 4e-4 8e-4"; K="${SYNC_K:-12}"; WH="${SYNC_WHOLE:-1}"
-AT=mix20sync12; SEEDB=3000; [ "$K-$WH" = 12-1 ] || { AT=mix20sync${K}w$WH; SEEDB=3100; }   # arm tag; the first run (12 sub-models, layer 1 whole) keeps its names
-S=sparse_experts; W=/weka/oe-training-default/ryanwang/EMO/sparse_experts; FULL=olmoe3_275m_emo_mix20_10b; SAMPLE=sample_8k_300b.npz; VAL=sample_8k_300b_val.npz
+MODE="${1:?sweep|choose|final|run|nosync}"; MODEL="${SYNC_MODEL:-mix20}"; LR="${2:-}"; LRS="1e-4 2e-4 4e-4 8e-4"; K="${SYNC_K:-12}"; WH="${SYNC_WHOLE:-1}"
+AT=mix20sync12; SEEDB=3000; [ "$K-$WH-$MODEL" = 12-1-mix20 ] || { AT=${MODEL}sync${K}w$WH; SEEDB=3100; }; [ $MODE = nosync ] && AT=${MODEL}fix${K}w$WH   # arm tag; the first run (12 sub-models, layer 1 whole) keeps its names
+S=sparse_experts; W=/weka/oe-training-default/ryanwang/EMO/sparse_experts; FULL=olmoe3_275m_emo_mix20_10b; POOLENV="OLMOE3_EMO_POOL_SELECT=mix:0.2"; [ $MODEL = emo ] && { FULL=olmoe3_275m_emo_10b; POOLENV=""; }; SAMPLE=sample_8k_300b.npz; VAL=sample_8k_300b_val.npz
 say() { echo "$(date -u +%m-%d\ %H:%M) [$AT $MODE ${LR}] $*"; }
 ce_of() { python -c "import json, os; d = '$1/none/'; f = d + 'meta.json' if os.path.exists(d + 'meta.json') else d + 'rank0/meta.json'; print(round(json.load(open(f))['mean_ce'], 4))" 2>/dev/null; }
 arm() { SQN=olmoe3_squares_${AT}_lr$1; RP=olmoe3_275m_${AT}_lr$1; HR=runs_heldout300b_${AT}_lr$1; SQ=$S/$SQN; H=$S/olmoe3_routing/$HR; HV=${H}_val; LOG=$SQ/logs; }
@@ -40,7 +45,7 @@ fi
 # =========================== sweep / final: one arm ===========================
 [ -n "$LR" ] || { echo "sweep|final need an LR"; exit 1; }
 arm $LR; mkdir -p $LOG $H $HV $SQ/templates $SQ/merged; GS=$(seq 0 $((K-1)))
-NCYC=5; FIRST=1; FULLRUN=0; [ $MODE = final ] && { NCYC=10; FIRST=6; FULLRUN=1; }; [ $MODE = run ] && { NCYC=10; FULLRUN=1; }
+NCYC=5; FIRST=1; FULLRUN=0; [ $MODE = final ] && { NCYC=10; FIRST=6; FULLRUN=1; }; [ $MODE = run ] && { NCYC=10; FULLRUN=1; }; [ $MODE = nosync ] && { NCYC=1; FULLRUN=1; }
 if [ ! -f $SQ/plan.tsv ] || [ "$(awk '{ if ($1 > m) m = $1 } END { print m }' $SQ/plan.tsv)" -lt $NCYC ]; then python - <<PY || { say "ABORT: plan failed"; exit 1; }
 import shutil, os
 S, SQ, K, n = "$S", "$SQ", $K, $NCYC; rows = []
@@ -49,13 +54,14 @@ per = 38147 / K; width = math.ceil(per); b = [round(per * c / 10) for c in range
 for g in range(K):
     base = 19074 + g * width; mid = base + round((g + 1) * 10926 / K) - round(g * 10926 / K)   # 15.7B = joint step 30,000: 10,926 stream steps, split over the K sub-models
     rows += [(c, g, 3, base + b[c - 1], base + b[c], mid if c == 3 else 0) for c in range(1, n + 1)]
+    if "$MODE" == "nosync": rows[-1] = (1, g, 3, base, base + b[10], f"{mid},{base + b[5]}")   # one run 10B -> 30B, extra checkpoints at 15.7B and 20B
     d = f"{SQ}/templates/w3/group{g}"
     if not os.path.exists(d + "/train"):   # trainer state (stream position) of the joint 10B checkpoint + a sub-model config (the trainer rewrites config.json at every save)
         shutil.rmtree(d, ignore_errors=True); os.makedirs(d); shutil.copytree(f"{S}/$FULL/step19074/train", f"{d}/train"); shutil.copy(f"{S}/$FULL/step19074/.metadata.json", f"{d}/.metadata.json")
         shutil.copy(f"{S}/olmoe3_squares_mix20rand8_rp100m/templates/w2/group0/config.json", f"{d}/config.json")
-assert all(r[4] > r[3] for r in rows) and all(r[3] < r[5] < r[4] for r in rows if r[5])
-open(f"{SQ}/keep.tsv", "w").write("3 sync3\n5 match38148\n10 match57221\n")
-open(f"{SQ}/plan.tsv.tmp", "w").write("".join("%d %d %d %d %d %d\n" % r for r in sorted(rows))); os.replace(f"{SQ}/plan.tsv.tmp", f"{SQ}/plan.tsv")
+assert all(r[4] > r[3] for r in rows) and all(r[3] < r[5] < r[4] for r in rows if r[5] and not isinstance(r[5], str))
+open(f"{SQ}/keep.tsv", "w").write("1 match57221\n" if "$MODE" == "nosync" else "3 sync3\n5 match38148\n10 match57221\n")
+open(f"{SQ}/plan.tsv.tmp", "w").write("".join("%d %d %d %d %d %s\n" % r for r in sorted(rows))); os.replace(f"{SQ}/plan.tsv.tmp", f"{SQ}/plan.tsv")
 print("plan:", n, "cycles, steps per sub-model and cycle", min(r[4] - r[3] for r in rows), "to", max(r[4] - r[3] for r in rows))
 PY
   rm -f $SQ/DONE; rm -rf "${LOG:?}/locks"; fi
@@ -70,7 +76,7 @@ workers() { local i e n u; [ -f $SQ/DONE ] && return 0
   for i in $(seq 1 $NWORK); do e=$(tail -n 1 $LOG/${MODE}_worker$i.launched 2>/dev/null | grep -o '01[A-Z0-9]\{20,\}' | head -1)
     if [ -n "$e" ]; then ended $e || continue; fi
     n=$(cat $LOG/${MODE}_worker$i.launched 2>/dev/null | wc -l); [ $n -ge 10 ] && continue
-    u=$(python3 scripts/sparse_experts/olmoe3_beaker_cmd_cli.py --name "$AT-lr$LR-$MODE-worker$i-$(date +%m%d%H%M%S)" --gpus 8 -- bash -c "K=$K WHOLE_LAYERS=$WH FIRST_CYCLE=$FIRST SEED_BASE=$SEEDB FIXED_GROUPS=1 REPART_WANDB=false SQUARES_NAME=$SQN RUN_PREFIX=$RP FULL=$FULL OLMOE3_LR=$LR OLMOE3_EMO_POOL_SELECT=mix:0.2 bash scripts/sparse_experts/olmoe3_squares/repartition_worker.sh" 2>&1 | tail -n 1)
+    u=$(python3 scripts/sparse_experts/olmoe3_beaker_cmd_cli.py --name "$AT-lr$LR-$MODE-worker$i-$(date +%m%d%H%M%S)" --gpus 8 -- bash -c "K=$K WHOLE_LAYERS=$WH FIRST_CYCLE=$FIRST SEED_BASE=$SEEDB FIXED_GROUPS=1 REPART_WANDB=false OLMOE3_SAVE_INTERVAL=100000000 SQUARES_NAME=$SQN RUN_PREFIX=$RP FULL=$FULL OLMOE3_LR=$LR $POOLENV bash scripts/sparse_experts/olmoe3_squares/repartition_worker.sh" 2>&1 | tail -n 1)
     say "worker $i (launch $((n+1))): $u"; echo "$u" | grep -q beaker.org && echo "$u" >> $LOG/${MODE}_worker$i.launched; done; }
 # ---- the 15.7B matched point: the 12 extra checkpoints of cycle 3, merged for evaluation only ----
 midmerge() { local g; [ -f $LOG/mid.done ] && return 0; [ -f $SQ/merged/match30000/merge_info.json ] && return 0
@@ -91,7 +97,7 @@ build() { local s; : > $CF
   if [ $FULLRUN = 1 ]; then [ -f $LOG/c5.cleaned ] || subs_eval 5 38148; [ -f $SQ/merged/match57221/merge_info.json ] && subs_eval 10 57221; fi; }
 evals() { local e tries u; CF=$LOG/evals_${MODE}_cur.txt
   e=$(tail -n 1 $LOG/evals_$MODE.launched 2>/dev/null | grep -o '01[A-Z0-9]\{20,\}' | head -1); if [ -n "$e" ] && ! ended $e; then return 0; fi
-  build; [ -s $CF ] || return 0; tries=$(cat $LOG/evals_$MODE.launched 2>/dev/null | wc -l); [ $tries -ge 8 ] && return 0; cp $CF $LOG/evals_${MODE}_try$tries.txt
+  ${BUILDFN:-build}; [ -s $CF ] || return 0; tries=$(cat $LOG/evals_$MODE.launched 2>/dev/null | wc -l); [ $tries -ge 8 ] && return 0; cp $CF $LOG/evals_${MODE}_try$tries.txt
   u=$(python3 scripts/sparse_experts/olmoe3_beaker_cmd_cli.py --name "$AT-lr$LR-$MODE-evals-$(date +%m%d%H%M%S)" --gpus 8 -- bash scripts/sparse_experts/olmoe3_squares/eval_batch_8gpu.sh $W/$SQN/logs/evals_${MODE}_try$tries.txt 2>&1 | tail -n 1)
   say "evals ($(wc -l < $CF) commands): $u"; echo "$u" | grep -q beaker.org && echo "$u" >> $LOG/evals_$MODE.launched; }
 # ---- storage: delete what is evaluated and superseded ----
@@ -102,6 +108,33 @@ cleanup() { local g
     for g in $GS; do done_h $H/sub${g}_match38148 || return 0; done
     rm -rf "${SQ:?}/merged/match38148"; for g in $GS; do rm -rf "$S/${RP:?}_c5_g$g"; done; touch $LOG/c5.cleaned; say "20B point: sub-models evaluated; its checkpoints deleted"; fi; }
 scored() { local s=$1; done_h $H/merged_match$s && done_h $HV/merged_match$s && [ -f $SQ/ppl_validation/merged/match$s.json ]; }
+# =========================== nosync: one training run per sub-model, merges for evaluation only ===========================
+if [ $MODE = nosync ]; then BUILDFN=build_ns
+  ck_of() { echo "$S/${RP}_c1_g$2/step$(awk -v g="$2" -v i="$1" '$2 == g { split($6, a, ","); print a[i] }' $SQ/plan.tsv)"; }   # i = 1: the 15.7B checkpoint, 2: the 20B one
+  emerge() { local s=$1 i=$2 g; [ -f $LOG/ns_$s.done ] && return 0; [ -f $SQ/merged/match$s/merge_info.json ] && return 0
+    for g in $GS; do [ -f "$(ck_of $i $g)/train/rank0.pt" ] || return 1; done
+    PYTHONPATH=external/OLMo-core/src OPENBLAS_NUM_THREADS=8 python scripts/sparse_experts/olmoe3_squares/merge_models.py --groups $SQ/groups/c1.json --full $S/$FULL/step19074 --subs "$(for g in $GS; do ck_of $i $g; done | paste -sd,)" \
+      --weights "$(for g in $GS; do echo 1; done | paste -sd,)" --out $SQ/merged/match$s --overwrite > $LOG/merge_$s.log 2>&1
+    [ -f $SQ/merged/match$s/merge_info.json ] && say "point $s merged (evaluation only)" || say "merge at $s FAILED (see $LOG/merge_$s.log)"; }
+  build_ns() { local s g d; : > $CF
+    for s in 30000 38148 57221; do [ -f $SQ/merged/match$s/merge_info.json ] || continue
+      done_h $H/merged_match$s || hl $H/merged_match$s $W/$SQN/merged/match$s $SAMPLE >> $CF; [ $s = 30000 ] || done_h $HV/merged_match$s || hl $HV/merged_match$s $W/$SQN/merged/match$s $VAL >> $CF
+      [ -f $SQ/ppl_validation/merged/match$s.json ] || pl $W/$SQN/merged/match$s >> $CF; done
+    if [ ! -f $LOG/ns_38148.done ] && [ -f $SQ/merged/match38148/merge_info.json ]; then for g in $GS; do d=$(ck_of 2 $g); done_h $H/sub${g}_match38148 || hl $H/sub${g}_match38148 ${d/$S/$W} $SAMPLE >> $CF; done; fi
+    [ -f $SQ/merged/match57221/merge_info.json ] && subs_eval 1 57221; }
+  cleanup_ns() { local g
+    if [ ! -f $LOG/ns_30000.done ] && done_h $H/merged_match30000 && [ -f $SQ/ppl_validation/merged/match30000.json ]; then
+      rm -rf "${SQ:?}/merged/match30000"; for g in $GS; do d=$(ck_of 1 $g); [ -d "$d" ] && rm -rf "$d"; done; touch $LOG/ns_30000.done; say "15.7B point: evaluated (merged CE $(ce_of $H/merged_match30000)); its checkpoints deleted"; fi
+    if [ ! -f $LOG/ns_38148.done ] && scored 38148; then for g in $GS; do done_h $H/sub${g}_match38148 || return 0; done
+      rm -rf "${SQ:?}/merged/match38148"; for g in $GS; do d=$(ck_of 2 $g); [ -d "$d" ] && rm -rf "$d"; done; touch $LOG/ns_38148.done; say "20B point: evaluated (merged CE $(ce_of $H/merged_match38148)); its checkpoints deleted"; fi; }
+  while true; do workers; emerge 30000 1; emerge 38148 2; evals; cleanup_ns
+    if [ -f $SQ/DONE ] && [ -f $LOG/ns_30000.done ] && [ -f $LOG/ns_38148.done ] && scored 57221; then ok=1; for g in $GS; do done_h $H/sub${g}_match57221 || ok=0; done; [ $ok = 1 ] && break; fi
+    n=$(for g in $GS; do [ -f "$(fin_of 1 $g)/train/rank0.pt" ] && echo x; done | wc -l); [ "$n" != "${lastn:-}" ] && { say "$n of $K sub-models trained to 30B"; lastn=$n; }; sleep 300; done
+  for d in $H/*/none $HV/*/none; do [ -f $d/rank0/DONE ] && [ ! -f $d/meta.json ] && python scripts/sparse_experts/olmoe3_routing/merge_routing.py $d 2>&1 | tail -1; done
+  PYTHONPATH=external/OLMo-core/src python scripts/sparse_experts/olmoe3_squares/strip_optim.py $(for g in $GS; do fin_of 1 $g; done) >> $LOG/strip.log 2>&1
+  for g in $GS; do d=$(fin_of 1 $g); for x in $(dirname $d)/step*; do [ "$x" = "$d" ] || rm -rf "$x"; done; done; rm -rf "${SQ:?}/cyc" "${SQ:?}/templates"
+  say "merged held-out CE: 15.7B $(ce_of $H/merged_match30000), 20B $(ce_of $H/merged_match38148), 30B $(ce_of $H/merged_match57221)"; say done; exit 0
+fi
 LAST=38148; [ $FULLRUN = 1 ] && LAST=57221
 while true; do workers; midmerge; evals; cleanup
   if [ -f $SQ/DONE ] && [ -f $LOG/mid.done ] && scored $LAST; then
