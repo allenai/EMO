@@ -11,6 +11,9 @@
 # 1000); a cycle whose merge is already saved under merged/<name> is cut from that file (with its Adam state) instead of re-merging its
 # squares; plan window 3 = the training stream itself after 30B (no pack: OLMOE3_DATA_PATHS unset, the row's steps are stream steps, the
 # trainer state of templates/w3 is a joint 30B checkpoint's); REPART_WANDB=true logs the squares to W&B (long cycles).
+# Sync runs (2026-11-23, squares_sync12.sh): FIXED_GROUPS=1 keeps ONE partition for the whole run (every cycle's groups file is drawn with
+# SEED_BASE), so a cycle end only averages what the squares share; an optional 6th plan column is an extra checkpoint step inside the cycle
+# (a matched evaluation point that is not a cycle end).
 #   SQUARES_NAME=<arm dir> RUN_PREFIX=<prefix> FULL=<start model run> OLMOE3_LR=4e-4 [OLMOE3_EMO_POOL_SELECT=mix:0.2] bash scripts/sparse_experts/olmoe3_squares/repartition_worker.sh
 set -u
 source "$(dirname "${BASH_SOURCE[0]}")/ensure_env.sh"
@@ -45,7 +48,7 @@ src_args() { local p=$1 g r subs="" wts=""   # the merge of cycle p (p = 0: the 
   for g in $(seq 0 $((K-1))); do r=($(row $p $g)); subs="$subs,$(fin_of $p $g)"; wts="$wts,$((r[2] - r[1]))"; done
   echo "--old-groups $SQ/groups/c$p.json --subs ${subs#,} --weights ${wts#,}"; }
 prep() { local c=$1 p=$(( $1 - 1 )) g r kn extra=""; local D="$SQ/cyc/c$c"
-  [ -f "$SQ/groups/c$c.json" ] || python $P/partition_random.py --out "$SQ/groups/c$c.json" --k $K --seed $((SEED_BASE + c)) > /dev/null || return 1
+  [ -f "$SQ/groups/c$c.json" ] || python $P/partition_random.py --out "$SQ/groups/c$c.json" --k $K --seed $(( SEED_BASE + ( ${FIXED_GROUPS:-0} == 1 ? 0 : c ) )) > /dev/null || return 1
   kn=$(keep_name $p); [ -n "$kn" ] && [ ! -f "$SQ/merged/$kn/merge_info.json" ] && extra="--save-merged $SQ/merged/$kn"
   rm -rf "$D"; mkdir -p "$D"
   python $P/remerge_reslice.py --full-config "$FULLD" $(src_args $p) --new-groups "$SQ/groups/c$c.json" --out "$D/init" $extra 2>&1 | tail -n 1 | cut -c1-80 || return 1
@@ -54,7 +57,8 @@ prep() { local c=$1 p=$(( $1 - 1 )) g r kn extra=""; local D="$SQ/cyc/c$c"
   touch "$D/PREP_DONE"
   local q=$(( c - 2 )); if [ $q -ge 1 ]; then rm -rf "$SQ/cyc/c$q"; [ -z "$(keep_name $q)" ] && for g in $(seq 0 $((K-1))); do rm -rf "$W/$(run_of $q $g)"; done; fi; return 0; }
 train() { local c=$1 g=$2 r; r=($(row $c $g)); local pack=pack; [ ${r[0]} = 2 ] && pack=pack2
-  export OLMOE3_GROUPS="$SQ/groups/c$c.json" OLMOE3_GROUP=$g OLMOE3_TOKENS=$(( r[2] * 524288 )) OLMOE3_FIXED_STEPS=${r[2]} OLMOE3_DATA_PATHS="$SQ/$pack/group$g/*.npy"
+  local mid; mid=$(awk -v c="$c" -v g="$g" '$1 == c && $2 == g && $6 > 0 { print $6 }' "$SQ/plan.tsv")
+  export OLMOE3_GROUPS="$SQ/groups/c$c.json" OLMOE3_GROUP=$g OLMOE3_TOKENS=$(( r[2] * 524288 )) OLMOE3_FIXED_STEPS="${mid:+$mid,}${r[2]}" OLMOE3_DATA_PATHS="$SQ/$pack/group$g/*.npy"
   [ ${r[0]} = 3 ] && unset OLMOE3_DATA_PATHS   # window 3: the standard training stream, position pinned by the finetune start
   rm -rf "$W/$(run_of $c $g)"
   torchrun --standalone --nproc-per-node 8 scripts/sparse_experts/olmoe3_275m.py train "$(run_of $c $g)" "$CLUSTER" --trainer.load_path="$SQ/cyc/c$c/ft/group$g/step${r[1]}" --trainer.load_strategy=always --trainer.callbacks.checkpointer.max_checkpoints=null --trainer.callbacks.wandb.enabled=${REPART_WANDB:-false} > "/results/train_c${c}_g$g.log" 2>&1
