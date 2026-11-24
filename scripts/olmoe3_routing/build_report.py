@@ -272,7 +272,8 @@ VARIANTS = [("A", "EMO 512e, 4 sub-models", "#2563eb", "the main experiment"),
             ("5N", "K-means expert groups", "#be185d", "does grouping similar experts help: EMO 512e cut into 8 sub-models by k-means on the experts' router rows instead of at random, 10B to 20B"),
             ("5O", "Frequent re-partitioning", "#be123c", "does re-drawing the expert groups often keep the merge close to joint training: mixed-pool EMO 512e, 8 sub-models re-partitioned every ~100M tokens and 4 sub-models every 5B, 10B to 61B"),
             ("5P", "More shared experts", "#0f766e", "does a larger always-active shared part make the split cheaper: EMO 512e with 4 shared experts instead of 1, trained from scratch, 4 and 8 sub-models at LR 4e-4, 10B to 30B"),
-            ("5Q", "12 sub-models with periodic syncs", "#b45309", "can the split go finer if the sub-models are averaged often: mixed-pool EMO 512e cut into 12 sub-models that are merged every 2B tokens, with the sub-model LR re-tuned, 10B to 30B")]
+            ("5Q", "12 sub-models with periodic syncs", "#b45309", "can the split go finer if the sub-models are averaged often: mixed-pool EMO 512e cut into 12 sub-models that are merged every 2B tokens, with the sub-model LR re-tuned, 10B to 30B"),
+            ("5R", "Splitting only the later layers", "#db2777", "does keeping the early layers whole make the split cheap: expert layers 1 to 4 whole in every sub-model, only layers 5 to 9 split, 8 and 12 sub-models, mixed-pool EMO 512e (synced every 2B) and EMO 512e (never merged), 10B to 30B")]
 
 
 def variant(letter, inner, tab="q3"):
@@ -1152,7 +1153,10 @@ def control_explorer_data():
         # 2026-11-16: k-means expert groups (EMO 512e, 10B -> 20B; squares_kmeans.sh) and re-partition every ~100M tokens (mixed-pool EMO 512e, 10B -> 30B; squares_repartition100m.sh)
         for model, tag, mk, sk, col, kx, PTS_X in (("emo", "emokm8", "km8", "skm8", "#be185d", 8, (30000, 38148, 57221)), ("mix20", "mix20rand8_rp100m", "rp100", "srp100", "#be123c", 8, (30000, 38148, 57221, 66481, 116479)),
                                                  ("mix20", "mix20rand4_rp5b", "rp5", "srp5", "#7c3aed", 4, RP5B_STEPS),
-                                                 ("mix20", "mix20sync12_lr4e-4", "sy12", "ssy12", "#0f766e", 12, (30000, 38148, 57221))):   # 2026-11-23: 12 sub-models, sync every 2B (squares_sync12.sh)
+                                                 ("mix20", "mix20sync12_lr4e-4", "sy12", "ssy12", "#0f766e", 12, (30000, 38148, 57221)),
+                                                 # 2026-11-23: expert layers 1-4 whole, only layers 5-9 split (squares_sync12.sh run / nosync)
+                                                 ("mix20", "mix20sync8w4_lr4e-4", "w8", "sw8", "#db2777", 8, (30000, 38148, 57221)), ("mix20", "mix20sync12w4_lr4e-4", "w12", "sw12", "#4d7c0f", 12, (30000, 38148, 57221)),
+                                                 ("emo", "emofix8w4_lr4e-4", "w8", "sw8", "#db2777", 8, (30000, 38148, 57221)), ("emo", "emofix12w4_lr4e-4", "w12", "sw12", "#4d7c0f", 12, (30000, 38148, 57221))):   # 2026-11-23: 12 sub-models, sync every 2B (squares_sync12.sh)
             HX = R / f"runs_heldout300b_{tag}"; PX = ROOT / f"sparse_experts/olmoe3_squares_{tag}/ppl_validation/merged"
             if which != model or not any(_ce(HX / f"merged_match{st}/none") is not None for st in PTS_X): continue
             ser[mk] = {"h": [hb(C["start"]) if st == 19074 else (_ce(HX / f"merged_match{st}/none") if st in PTS_X else None) for st in steps],
@@ -1178,6 +1182,8 @@ EXPLORER_LINES = [  # key, label, colour, dashed, needs-ppl
     ("rp100", "merged, 8 squares, LR 4e-4, re-merged + re-partitioned every ~100M tokens (mixed-pool EMO only)", "#be123c", False), ("srp100", "squares of the ~100M re-partition arm alone, mean of 8 (mixed-pool EMO only)", "#be123c", True),
     ("rp5", "merged, 4 squares, LR 4e-4, re-merged + re-partitioned every 5B tokens (mixed-pool EMO only)", "#7c3aed", False), ("srp5", "squares of the 5B re-partition arm alone, mean of 4 (mixed-pool EMO only)", "#7c3aed", True),
     ("sy12", "merged, 12 squares, LR 4e-4, synced (merged, same partition) every 2B tokens (mixed-pool EMO only)", "#0f766e", False), ("ssy12", "squares of the 12-square synced arm alone, mean of 12 (mixed-pool EMO only)", "#0f766e", True),
+    ("w8", "merged, 8 squares, layers 1-4 whole (only layers 5-9 split), LR 4e-4: synced every 2B (mixed-pool EMO) / never merged (EMO 512e)", "#db2777", False), ("sw8", "squares of the 8-square layers-1-4-whole arm alone, mean of 8", "#db2777", True),
+    ("w12", "merged, 12 squares, layers 1-4 whole (only layers 5-9 split), LR 4e-4: synced every 2B (mixed-pool EMO) / never merged (EMO 512e)", "#4d7c0f", False), ("sw12", "squares of the 12-square layers-1-4-whole arm alone, mean of 12", "#4d7c0f", True),
     ("rm", "re-merged + re-partitioned at 61B (std only)", "#7c3aed", False), ("rs", "squares after re-partition, mean of 4 (std only)", "#7c3aed", True),
     ("start", "start model (10B)", "#64748b", True)]
 EXPLORER_DEFAULT = ["baseline", "m4", "m8", "l4", "l8", "s4", "s8", "start"]
@@ -1705,6 +1711,40 @@ KMEANS_TAKE = [   # short observations, one line each, no numbers
     "The merged k-means sub-models are closer to joint training than the merged random ones at both points.",
     "Alone, the k-means sub-models are worse than the random ones, so the gain appears only after merging.",
     "The k-means groups are unequal in size, so this arm changes both which experts are grouped and how evenly."]
+
+
+WHOLE4_TAKE = [   # short observations, one line each, no numbers
+    "Keeping layers 1 to 4 whole removes most of the merge gap in every case tested: 8 and 12 sub-models, both start models, with and without syncing.",
+    "Mixed-pool EMO, synced: the 8-sub-model merge is ahead of joint training at every point, and the 12-sub-model merge only slightly behind.",
+    "EMO 512e, never merged during training: 8 sub-models stay close to joint training; 12 are clearly behind, but at about half the gap of the 8-sub-model control that keeps only layer 1 whole.",
+    "In all four runs the merge slips slowly against joint training as training goes on.",
+    "The two models differ in start model and in syncing at once, so the difference between them cannot be put down to either one."]
+
+
+def whole4_section():
+    """Box 5R (user requests 2026-11-23): expert layers 1-4 whole in every sub-model, only layers 5-9 split; 8 and 12 sub-models at LR 4e-4, 10B -> 30B. Mixed-pool EMO 512e:
+    synced every 2B on a fixed partition (squares_sync12.sh run). EMO 512e: never merged during training (nosync). Explorer lines w8 / sw8 / w12 / sw12 in both panels."""
+    R = ROOT / "sparse_experts/olmoe3_routing"; m = lambda tag, st: _ce(R / f"runs_heldout300b_{tag}/merged_match{st}/none")
+    if m("mix20sync8w4_lr4e-4", 30000) is None and m("emofix8w4_lr4e-4", 30000) is None and m("emofix12w4_lr4e-4", 30000) is None: return ""
+    f = lambda v: "&ndash;" if v is None else f"{v:.3f}"; PTS = (("15.7B", 30000), ("20B", 38148), ("30B", 57221))
+    def gap(tag, hb, st):
+        a, b = m(tag, st), _ce(R / hb / f"baseline_step{st}/none"); return "&ndash;" if a is None or b is None else f"{f(a)} <small>({a - b:+.3f})</small>"
+    def tbl(hb, cols):
+        return ('<table class="num"><thead><tr><th>tokens</th><th>joint</th>' + "".join(f"<th>{h}</th>" for h, _ in cols) + "</tr></thead><tbody>"
+                + "".join(f"<tr><td>{tl}</td><td>{f(_ce(R / hb / f'baseline_step{st}/none'))}</td>" + "".join(f"<td>{gap(tag, hb, st)}</td>" for _, tag in cols) + "</tr>" for tl, st in PTS) + "</tbody></table>")
+    t1 = tbl("runs_heldout300b_mix20", (("8 sub-models,<br>layers 1&ndash;4 whole", "mix20sync8w4_lr4e-4"), ("12 sub-models,<br>layers 1&ndash;4 whole", "mix20sync12w4_lr4e-4"),
+                                        ("12 sub-models,<br>layer 1 whole", "mix20sync12_lr4e-4"), ("8 sub-models, layer 1 whole,<br>never synced", "mix20rand8")))
+    t2 = tbl("runs_heldout300b_emo", (("8 sub-models,<br>layers 1&ndash;4 whole", "emofix8w4_lr4e-4"), ("12 sub-models,<br>layers 1&ndash;4 whole", "emofix12w4_lr4e-4"), ("8 sub-models,<br>layer 1 whole", "emorand8_lr4e-4")))
+    what = ("Every earlier split keeps expert layer 1 whole and cuts layers 2&ndash;9 into groups. Here layers 1&ndash;4 are whole in every sub-model and only layers 5&ndash;9 are cut (the model has a dense "
+            "block followed by nine expert layers, so this is the first five blocks whole). 8 or 12 sub-models, one fixed random partition, sub-model LR 4e-4, 10B to 30B; each sub-model reads its own "
+            "slice of the training stream. <b>Mixed-pool EMO 512e:</b> the sub-models are merged and cut again along the same partition every 2B tokens. <b>EMO 512e:</b> they are never merged during "
+            "training; the merges at the three points are for evaluation only. A sub-model with four whole layers holds about half of the full model's experts, against about a fifth before.")
+    btn = explorer_button("Show these runs in the explorer", ["mix20", "emo"], ["baseline", "l8", "w8", "sw8", "w12", "sw12", "sy12", "start"])
+    done = all(m(t, 57221) is not None for t in ("mix20sync8w4_lr4e-4", "mix20sync12w4_lr4e-4", "emofix8w4_lr4e-4", "emofix12w4_lr4e-4"))
+    pending = "" if done else '<p class="note">Runs still training or awaiting evaluation show a dash.</p>'
+    return card("info", "Setup", f"<p>{what}</p>") + card("results", "Results", btn + "<p>Held-out CE of the merged model; in brackets the gap to joint training (negative = the merge is ahead).</p>"
+        "<p><b>Mixed-pool EMO 512e, synced every 2B</b> (last column: the fixed-group control, never synced):</p>" + t1 + "<p><b>EMO 512e, never merged during training:</b></p>" + t2 + pending
+        + ("<ol>" + "".join(f"<li>{t}</li>" for t in WHOLE4_TAKE) + "</ol>" if WHOLE4_TAKE and done else ""))
 
 
 SYNC12_TAKE = [   # short observations, one line each, no numbers
@@ -2294,6 +2334,7 @@ def build_q5_controls():
     boxes["5O"] = repartition_often_section()
     boxes["5P"] = shared4_section()
     boxes["5Q"] = sync12_section()
+    boxes["5R"] = whole4_section()
     boxes = {L: inner for L, inner in boxes.items() if inner}
     body += VARIANT_CSS + card("info", "Experiments",
         '<ul class="q3index">' + "".join(f'<li><a href="#q5-{L}"><b>{L}</b> &middot; {t}</a> &mdash; {bl}</li>' for L, t, _, bl in VARIANTS if L in boxes) + "</ul>")
@@ -2822,7 +2863,7 @@ def artifact_page(body, path):
     """The Disjoint Training Report: Q5 as its own page (a Claude artifact). Same content as the Q5 tab, renumbered 1-8 (the 5A-5H
     letters only mean something inside the parent report), with a header, a sticky contents rail and its own stylesheet."""
     import datetime, re
-    letters = "ABCEFGHIJKLMNOPQ"; num = lambda L: str(letters.index(L) + 1)   # no 5D any more (its sweeps live in 5B)
+    letters = "ABCEFGHIJKLMNOPQR"; num = lambda L: str(letters.index(L) + 1)   # no 5D any more (its sweeps live in 5B)
     for L in letters:
         body = body.replace(f'id="q5-5{L}"', f'id="s{num(L)}"').replace(f'href="#q5-5{L}"', f'href="#s{num(L)}"').replace(f'<span class="vb">5{L}</span>', f'<span class="vb">{num(L)}</span>').replace(f'<b>5{L}</b> &middot;', f'<b>{num(L)}</b> &middot;')
     body = re.sub(r"boxes 5([A-M])((?:, 5[A-M])+)", lambda m: "sections " + ", ".join(num(x) for x in re.findall(r"5([A-M])", m.group(0))), body)
