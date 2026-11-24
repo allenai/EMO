@@ -13,7 +13,9 @@ def main():
     ap = argparse.ArgumentParser(); ap.add_argument("--out", type=Path, required=True); ap.add_argument("--k", type=int, default=4)
     ap.add_argument("--seed", type=int, default=0); ap.add_argument("--num-experts", type=int, default=E)
     ap.add_argument("--whole-layers", type=int, default=1, help="expert layers 1..N stay whole in every group (default 1); layers N+1..9 are partitioned (2026-11-23: 4 -> only layers 5-9 are split)")
-    a = ap.parse_args(); PARTITIONED = list(range(a.whole_layers + 1, 10)); WHOLE = list(range(1, a.whole_layers + 1))
+    ap.add_argument("--whole-set", default="", help="comma list of the expert layers kept whole, e.g. 1,3,5,9 (overrides --whole-layers; 2026-11-24)")
+    a = ap.parse_args(); WHOLE = sorted(int(x) for x in a.whole_set.split(",")) if a.whole_set else list(range(1, a.whole_layers + 1))
+    assert WHOLE and all(1 <= l <= 9 for l in WHOLE) and len(set(WHOLE)) == len(WHOLE) < 9; PARTITIONED = [l for l in LAYERS if l not in WHOLE]
     rng = np.random.default_rng(a.seed); k = a.k; n = a.num_experts   # n % k != 0 (12 groups of 512, 2026-11-23): near-equal groups, the first n % k one larger
     groups = {l: [list(range(n)) for _ in range(k)] for l in WHOLE}
     for l in PARTITIONED:
@@ -21,7 +23,9 @@ def main():
     out = dict(k=k, num_experts=n, partitioned_layers=PARTITIONED, untouched_layers=WHOLE, source=f"random(seed={a.seed})", size_normalized=False,
                groups={str(l): groups[l] for l in LAYERS}, sizes={str(l): [len(x) for x in groups[l]] for l in LAYERS}, layer9_agreement={}, preview=None)
     a.out.parent.mkdir(parents=True, exist_ok=True); json.dump(out, open(a.out, "w"))
-    print(f"wrote {a.out}: {k} random groups of {n // k} experts in layers {PARTITIONED[0]}-{PARTITIONED[-1]}, layer{'s 1-' + str(WHOLE[-1]) if len(WHOLE) > 1 else ' 1'} whole")
+    desc = (f"layers {PARTITIONED[0]}-{PARTITIONED[-1]}, layer{'s 1-' + str(WHOLE[-1]) if len(WHOLE) > 1 else ' 1'} whole" if PARTITIONED == list(range(PARTITIONED[0], 10))
+            else f"layers {','.join(map(str, PARTITIONED))}; layers {','.join(map(str, WHOLE))} whole")
+    print(f"wrote {a.out}: {k} random groups of {n // k} experts in {desc}")
 
 
 if __name__ == "__main__":

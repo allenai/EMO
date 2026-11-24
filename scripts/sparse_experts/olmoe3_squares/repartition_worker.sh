@@ -48,7 +48,7 @@ src_args() { local p=$1 g r subs="" wts=""   # the merge of cycle p (p = 0: the 
   for g in $(seq 0 $((K-1))); do r=($(row $p $g)); subs="$subs,$(fin_of $p $g)"; wts="$wts,$((r[2] - r[1]))"; done
   echo "--old-groups $SQ/groups/c$p.json --subs ${subs#,} --weights ${wts#,}"; }
 prep() { local c=$1 p=$(( $1 - 1 )) g r kn extra=""; local D="$SQ/cyc/c$c"
-  [ -f "$SQ/groups/c$c.json" ] || python $P/partition_random.py --out "$SQ/groups/c$c.json" --k $K --whole-layers ${WHOLE_LAYERS:-1} --seed $(( SEED_BASE + ( ${FIXED_GROUPS:-0} == 1 ? 0 : c ) )) > /dev/null || return 1
+  [ -f "$SQ/groups/c$c.json" ] || python $P/partition_random.py --out "$SQ/groups/c$c.json" --k $K --whole-layers ${WHOLE_LAYERS:-1} ${WHOLE_SET:+--whole-set $WHOLE_SET} --seed $(( SEED_BASE + ( ${FIXED_GROUPS:-0} == 1 ? 0 : c ) )) > /dev/null || return 1
   kn=$(keep_name $p); [ -n "$kn" ] && [ ! -f "$SQ/merged/$kn/merge_info.json" ] && extra="--save-merged $SQ/merged/$kn"
   rm -rf "$D"; mkdir -p "$D"
   python $P/remerge_reslice.py --full-config "$FULLD" $(src_args $p) --new-groups "$SQ/groups/c$c.json" --out "$D/init" $extra 2>&1 | tail -n 1 | cut -c1-80 || return 1

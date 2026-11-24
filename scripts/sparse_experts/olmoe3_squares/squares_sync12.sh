@@ -22,10 +22,13 @@
 # the checkpoints of each point are merged for evaluation only. Arm folders olmoe3_squares_<model>fix<K>w<N>_lr<lr>. Kept: the 30B merge + its
 # sub-models (weights only). SYNC_MODEL=emo is the EMO 512e model (olmoe3_275m_emo_10b, relevance pools).
 #   SYNC_MODEL=emo SYNC_K=8 SYNC_WHOLE=4 bash scripts/sparse_experts/olmoe3_squares/squares_sync12.sh nosync 4e-4
+#   SYNC_MODEL=mix20 SYNC_K=12 SYNC_WHOLESET=1,3,5,9 bash scripts/sparse_experts/olmoe3_squares/squares_sync12.sh run 4e-4      (any set of whole layers)
 #   bash scripts/sparse_experts/olmoe3_squares/squares_sync12.sh sweep <lr> | choose | final <lr>      (idempotent; detach; commit + push first)
 set -u; cd "$(git rev-parse --show-toplevel)"; export PATH=/root/.conda/envs/emo/bin:$PATH
 MODE="${1:?sweep|choose|final|run|nosync}"; MODEL="${SYNC_MODEL:-mix20}"; LR="${2:-}"; LRS="1e-4 2e-4 4e-4 8e-4"; K="${SYNC_K:-12}"; WH="${SYNC_WHOLE:-1}"
-AT=mix20sync12; SEEDB=3000; [ "$K-$WH-$MODEL" = 12-1-mix20 ] || { AT=${MODEL}sync${K}w$WH; SEEDB=3100; }; [ $MODE = nosync ] && AT=${MODEL}fix${K}w$WH   # arm tag; the first run (12 sub-models, layer 1 whole) keeps its names
+AT=mix20sync12; SEEDB=3000; [ "$K-$WH-$MODEL" = 12-1-mix20 ] || { AT=${MODEL}sync${K}w$WH; SEEDB=3100; }; [ $MODE = nosync ] && AT=${MODEL}fix${K}w$WH
+WS="${SYNC_WHOLESET:-}"; if [ -n "$WS" ]; then AT=${MODEL}sync${K}ws${WS//,/}; [ $MODE = nosync ] && AT=${MODEL}fix${K}ws${WS//,/}; fi   # SYNC_WHOLESET=1,3,5,9: exactly these expert layers stay whole (2026-11-24; arm tags ...ws1359)
+# arm tag; the first run (12 sub-models, layer 1 whole) keeps its names
 S=sparse_experts; W=/weka/oe-training-default/ryanwang/EMO/sparse_experts; FULL=olmoe3_275m_emo_mix20_10b; POOLENV="OLMOE3_EMO_POOL_SELECT=mix:0.2"; [ $MODEL = emo ] && { FULL=olmoe3_275m_emo_10b; POOLENV=""; }; SAMPLE=sample_8k_300b.npz; VAL=sample_8k_300b_val.npz
 say() { echo "$(date -u +%m-%d\ %H:%M) [$AT $MODE ${LR}] $*"; }
 ce_of() { python -c "import json, os; d = '$1/none/'; f = d + 'meta.json' if os.path.exists(d + 'meta.json') else d + 'rank0/meta.json'; print(round(json.load(open(f))['mean_ce'], 4))" 2>/dev/null; }
@@ -76,7 +79,7 @@ workers() { local i e n u; [ -f $SQ/DONE ] && return 0
   for i in $(seq 1 $NWORK); do e=$(tail -n 1 $LOG/${MODE}_worker$i.launched 2>/dev/null | grep -o '01[A-Z0-9]\{20,\}' | head -1)
     if [ -n "$e" ]; then ended $e || continue; fi
     n=$(cat $LOG/${MODE}_worker$i.launched 2>/dev/null | wc -l); [ $n -ge 10 ] && continue
-    u=$(python3 scripts/sparse_experts/olmoe3_beaker_cmd_cli.py --name "$AT-lr$LR-$MODE-worker$i-$(date +%m%d%H%M%S)" --gpus 8 -- bash -c "K=$K WHOLE_LAYERS=$WH FIRST_CYCLE=$FIRST SEED_BASE=$SEEDB FIXED_GROUPS=1 REPART_WANDB=false OLMOE3_SAVE_INTERVAL=100000000 SQUARES_NAME=$SQN RUN_PREFIX=$RP FULL=$FULL OLMOE3_LR=$LR $POOLENV bash scripts/sparse_experts/olmoe3_squares/repartition_worker.sh" 2>&1 | tail -n 1)
+    u=$(python3 scripts/sparse_experts/olmoe3_beaker_cmd_cli.py --name "$AT-lr$LR-$MODE-worker$i-$(date +%m%d%H%M%S)" --gpus 8 -- bash -c "K=$K WHOLE_LAYERS=$WH WHOLE_SET=$WS FIRST_CYCLE=$FIRST SEED_BASE=$SEEDB FIXED_GROUPS=1 REPART_WANDB=false OLMOE3_SAVE_INTERVAL=100000000 SQUARES_NAME=$SQN RUN_PREFIX=$RP FULL=$FULL OLMOE3_LR=$LR $POOLENV bash scripts/sparse_experts/olmoe3_squares/repartition_worker.sh" 2>&1 | tail -n 1)
     say "worker $i (launch $((n+1))): $u"; echo "$u" | grep -q beaker.org && echo "$u" >> $LOG/${MODE}_worker$i.launched; done; }
 # ---- the 15.7B matched point: the 12 extra checkpoints of cycle 3, merged for evaluation only ----
 midmerge() { local g; [ -f $LOG/mid.done ] && return 0; [ -f $SQ/merged/match30000/merge_info.json ] && return 0
