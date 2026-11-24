@@ -1722,6 +1722,7 @@ WHOLE4_TAKE = [   # short observations, one line each, no numbers
     "Keeping more layers whole removes most of the merge gap in every case tested: 8 and 12 sub-models, both start models, with and without syncing.",
     "Which layers are whole matters as much as how many: layers 1, 3, 5, 9 are clearly better than layers 1 to 4 at the same sub-model size.",
     "With layers 1, 3, 5, 9 whole the 8-sub-model merge is ahead of joint training at every point for both models, and the 12-sub-model merge is ahead or level.",
+    "Two whole layers (1 and 5) are not enough: every run ends behind joint training, the 12-sub-model ones clearly, though still ahead of keeping only layer 1 whole.",
     "Mixed-pool EMO with syncing keeps its lead over joint training almost unchanged to 30B; EMO 512e without any merging loses it slowly.",
     "The sub-models train at half the joint run's learning rate, and no joint run at that rate exists, so part of the lead may be the learning rate.",
     "The two models differ in start model and in syncing at once, so the difference between them cannot be put down to either one."]
